@@ -3,6 +3,7 @@
 import Link from "next/link";
 import type { User } from "firebase/auth";
 import { useEffect, useState } from "react";
+import { PassTheMemory } from "@/components/pass-the-memory";
 import { card, primaryButton } from "@/components/ui";
 import { friendlyError } from "@/lib/auth-errors";
 import { memoryPath } from "@/lib/memories";
@@ -36,6 +37,7 @@ const statusStyles: Record<StoryStatus, string> = {
 export function MyStories({ user }: { user: User }) {
   const [stories, setStories] = useState<MyStory[] | null>(null);
   const [confirming, setConfirming] = useState<string | null>(null);
+  const [passing, setPassing] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -97,88 +99,110 @@ export function MyStories({ user }: { user: User }) {
       ) : (
         <ul className="mt-4 flex flex-col gap-4">
           {stories.map((story) => (
-            <li key={story.id} className="flex gap-4">
-              {story.thumbUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element -- private, signed link from our server
-                <img
-                  src={story.thumbUrl}
-                  alt=""
-                  className="h-20 w-20 shrink-0 rounded-xl object-cover ring-1 ring-ink/10"
-                />
-              ) : (
-                <div className="h-20 w-20 shrink-0 rounded-xl bg-paper" />
-              )}
-              <div className="min-w-0 flex-1">
-                <p className="truncate font-bold text-ink">{story.storeName}</p>
-                <p className="truncate text-sm text-ink-soft">
-                  {[story.neighbourhood, story.city].filter(Boolean).join(", ")} ·{" "}
-                  {story.category}
-                </p>
-                <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
-                  <span className={`rounded-full px-2 py-0.5 font-bold ${statusStyles[story.status]}`}>
-                    {statusLabel(story)}
-                  </span>
-                  {story.status === "approved" && story.featuredAt && (
-                    <span className="rounded-full bg-brand-yellow/25 px-2 py-0.5 font-bold text-ink">
-                      ★ Featured
+            <li key={story.id}>
+              <div className="flex gap-4">
+                {story.thumbUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element -- private, signed link from our server
+                  <img
+                    src={story.thumbUrl}
+                    alt=""
+                    className="h-20 w-20 shrink-0 rounded-xl object-cover ring-1 ring-ink/10"
+                  />
+                ) : (
+                  <div className="h-20 w-20 shrink-0 rounded-xl bg-paper" />
+                )}
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-bold text-ink">{story.storeName}</p>
+                  <p className="truncate text-sm text-ink-soft">
+                    {[story.neighbourhood, story.city].filter(Boolean).join(", ")} ·{" "}
+                    {story.category}
+                  </p>
+                  <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+                    <span className={`rounded-full px-2 py-0.5 font-bold ${statusStyles[story.status]}`}>
+                      {statusLabel(story)}
                     </span>
-                  )}
-                  {story.status === "approved" && lovedBy(story.reactionCount) && (
-                    <span className="text-ink-soft">{lovedBy(story.reactionCount)}</span>
-                  )}
-                </p>
-                <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
-                  {story.status === "approved" && (
-                    <>
-                      <Link
-                        href={memoryPath(story.id)}
-                        className="font-bold text-brand-red underline underline-offset-4"
-                      >
-                        Open
-                      </Link>
+                    {story.status === "approved" && story.featuredAt && (
+                      <span className="rounded-full bg-brand-yellow/25 px-2 py-0.5 font-bold text-ink">
+                        ★ Featured
+                      </span>
+                    )}
+                    {story.status === "approved" && lovedBy(story.reactionCount) && (
+                      <span className="text-ink-soft">{lovedBy(story.reactionCount)}</span>
+                    )}
+                  </p>
+                  <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+                    {(story.status === "pending" || story.status === "approved") && (
                       <button
                         type="button"
-                        onClick={() => copyLink(story)}
+                        aria-expanded={passing === story.id}
+                        onClick={() => setPassing(passing === story.id ? null : story.id)}
                         className="font-bold text-brand-red underline underline-offset-4"
                       >
-                        {copied === story.id ? "Link copied" : "Copy link"}
+                        Pass the memory
                       </button>
-                    </>
-                  )}
-                  {confirming === story.id ? (
-                    <>
+                    )}
+                    {story.status === "approved" && (
+                      <>
+                        <Link
+                          href={memoryPath(story.id)}
+                          className="font-bold text-brand-red underline underline-offset-4"
+                        >
+                          Open
+                        </Link>
+                        <button
+                          type="button"
+                          onClick={() => copyLink(story)}
+                          className="font-bold text-brand-red underline underline-offset-4"
+                        >
+                          {copied === story.id ? "Link copied" : "Copy link"}
+                        </button>
+                      </>
+                    )}
+                    {confirming === story.id ? (
+                      <>
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={() => remove(story)}
+                          className="font-bold text-brand-red underline underline-offset-4"
+                        >
+                          {busy ? "Deleting…" : "Yes, delete it"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setConfirming(null)}
+                          className="font-bold text-ink-soft underline underline-offset-4"
+                        >
+                          Keep it
+                        </button>
+                      </>
+                    ) : (
                       <button
                         type="button"
-                        disabled={busy}
-                        onClick={() => remove(story)}
-                        className="font-bold text-brand-red underline underline-offset-4"
-                      >
-                        {busy ? "Deleting…" : "Yes, delete it"}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setConfirming(null)}
+                        onClick={() => setConfirming(story.id)}
                         className="font-bold text-ink-soft underline underline-offset-4"
                       >
-                        Keep it
+                        Delete
                       </button>
-                    </>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => setConfirming(story.id)}
-                      className="font-bold text-ink-soft underline underline-offset-4"
-                    >
-                      Delete
-                    </button>
-                  )}
-                </p>
-                {story.reviewNote && story.status !== "approved" && (
-                  <p className="mt-2 text-sm text-ink">
-                    <span className="font-bold">From the moderator:</span> {story.reviewNote}
+                    )}
                   </p>
-                )}
+                  {story.reviewNote && story.status !== "approved" && (
+                    <p className="mt-2 text-sm text-ink">
+                      <span className="font-bold">From the moderator:</span> {story.reviewNote}
+                    </p>
+                  )}
+                </div>
               </div>
+              {passing === story.id && (
+                <div className="mt-3">
+                  <PassTheMemory
+                    user={user}
+                    storyId={story.id}
+                    storeName={story.storeName}
+                    visibility={story.visibility}
+                  />
+                </div>
+              )}
             </li>
           ))}
         </ul>

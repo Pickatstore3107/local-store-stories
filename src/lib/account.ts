@@ -9,6 +9,7 @@ import {
 } from "firebase/firestore";
 import { CONSENT_VERSION } from "./consent";
 import { getFirebase } from "./firebase";
+import { deleteMyInvites, type OpenInvite } from "./invites";
 import { deleteMyReactions } from "./reactions";
 import { deleteMyReports } from "./reports";
 import { deleteAllMyStories } from "./stories";
@@ -19,6 +20,11 @@ export type Profile = {
   city: string;
   createdAt: Timestamp;
   updatedAt: Timestamp;
+  /** Set once, when someone joins through a friend's invite: the Memory Chain's link. */
+  invitedBy?: string;
+  /** The memory the invite was made for, if it's shared with everyone. */
+  invitedVia?: string;
+  inviteCode?: string;
 };
 
 /** Private consent record, readable only by its owner: usersPrivate/{uid}. */
@@ -47,10 +53,12 @@ export async function loadAccount(uid: string) {
 /**
  * Records consent and creates the public profile in one atomic write,
  * so a profile can never exist without consent (enforced in the rules).
+ * Joining through a friend's invite also uses the invite up, in the same write.
  */
 export async function createAccount(
   uid: string,
   input: { displayName: string; city: string },
+  invite: OpenInvite | null = null,
 ) {
   const { db } = getFirebase();
   const batch = writeBatch(db);
@@ -64,7 +72,16 @@ export async function createAccount(
     city: input.city.trim(),
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
+    ...(invite && {
+      invitedBy: invite.from,
+      // A memory shared only by link isn't named: its address is the link's secret.
+      ...(invite.visibility === "public" && { invitedVia: invite.storyId }),
+      inviteCode: invite.code,
+    }),
   });
+  if (invite) {
+    batch.update(doc(db, "invites", invite.code), { usedBy: uid, usedAt: serverTimestamp() });
+  }
   await batch.commit();
 }
 
@@ -88,12 +105,13 @@ export function signedInRecently(user: User) {
 
 /**
  * Deletes the person's stories and photos, takes back their loves, deletes their
- * reports, profile and consent record, and then the sign-in account.
+ * reports, invites, profile and consent record, and then the sign-in account.
  */
 export async function deleteAccount(user: User) {
   await deleteAllMyStories(user);
   await deleteMyReactions(user);
   await deleteMyReports(user);
+  await deleteMyInvites(user);
   const { db } = getFirebase();
   const batch = writeBatch(db);
   batch.delete(doc(db, "users", user.uid));

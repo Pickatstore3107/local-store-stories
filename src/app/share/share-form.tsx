@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useLayoutEffect, useRef, useState, type FormEvent } from "react";
 import { useAuth } from "@/components/auth-provider";
-import { card, input, primaryButton, secondaryButton } from "@/components/ui";
+import { PassTheMemory } from "@/components/pass-the-memory";
+import { card, input, primaryButton } from "@/components/ui";
 import { friendlyError } from "@/lib/auth-errors";
 import {
   CAPTION_MAX,
@@ -77,7 +78,8 @@ function StoryForm({
   const [rights, setRights] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [shared, setShared] = useState(false);
+  // The new memory's ID, once it's shared.
+  const [shared, setShared] = useState<string | null>(null);
 
   if (!user) return null;
 
@@ -125,12 +127,12 @@ function StoryForm({
     setError(null);
     setBusy(true);
     try {
-      await shareStory(
+      const storyId = await shareStory(
         user,
         { storeName, category, city, neighbourhood, caption, year: yearNumber, ordered, visibility },
         photo.jpeg,
       );
-      setShared(true);
+      setShared(storyId);
       onShared();
     } catch (e) {
       setError(friendlyError(e));
@@ -147,14 +149,26 @@ function StoryForm({
           Your memory of <strong>{storeName.trim()}</strong> is saved and waiting for review.
           Nobody else can see it until a moderator approves it.
         </p>
-        <div className="mt-6 flex flex-wrap gap-3">
-          <Link href="/account" className={primaryButton}>
+        <div className="mt-6">
+          <PassTheMemory
+            user={user}
+            storyId={shared}
+            storeName={storeName.trim()}
+            visibility={visibility}
+          />
+        </div>
+        <p className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-sm">
+          <Link href="/account" className="font-bold text-brand-red underline underline-offset-4">
             See my memories
           </Link>
-          <button type="button" onClick={onShareAnother} className={secondaryButton}>
+          <button
+            type="button"
+            onClick={onShareAnother}
+            className="font-bold text-brand-red underline underline-offset-4"
+          >
             Share another
           </button>
-        </div>
+        </p>
       </div>
     );
   }

@@ -31,6 +31,7 @@ export default function PrivacyPage() {
             <li>Photos are resized on your phone and the location hidden inside them is removed before upload. They are stored privately with our image provider, Cloudinary, until they are approved.</li>
             <li>Which memories you love. Only you can see this; the person who shared a memory sees only how many people loved it.</li>
             <li>Reports you send about a memory. Only moderators can read them.</li>
+            <li>The invite links you make, and who joined through them. If you joined through a friend&apos;s invite, who invited you.</li>
             <li>When you agreed to this notice, and that you confirmed you are 18 or older.</li>
           </ul>
         </section>
@@ -50,6 +51,21 @@ export default function PrivacyPage() {
             Once a story is approved, its photo is shown through a web link. If a moderator
             hides the story later, anyone who saved that link can still open the photo until
             you delete the story.
+          </p>
+        </section>
+
+        <section>
+          <h2 className="text-lg font-bold">Invites and the Memory Chain</h2>
+          <p className="mt-2">
+            Each memory comes with three personal invite links for you to send to friends. Each
+            link works once. When a friend joins through yours, you see their name next to that
+            invite, and the Memory Chain shows that you passed the memory on to them.
+          </p>
+          <p className="mt-2">
+            The Memory Chain is public. It names people only through memories they chose to
+            show on the Wall; anyone without one appears as &ldquo;a friend&rdquo;. A memory
+            you shared only by link never appears on it. If you delete your account, you leave
+            the chain and your invite links stop working.
           </p>
         </section>
 
@@ -77,9 +93,9 @@ export default function PrivacyPage() {
           <h2 className="text-lg font-bold">Your choices</h2>
           <p className="mt-2">
             You can see and edit your public details, and delete your account and everything
-            linked to it (your memories and photos, the list of memories you loved and the
-            reports you sent), from <strong>My account</strong> at any time. You can also write to
-            us to access, correct or erase your data.
+            linked to it (your memories and photos, your invite links, the list of memories you
+            loved and the reports you sent), from <strong>My account</strong> at any time. You can
+            also write to us to access, correct or erase your data.
           </p>
         </section>
 

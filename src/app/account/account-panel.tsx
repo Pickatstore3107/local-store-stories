@@ -184,9 +184,9 @@ export function AccountPanel() {
       <section className={card}>
         <h2 className="text-lg font-extrabold text-ink">Delete my account</h2>
         <p className="mt-2 text-sm text-ink-soft">
-          This permanently removes your profile, your memories and photos, the list of
-          memories you loved, the reports you sent, your consent record and your sign-in. It
-          cannot be undone.
+          This permanently removes your profile, your memories and photos, your invite links,
+          the list of memories you loved, the reports you sent, your consent record and your
+          sign-in. You also leave the Memory Chain. It cannot be undone.
         </p>
         {!confirmingDelete ? (
           <button

@@ -3,7 +3,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense, type CSSProperties } from "react";
 import { PolaroidPhoto } from "@/components/polaroid";
-import { excerpt, placeLine, shortDate, textLang, tilt } from "@/lib/memories";
+import type { MemoryLinks } from "@/lib/chain";
+import { excerpt, memoryPath, placeLine, shortDate, textLang, tilt } from "@/lib/memories";
+import { loadMemoryLinks } from "@/lib/server/chain";
 import { loadMemory } from "@/lib/server/wall";
 import { MemoryActions } from "./memory-actions";
 
@@ -70,6 +72,7 @@ async function MemoryContent({ id }: { id: string }) {
     );
   }
   const { memory } = result;
+  const links = await loadMemoryLinks(memory.id, result.invitedBy);
 
   return (
     <article className="mt-8">
@@ -125,6 +128,8 @@ async function MemoryContent({ id }: { id: string }) {
         )}
       </div>
 
+      <ChainLinks links={links} />
+
       <Suspense fallback={<div className="mt-10 h-28 border-t border-ink/10" />}>
         <MemoryActions id={memory.id} storeName={memory.storeName} city={memory.city} />
       </Suspense>
@@ -140,6 +145,86 @@ async function MemoryContent({ id }: { id: string }) {
         </p>
       )}
     </article>
+  );
+}
+
+const link = "font-bold text-brand-red underline underline-offset-4";
+
+/** Where this memory came from on the Memory Chain, and what it led to. */
+function ChainLinks({ links }: { links: MemoryLinks }) {
+  const { from, inspired } = links;
+  if (!from && !inspired.length) return null;
+  return (
+    <section
+      aria-labelledby="chain-heading"
+      className="mt-10 rounded-3xl bg-white/70 p-6 ring-1 ring-ink/5"
+    >
+      <h2 id="chain-heading" className="font-hand text-2xl font-bold text-ink">
+        On the Memory Chain
+      </h2>
+      {from && (
+        <p className="mt-2 text-ink">
+          {from.memory ? (
+            <>
+              Passed on from{" "}
+              <Link href={memoryPath(from.memory.id)} className={link}>
+                {from.name ?? "a friend"}&apos;s memory of {from.memory.storeName}
+              </Link>
+              .
+            </>
+          ) : (
+            <>Passed on by {from.name ?? "a friend"}.</>
+          )}
+        </p>
+      )}
+      {inspired.length > 0 && (
+        <>
+          <p className="mt-4 text-ink">
+            {from ? "And it" : "It"} inspired{" "}
+            {inspired.length === 1 ? "1 more memory" : `${inspired.length} more memories`}:
+          </p>
+          <ul className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3">
+            {inspired.map((memory) => (
+              <li key={memory.id}>
+                <Link
+                  href={memoryPath(memory.id)}
+                  className="block bg-white p-2 pb-3 shadow-[0_10px_24px_-14px_rgba(43,29,26,0.55)] ring-1 ring-ink/5 transition hover:-translate-y-0.5"
+                >
+                  {memory.photoUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element -- a signed link from our image host, already sized
+                    <img
+                      src={memory.photoUrl}
+                      alt=""
+                      width={240}
+                      height={240}
+                      loading="lazy"
+                      decoding="async"
+                      className="aspect-square w-full bg-paper object-cover"
+                    />
+                  ) : (
+                    <div className="aspect-square w-full bg-paper" />
+                  )}
+                  <span
+                    lang={textLang(memory.storeName)}
+                    className="mt-2 block px-1 font-hand font-bold leading-tight text-ink"
+                  >
+                    {memory.storeName}
+                  </span>
+                  {memory.authorName && (
+                    <span className="block px-1 text-xs text-ink-soft">— {memory.authorName}</span>
+                  )}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+      <p className="mt-5 text-sm">
+        <Link href="/chain" className={link}>
+          See the whole Memory Chain
+        </Link>
+      </p>
+    </section>
   );
 }
 
