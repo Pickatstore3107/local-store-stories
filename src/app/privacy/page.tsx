@@ -1,10 +1,9 @@
 import type { Metadata } from "next";
+import { GRIEVANCE_EMAIL } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "Privacy · Local Stores & Their Stories",
 };
-
-const GRIEVANCE_EMAIL = "krishna@pickatstore.in";
 
 export default function PrivacyPage() {
   return (
@@ -30,6 +29,8 @@ export default function PrivacyPage() {
             <li>The name and city you choose. Shown publicly with your stories.</li>
             <li>Stories, photos and videos you choose to share, once they are approved.</li>
             <li>Photos are resized on your phone and the location hidden inside them is removed before upload. They are stored privately with our image provider, Cloudinary, until they are approved.</li>
+            <li>Which memories you love. Only you can see this; the person who shared a memory sees only how many people loved it.</li>
+            <li>Reports you send about a memory. Only moderators can read them.</li>
             <li>When you agreed to this notice, and that you confirmed you are 18 or older.</li>
           </ul>
         </section>
@@ -44,6 +45,22 @@ export default function PrivacyPage() {
             you&apos;ll see why on <strong>My account</strong>. We keep a short record of each
             decision (the store&apos;s name, what was decided and why, but not your name) so we
             can answer questions about it later.
+          </p>
+          <p className="mt-2">
+            Once a story is approved, its photo is shown through a web link. If a moderator
+            hides the story later, anyone who saved that link can still open the photo until
+            you delete the story.
+          </p>
+        </section>
+
+        <section>
+          <h2 className="text-lg font-bold">Reporting a memory</h2>
+          <p className="mt-2">
+            If a memory is unkind, shows private details, or uses your photo or your store
+            without your agreement, report it from the memory&apos;s page. A moderator reads
+            every report and decides whether to hide the memory; it stays up until they do.
+            Moderators can see who sent a report, but the memory&apos;s author can&apos;t. You
+            can also email us without an account.
           </p>
         </section>
 
@@ -60,7 +77,8 @@ export default function PrivacyPage() {
           <h2 className="text-lg font-bold">Your choices</h2>
           <p className="mt-2">
             You can see and edit your public details, and delete your account and everything
-            linked to it, from <strong>My account</strong> at any time. You can also write to
+            linked to it (your memories and photos, the list of memories you loved and the
+            reports you sent), from <strong>My account</strong> at any time. You can also write to
             us to access, correct or erase your data.
           </p>
         </section>

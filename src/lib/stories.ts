@@ -63,6 +63,10 @@ export type Story = {
   /** Why a moderator turned the story down or hid it, for the author. */
   reviewNote?: string;
   reviewLogId?: string;
+  /** Set by a moderator to show the story in the Wall's Featured row. */
+  featuredAt?: Timestamp;
+  /** How many people loved it; see src/lib/reactions.ts. */
+  reactionCount?: number;
 };
 
 export type StoryInput = {
@@ -118,8 +122,8 @@ export async function preparePhoto(file: File) {
   }
 }
 
-/** Calls one of our photo routes as the signed-in person. */
-export async function photoApi(user: User, path: string, init: RequestInit) {
+/** Calls one of our server routes as the signed-in person. */
+export async function callApi(user: User, path: string, init: RequestInit) {
   const response = await fetch(path, {
     ...init,
     headers: { ...init.headers, Authorization: `Bearer ${await user.getIdToken()}` },
@@ -129,6 +133,22 @@ export async function photoApi(user: User, path: string, init: RequestInit) {
     throw new FriendlyError(body?.error ?? "Something went wrong with the photo. Please try again.");
   }
   return response;
+}
+
+/**
+ * Asks the server to rebuild the Wall, and these memories' pages, so a
+ * change shows straight away. Otherwise it shows within 15 minutes.
+ */
+export async function refreshWall(user: User, storyIds: string[]) {
+  try {
+    await callApi(user, "/api/wall/refresh", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ storyIds }),
+    });
+  } catch (error) {
+    console.error("Could not refresh the Wall", error); // it catches up on its own
+  }
 }
 
 function cleanInput(input: StoryInput) {
@@ -158,7 +178,7 @@ export async function shareStory(user: User, input: StoryInput, photo: Blob) {
   const form = new FormData();
   form.set("storyId", storyRef.id);
   form.set("photo", photo, "photo.jpg");
-  const response = await photoApi(user, "/api/photos", { method: "POST", body: form });
+  const response = await callApi(user, "/api/photos", { method: "POST", body: form });
   const { photoId } = (await response.json()) as { photoId: string };
 
   try {
@@ -191,7 +211,7 @@ export async function loadMyStories(user: User): Promise<MyStory[]> {
   let urls: Record<string, string> = {};
   if (stories.length) {
     try {
-      const response = await photoApi(user, "/api/photos/thumbnails", {
+      const response = await callApi(user, "/api/photos/thumbnails", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ storyIds: stories.map((s) => s.id) }),
@@ -205,22 +225,25 @@ export async function loadMyStories(user: User): Promise<MyStory[]> {
 }
 
 function deletePhoto(user: User, storyId: string) {
-  return photoApi(user, `/api/photos?storyId=${encodeURIComponent(storyId)}`, {
+  return callApi(user, `/api/photos?storyId=${encodeURIComponent(storyId)}`, {
     method: "DELETE",
   });
 }
 
 /** Deletes a story's photo first, then the story itself. */
-export async function deleteStory(user: User, story: { id: string }) {
+export async function deleteStory(user: User, story: { id: string; status: StoryStatus }) {
   await deletePhoto(user, story.id);
   await deleteDoc(doc(getFirebase().db, "stories", story.id));
+  if (story.status === "approved") await refreshWall(user, [story.id]);
 }
 
 /** Deletes every photo and story the person has shared. */
 export async function deleteAllMyStories(user: User) {
   const stories = await myStoryDocs(user.uid);
   if (!stories.length) return;
-  await photoApi(user, "/api/photos", { method: "DELETE" });
+  await callApi(user, "/api/photos", { method: "DELETE" });
   const { db } = getFirebase();
   await Promise.all(stories.map((story) => deleteDoc(doc(db, "stories", story.id))));
+  const approved = stories.filter((story) => story.status === "approved");
+  if (approved.length) await refreshWall(user, approved.map((story) => story.id));
 }

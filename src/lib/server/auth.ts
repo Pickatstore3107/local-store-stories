@@ -79,10 +79,13 @@ export async function requireModerator(uid: string, token: string) {
 }
 
 /** Turns an error into a JSON response the browser can show. */
-export function errorResponse(error: unknown) {
+export function errorResponse(
+  error: unknown,
+  fallback = "Something went wrong with the photo. Please try again.",
+) {
   if (error instanceof HttpError) {
     return Response.json({ error: error.message }, { status: error.status });
   }
   console.error(error);
-  return Response.json({ error: "Something went wrong with the photo. Please try again." }, { status: 500 });
+  return Response.json({ error: fallback }, { status: 500 });
 }

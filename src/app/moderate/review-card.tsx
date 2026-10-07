@@ -1,10 +1,12 @@
 "use client";
 
 import type { User } from "firebase/auth";
-import { useState, type FormEvent } from "react";
+import { useState, type FormEvent, type ReactNode } from "react";
 import { input, primaryButton, secondaryButton } from "@/components/ui";
 import { friendlyError } from "@/lib/auth-errors";
+import { memoryPath } from "@/lib/memories";
 import {
+  featureStory,
   NOTE_SUGGESTIONS,
   REVIEW_MOVES,
   REVIEW_NOTE_MAX,
@@ -15,51 +17,15 @@ import {
 } from "@/lib/moderation";
 import { when } from "./when";
 
-const actionLabels: Record<ReviewAction, string> = {
+export const actionLabels: Record<ReviewAction, string> = {
   approved: "Approve",
   rejected: "Don't approve",
   hidden: "Hide",
 };
 
-export function ReviewCard({
-  user,
-  story,
-  onReviewed,
-}: {
-  user: User;
-  story: ReviewStory;
-  onReviewed: (story: ReviewStory, action: ReviewAction) => void;
-}) {
-  // Turning down or hiding asks for a note first.
-  const [noting, setNoting] = useState<ReviewAction | null>(null);
-  const [note, setNote] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  async function decide(action: ReviewAction) {
-    setError(null);
-    setBusy(true);
-    try {
-      await reviewStory(user, story, action, note);
-      onReviewed(story, action);
-    } catch (e) {
-      setError(friendlyError(e));
-      setBusy(false);
-    }
-  }
-
-  function sendNote(event: FormEvent) {
-    event.preventDefault();
-    if (!noting) return;
-    if (note.trim().length < REVIEW_NOTE_MIN) {
-      setError("Write a short note so the author knows why.");
-      return;
-    }
-    decide(noting);
-  }
-
+/** The memory as its author shared it, with what only moderators see. */
+export function StoryDetails({ story, children }: { story: ReviewStory; children?: ReactNode }) {
   const place = [story.neighbourhood, story.city].filter(Boolean).join(", ");
-  const authorName = story.author?.displayName ?? "the author";
 
   return (
     <article className="w-full overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-ink/5">
@@ -120,95 +86,209 @@ export function ReviewCard({
           )}
         </dl>
 
-        {noting ? (
-          <form onSubmit={sendNote} noValidate className="mt-6 rounded-2xl bg-paper p-4">
-            <label htmlFor={`note-${story.id}`} className="block text-sm font-bold text-ink">
-              Why? {authorName} will see this note
-            </label>
-            <div className="mt-3 flex flex-wrap gap-2">
-              {NOTE_SUGGESTIONS.map(([label, text]) => (
-                <button
-                  key={label}
-                  type="button"
-                  onClick={() => {
-                    setNote(text);
-                    setError(null);
-                  }}
-                  className="rounded-full bg-white px-3 py-1 text-xs font-bold text-ink ring-1 ring-ink/15 hover:ring-brand-red/40"
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-            <textarea
-              id={`note-${story.id}`}
-              value={note}
-              maxLength={REVIEW_NOTE_MAX}
-              rows={3}
-              onChange={(e) => {
-                setNote(e.target.value);
-                setError(null);
-              }}
-              placeholder="Pick a reason above, or write your own"
-              className={`${input} mt-3 resize-y`}
-            />
-            <p className="mt-1 text-right text-xs text-ink-soft">
-              {note.trim().length}/{REVIEW_NOTE_MAX}
-            </p>
-            <div className="mt-2 flex flex-wrap gap-3">
-              <button type="submit" disabled={busy} className={primaryButton}>
-                {busy ? "Saving…" : actionLabels[noting]}
-              </button>
+        {children}
+      </div>
+    </article>
+  );
+}
+
+/** Asks for the note an author sees when their memory is turned down or hidden. */
+export function NoteForm({
+  story,
+  label,
+  busy,
+  onSend,
+  onCancel,
+}: {
+  story: ReviewStory;
+  label: string;
+  busy: boolean;
+  onSend: (note: string) => void;
+  onCancel: () => void;
+}) {
+  const [note, setNote] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const authorName = story.author?.displayName ?? "the author";
+
+  function send(event: FormEvent) {
+    event.preventDefault();
+    if (note.trim().length < REVIEW_NOTE_MIN) {
+      setError("Write a short note so the author knows why.");
+      return;
+    }
+    onSend(note);
+  }
+
+  return (
+    <form onSubmit={send} noValidate className="mt-6 rounded-2xl bg-paper p-4">
+      <label htmlFor={`note-${story.id}`} className="block text-sm font-bold text-ink">
+        Why? {authorName} will see this note
+      </label>
+      <div className="mt-3 flex flex-wrap gap-2">
+        {NOTE_SUGGESTIONS.map(([suggestion, text]) => (
+          <button
+            key={suggestion}
+            type="button"
+            onClick={() => {
+              setNote(text);
+              setError(null);
+            }}
+            className="rounded-full bg-white px-3 py-1 text-xs font-bold text-ink ring-1 ring-ink/15 hover:ring-brand-red/40"
+          >
+            {suggestion}
+          </button>
+        ))}
+      </div>
+      <textarea
+        id={`note-${story.id}`}
+        value={note}
+        maxLength={REVIEW_NOTE_MAX}
+        rows={3}
+        onChange={(e) => {
+          setNote(e.target.value);
+          setError(null);
+        }}
+        placeholder="Pick a reason above, or write your own"
+        className={`${input} mt-3 resize-y`}
+      />
+      <p className="mt-1 text-right text-xs text-ink-soft">
+        {note.trim().length}/{REVIEW_NOTE_MAX}
+      </p>
+      {error && (
+        <p role="alert" className="mb-3 text-sm text-brand-red-deep">
+          {error}
+        </p>
+      )}
+      <div className="mt-2 flex flex-wrap gap-3">
+        <button type="submit" disabled={busy} className={primaryButton}>
+          {busy ? "Saving…" : label}
+        </button>
+        <button type="button" disabled={busy} onClick={onCancel} className={secondaryButton}>
+          Cancel
+        </button>
+      </div>
+    </form>
+  );
+}
+
+export function ReviewCard({
+  user,
+  story,
+  onReviewed,
+}: {
+  user: User;
+  story: ReviewStory;
+  onReviewed: (story: ReviewStory, action: ReviewAction) => void;
+}) {
+  // Turning down or hiding asks for a note first.
+  const [noting, setNoting] = useState<ReviewAction | null>(null);
+  const [featured, setFeatured] = useState(!!story.featuredAt);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const onTheWall = story.status === "approved" && story.visibility === "public";
+
+  async function decide(action: ReviewAction, note = "") {
+    setError(null);
+    setBusy(true);
+    try {
+      await reviewStory(user, story, action, note);
+      onReviewed(story, action);
+    } catch (e) {
+      setError(friendlyError(e));
+      setBusy(false);
+    }
+  }
+
+  async function toggleFeatured() {
+    setError(null);
+    setBusy(true);
+    try {
+      await featureStory(user, story.id, !featured);
+      setFeatured(!featured);
+    } catch (e) {
+      setError(friendlyError(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <StoryDetails story={story}>
+      {story.status === "approved" && (
+        <p className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+          <a
+            href={memoryPath(story.id)}
+            target="_blank"
+            rel="noopener"
+            className="font-bold text-brand-red underline underline-offset-4"
+          >
+            {onTheWall ? "Open on the Wall" : "Open its page"}
+          </a>
+          {featured && (
+            <span className="rounded-full bg-brand-yellow/25 px-2 py-0.5 font-bold text-ink">
+              ★ Featured
+            </span>
+          )}
+        </p>
+      )}
+
+      {noting ? (
+        <NoteForm
+          story={story}
+          label={actionLabels[noting]}
+          busy={busy}
+          onSend={(note) => decide(noting, note)}
+          onCancel={() => {
+            setNoting(null);
+            setError(null);
+          }}
+        />
+      ) : (
+        <div className="mt-6 flex flex-wrap gap-3">
+          {REVIEW_MOVES[story.status].map((action) =>
+            action === "approved" ? (
               <button
+                key={action}
+                type="button"
+                disabled={busy}
+                onClick={() => decide(action)}
+                className={primaryButton}
+              >
+                {busy ? "Saving…" : actionLabels[action]}
+              </button>
+            ) : (
+              <button
+                key={action}
                 type="button"
                 disabled={busy}
                 onClick={() => {
-                  setNoting(null);
                   setError(null);
+                  setNoting(action);
                 }}
                 className={secondaryButton}
               >
-                Cancel
+                {actionLabels[action]}
               </button>
-            </div>
-          </form>
-        ) : (
-          <div className="mt-6 flex flex-wrap gap-3">
-            {REVIEW_MOVES[story.status].map((action) =>
-              action === "approved" ? (
-                <button
-                  key={action}
-                  type="button"
-                  disabled={busy}
-                  onClick={() => decide(action)}
-                  className={primaryButton}
-                >
-                  {busy ? "Saving…" : actionLabels[action]}
-                </button>
-              ) : (
-                <button
-                  key={action}
-                  type="button"
-                  disabled={busy}
-                  onClick={() => {
-                    setError(null);
-                    setNoting(action);
-                  }}
-                  className={secondaryButton}
-                >
-                  {actionLabels[action]}
-                </button>
-              ),
-            )}
-          </div>
-        )}
+            ),
+          )}
+          {(onTheWall || featured) && (
+            <button
+              type="button"
+              disabled={busy}
+              onClick={toggleFeatured}
+              className={secondaryButton}
+            >
+              {featured ? "Remove from Featured" : "Feature on the Wall"}
+            </button>
+          )}
+        </div>
+      )}
 
-        {error && (
-          <p role="alert" className="mt-4 rounded-xl bg-brand-red/10 px-4 py-3 text-sm text-brand-red-deep">
-            {error}
-          </p>
-        )}
-      </div>
-    </article>
+      {error && (
+        <p role="alert" className="mt-4 rounded-xl bg-brand-red/10 px-4 py-3 text-sm text-brand-red-deep">
+          {error}
+        </p>
+      )}
+    </StoryDetails>
   );
 }

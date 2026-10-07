@@ -51,6 +51,26 @@ console:
 
 Every decision is written to `moderationLog`, which nobody can edit or delete.
 
+Moderators also see a **Reports** tab. Anyone signed in can report a memory
+from its page (or the flag on its Wall card); the memory stays up until a
+moderator hides it or keeps it. The **Approved** tab can feature a memory in
+the Wall's Featured row.
+
+## The Memory Wall
+
+`/wall` shows every approved memory shared with everyone, and
+`/memories/<id>` shows one memory, including those shared by link only.
+Both are built on the server from what an anonymous visitor may read, then
+cached, so visitors don't each cost a Firestore read:
+
+- They refresh every 15 minutes (memory pages every hour), and straight away
+  when a moderator approves, hides or features a memory or an author deletes
+  one (`src/app/api/wall/refresh`).
+- Photos on the Wall use signed Cloudinary links made only for approved
+  memories.
+- Loves are private records in `usersPrivate/<uid>/reactions` plus a count on
+  the story that only its author is shown. There are no public counters.
+
 ## Security rules
 
 `firestore.rules` and `storage.rules` deny everything by default (Firebase

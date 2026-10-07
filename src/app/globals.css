@@ -19,6 +19,7 @@
   --color-ink: var(--ink);
   --color-ink-soft: var(--ink-soft);
   --font-sans: var(--font-nunito), ui-rounded, system-ui, sans-serif;
+  --font-hand: var(--font-kalam), "Segoe Print", "Bradley Hand", cursive;
 }
 
 html,

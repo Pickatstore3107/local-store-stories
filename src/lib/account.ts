@@ -9,6 +9,8 @@ import {
 } from "firebase/firestore";
 import { CONSENT_VERSION } from "./consent";
 import { getFirebase } from "./firebase";
+import { deleteMyReactions } from "./reactions";
+import { deleteMyReports } from "./reports";
 import { deleteAllMyStories } from "./stories";
 
 /** Public profile, readable by anyone: users/{uid}. */
@@ -85,11 +87,13 @@ export function signedInRecently(user: User) {
 }
 
 /**
- * Deletes the person's stories and photos, their profile and consent record,
- * and then the sign-in account.
+ * Deletes the person's stories and photos, takes back their loves, deletes their
+ * reports, profile and consent record, and then the sign-in account.
  */
 export async function deleteAccount(user: User) {
   await deleteAllMyStories(user);
+  await deleteMyReactions(user);
+  await deleteMyReports(user);
   const { db } = getFirebase();
   const batch = writeBatch(db);
   batch.delete(doc(db, "users", user.uid));

@@ -24,7 +24,8 @@ export function returnPath() {
   }
 }
 
-function setReturnPath(path: string | null) {
+/** Sets the page sign-in brings someone back to. */
+export function setReturnPath(path: string | null) {
   try {
     if (path) sessionStorage.setItem(RETURN_TO, path);
     else sessionStorage.removeItem(RETURN_TO);
