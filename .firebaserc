@@ -1,0 +1,7 @@
+{
+  "projects": {
+    "default": "pas-dev-7786f",
+    "dev": "pas-dev-7786f",
+    "prod": "pas-prod-c8190"
+  }
+}

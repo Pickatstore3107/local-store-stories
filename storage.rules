@@ -1,0 +1,11 @@
+rules_version = '2';
+
+// Deny everything by default until the upload flow (Step 3) adds
+// owner-only, size- and type-checked upload paths.
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
