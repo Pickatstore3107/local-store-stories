@@ -192,6 +192,20 @@ describe("loving a memory", () => {
     await assertFails(unlove(db, "ravi", "a1", -2));
   });
 
+  it("doesn't let a love change anything else about the memory", async () => {
+    const db = as("ravi");
+    const loveAnd = (changes: Record<string, unknown>) => {
+      const batch = writeBatch(db);
+      batch.set(mine(db, "ravi", "a1"), { at: serverTimestamp() });
+      batch.update(doc(db, "stories/a1"), { reactionCount: increment(1), ...changes });
+      return batch.commit();
+    };
+    await assertFails(loveAnd({ caption: "Changed by someone else." }));
+    await assertFails(loveAnd({ featuredAt: serverTimestamp() }));
+    await assertFails(loveAnd({ status: "hidden" }));
+    await assertSucceeds(loveAnd({}));
+  });
+
   it("refuses records for someone else, extra fields and back-dating", async () => {
     const db = as("mallory");
     await assertFails(love(db, "ravi", "a1"));
