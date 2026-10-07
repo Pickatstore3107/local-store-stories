@@ -47,7 +47,7 @@ export function AccountPanel() {
   useEffect(clearPendingDelete, []);
 
   if (!user || !profile) return null;
-  const signedInWith = user.phoneNumber ?? user.email ?? "your account";
+  const signedInWith = user.email ?? "your Google account";
 
   async function save(event: FormEvent) {
     event.preventDefault();
