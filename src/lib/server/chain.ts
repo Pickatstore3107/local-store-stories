@@ -100,7 +100,7 @@ function buildChains({ stories, people }: PublicMemories): Chain[] {
     .sort((a, b) => b.latestAt - a.latestAt);
 }
 
-/** Every chain with at least one invite used, the most recently grown first. */
+/** Every chain someone has joined through an invite, the most recently grown first. */
 export async function loadChains(): Promise<Chain[] | null> {
   "use cache";
   cacheTag(WALL_TAG);
@@ -153,7 +153,7 @@ export async function loadMemoryLinks(
 
 /**
  * What an invite link's page shows: who sent it and the memory it was made
- * for. Visitors can read an invite only while it's unused, so a used one
+ * for. Visitors can't read a used invite from before shared links, so it
  * reads as closed. Null on error.
  */
 export async function loadInvite(code: string): Promise<InviteLanding | null> {
@@ -167,7 +167,7 @@ export async function loadInvite(code: string): Promise<InviteLanding | null> {
     const invite = await getPublicDocument(`invites/${code}`);
     const from = text(invite?.data.from);
     const storyId = text(invite?.data.storyId);
-    if (!invite || !from || !storyId || invite.data.usedBy) {
+    if (!invite || !from || !storyId) {
       cacheLife(MEMORY_LIFE);
       return { status: "closed" };
     }
