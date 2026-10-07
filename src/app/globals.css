@@ -1,0 +1,29 @@
+@import "tailwindcss";
+
+:root {
+  --paper: #f6efe3;
+  --ink: #2b2118;
+  --ink-soft: #6b5a4a;
+  --marigold: #d9822b;
+}
+
+@theme inline {
+  --color-paper: var(--paper);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-marigold: var(--marigold);
+  --font-serif: Georgia, "Times New Roman", serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #1f1914;
+    --ink: #f3e9da;
+    --ink-soft: #c2b29f;
+  }
+}
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+}
