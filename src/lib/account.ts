@@ -1,0 +1,94 @@
+import { deleteUser, type User } from "firebase/auth";
+import {
+  doc,
+  getDoc,
+  serverTimestamp,
+  updateDoc,
+  writeBatch,
+  type Timestamp,
+} from "firebase/firestore";
+import { CONSENT_VERSION } from "./consent";
+import { getFirebase } from "./firebase";
+
+/** Public profile, readable by anyone: users/{uid}. */
+export type Profile = {
+  displayName: string;
+  city: string;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+};
+
+/** Private consent record, readable only by its owner: usersPrivate/{uid}. */
+export type ConsentRecord = {
+  consentVersion: string;
+  consentAt: Timestamp;
+  ageConfirmed: true;
+};
+
+export const NAME_MAX = 40;
+export const CITY_MIN = 2;
+export const CITY_MAX = 60;
+
+export async function loadAccount(uid: string) {
+  const { db } = getFirebase();
+  const [profile, consent] = await Promise.all([
+    getDoc(doc(db, "users", uid)),
+    getDoc(doc(db, "usersPrivate", uid)),
+  ]);
+  return {
+    profile: profile.exists() ? (profile.data() as Profile) : null,
+    consent: consent.exists() ? (consent.data() as ConsentRecord) : null,
+  };
+}
+
+/**
+ * Records consent and creates the public profile in one atomic write,
+ * so a profile can never exist without consent (enforced in the rules).
+ */
+export async function createAccount(
+  uid: string,
+  input: { displayName: string; city: string },
+) {
+  const { db } = getFirebase();
+  const batch = writeBatch(db);
+  batch.set(doc(db, "usersPrivate", uid), {
+    consentVersion: CONSENT_VERSION,
+    consentAt: serverTimestamp(),
+    ageConfirmed: true,
+  });
+  batch.set(doc(db, "users", uid), {
+    displayName: input.displayName.trim(),
+    city: input.city.trim(),
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
+  await batch.commit();
+}
+
+export async function updateProfile(
+  uid: string,
+  input: { displayName: string; city: string },
+) {
+  const { db } = getFirebase();
+  await updateDoc(doc(db, "users", uid), {
+    displayName: input.displayName.trim(),
+    city: input.city.trim(),
+    updatedAt: serverTimestamp(),
+  });
+}
+
+/** Firebase only allows deleting an account within 5 minutes of signing in. */
+export function signedInRecently(user: User) {
+  const last = Date.parse(user.metadata.lastSignInTime ?? "");
+  return Number.isFinite(last) && Date.now() - last < 4 * 60 * 1000;
+}
+
+/** Deletes the profile, the consent record, and then the sign-in account. */
+export async function deleteAccount(user: User) {
+  const { db } = getFirebase();
+  const batch = writeBatch(db);
+  batch.delete(doc(db, "users", user.uid));
+  batch.delete(doc(db, "usersPrivate", user.uid));
+  await batch.commit();
+  await deleteUser(user);
+}

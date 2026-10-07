@@ -1,11 +1,66 @@
 rules_version = '2';
 
-// Deny everything by default. Each later step opens only the exact
-// reads and writes its screens need, with tests in tests/rules.
+// Everything is denied unless a rule below allows it.
+// Tests for every rule live in tests/rules.
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /{document=**} {
-      allow read, write: if false;
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    function isText(value, min, max) {
+      return value is string && value.size() >= min && value.size() <= max;
+    }
+
+    // Must match CONSENT_VERSION in src/lib/consent.ts.
+    function currentConsentVersion() {
+      return '2026-10-v1';
+    }
+
+    // Public profile. Anyone may read one profile; nobody may list them all.
+    match /users/{uid} {
+      function validProfile(data) {
+        return isText(data.displayName, 1, 40)
+          && isText(data.city, 2, 60)
+          && data.updatedAt == request.time;
+      }
+
+      allow get: if true;
+
+      // Created together with the consent record, in one batch.
+      allow create: if isOwner(uid)
+        && request.resource.data.keys().hasOnly(['displayName', 'city', 'createdAt', 'updatedAt'])
+        && request.resource.data.keys().hasAll(['displayName', 'city', 'createdAt', 'updatedAt'])
+        && request.resource.data.createdAt == request.time
+        && validProfile(request.resource.data)
+        && existsAfter(/databases/$(database)/documents/usersPrivate/$(uid));
+
+      allow update: if isOwner(uid)
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['displayName', 'city', 'updatedAt'])
+        && validProfile(request.resource.data);
+
+      allow delete: if isOwner(uid);
+    }
+
+    // Private consent record. Only its owner can read it.
+    match /usersPrivate/{uid} {
+      function validConsent(data) {
+        return data.keys().hasOnly(['consentVersion', 'consentAt', 'ageConfirmed'])
+          && data.keys().hasAll(['consentVersion', 'consentAt', 'ageConfirmed'])
+          && data.consentVersion == currentConsentVersion()
+          && data.ageConfirmed == true
+          && data.consentAt == request.time;
+      }
+
+      allow get: if isOwner(uid);
+      allow create, update: if isOwner(uid) && validConsent(request.resource.data);
+      allow delete: if isOwner(uid);
     }
   }
 }
