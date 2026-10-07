@@ -101,6 +101,11 @@ export function cardPhotoUrl(id: string) {
   return signedUrl(checkedId(id), { width: 600, height: 600, crop: "fill", ...forBrowsers });
 }
 
+/** A small square photo, for the Memory Chain and "passed on" links. */
+export function smallPhotoUrl(id: string) {
+  return signedUrl(checkedId(id), { width: 240, height: 240, crop: "fill", ...forBrowsers });
+}
+
 /** The whole photo, for a memory's own page. */
 export function fullPhotoUrl(id: string) {
   return signedUrl(checkedId(id), { width: 1200, height: 1200, crop: "limit", ...forBrowsers });

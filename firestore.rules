@@ -19,7 +19,7 @@ service cloud.firestore {
 
     // Must match CONSENT_VERSION in src/lib/consent.ts.
     function currentConsentVersion() {
-      return '2026-10-v1';
+      return '2026-10-v2';
     }
 
     function isModerator() {
@@ -41,15 +41,39 @@ service cloud.firestore {
           && data.updatedAt == request.time;
       }
 
+      function invite(code) {
+        return /databases/$(database)/documents/invites/$(code);
+      }
+
+      // Joining through a friend's invite. The profile names the invite, who
+      // sent it and for which memory, and the invite is marked as used in the
+      // same batch (checked there too). This is the Memory Chain's only link,
+      // so nobody can claim an invite they weren't sent, or one already used.
+      // The memory is named only if it's shared with everyone: a link-only
+      // memory's address must not appear on a public profile.
+      function validJoin(data) {
+        let sent = get(invite(data.inviteCode)).data;
+        return !('usedBy' in sent)
+          && data.invitedBy == sent.from
+          && (sent.visibility == 'public'
+              ? data.get('invitedVia', null) == sent.storyId
+              : !('invitedVia' in data))
+          && getAfter(invite(data.inviteCode)).data.get('usedBy', null) == uid;
+      }
+
       allow get: if true;
 
-      // Created together with the consent record, in one batch.
+      // Created together with the consent record, in one batch. Who invited
+      // someone is set here, once, and can never be changed.
       allow create: if isOwner(uid)
-        && request.resource.data.keys().hasOnly(['displayName', 'city', 'createdAt', 'updatedAt'])
+        && request.resource.data.keys().hasOnly(['displayName', 'city', 'createdAt', 'updatedAt',
+             'invitedBy', 'invitedVia', 'inviteCode'])
         && request.resource.data.keys().hasAll(['displayName', 'city', 'createdAt', 'updatedAt'])
         && request.resource.data.createdAt == request.time
         && validProfile(request.resource.data)
-        && existsAfter(/databases/$(database)/documents/usersPrivate/$(uid));
+        && existsAfter(/databases/$(database)/documents/usersPrivate/$(uid))
+        && (!request.resource.data.keys().hasAny(['invitedBy', 'invitedVia', 'inviteCode'])
+            || validJoin(request.resource.data));
 
       allow update: if isOwner(uid)
         && request.resource.data.diff(resource.data).affectedKeys()
@@ -305,6 +329,93 @@ service cloud.firestore {
       allow list: if isModerator() || (signedIn() && resource.data.by == request.auth.uid);
       allow update: if validClose(resource.data, request.resource.data);
       allow delete: if signedIn() && resource.data.by == request.auth.uid;
+    }
+
+    // A personal invite link, /invite/{code}, to pass a memory on. Each memory
+    // comes with three, and each works once. The code is random, so only the
+    // people its author sends it to can use it.
+    match /invites/{code} {
+      function story(id) {
+        return /databases/$(database)/documents/stories/$(id);
+      }
+
+      function inviteSet(storyId) {
+        return /databases/$(database)/documents/inviteSets/$(storyId);
+      }
+
+      function profile(uid) {
+        return /databases/$(database)/documents/users/$(uid);
+      }
+
+      // Anyone with the link can open an unused invite. Once it's used, only
+      // the person who sent it and the person who used it can see who that was.
+      allow get: if resource == null
+        || !('usedBy' in resource.data)
+        || (signedIn() && request.auth.uid in [resource.data.from, resource.data.usedBy]);
+      allow list: if signedIn() && resource.data.from == request.auth.uid;
+
+      // Made for the author's own memory, all three at once, together with the
+      // memory's invite set (below), which can only be made once. Each says
+      // whether the memory is shared with everyone (checked there too).
+      allow create: if signedIn()
+        && exists(/databases/$(database)/documents/usersPrivate/$(request.auth.uid))
+        && request.resource.data.keys().hasOnly(['from', 'storyId', 'visibility', 'createdAt'])
+        && request.resource.data.keys().hasAll(['from', 'storyId', 'visibility', 'createdAt'])
+        && request.resource.data.from == request.auth.uid
+        && request.resource.data.storyId is string
+        && request.resource.data.createdAt == request.time
+        && !exists(inviteSet(request.resource.data.storyId))
+        && code in getAfter(inviteSet(request.resource.data.storyId)).data.codes;
+
+      // Used once, by someone new joining through it, in the same batch that
+      // creates their profile (see validJoin above). Never by its own author,
+      // and not once the memory it was made for is deleted.
+      allow update: if signedIn()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['usedBy', 'usedAt'])
+        && !('usedBy' in resource.data)
+        && request.resource.data.usedBy == request.auth.uid
+        && request.resource.data.usedAt == request.time
+        && resource.data.from != request.auth.uid
+        && exists(story(resource.data.storyId))
+        && getAfter(profile(request.auth.uid)).data.get('inviteCode', null) == code;
+
+      // Taken back once the memory is gone, when its author deletes it or
+      // their account.
+      allow delete: if signedIn()
+        && resource.data.from == request.auth.uid
+        && !exists(story(resource.data.storyId));
+    }
+
+    // The codes of a memory's three invites. It can be made only once, so a
+    // memory never has more than three. Only its author can find it.
+    match /inviteSets/{storyId} {
+      function story() {
+        return /databases/$(database)/documents/stories/$(storyId);
+      }
+
+      function madeNow(code) {
+        let made = getAfter(/databases/$(database)/documents/invites/$(code)).data;
+        return made.storyId == storyId && made.visibility == get(story()).data.visibility;
+      }
+
+      allow list: if signedIn() && resource.data.from == request.auth.uid;
+
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(['from', 'codes', 'createdAt'])
+        && request.resource.data.keys().hasAll(['from', 'codes', 'createdAt'])
+        && request.resource.data.from == request.auth.uid
+        && request.resource.data.createdAt == request.time
+        && get(story()).data.authorId == request.auth.uid
+        && request.resource.data.codes is list
+        && request.resource.data.codes.size() == 3
+        && request.resource.data.codes.toSet().size() == 3
+        && madeNow(request.resource.data.codes[0])
+        && madeNow(request.resource.data.codes[1])
+        && madeNow(request.resource.data.codes[2]);
+
+      allow delete: if signedIn()
+        && resource.data.from == request.auth.uid
+        && !exists(story());
     }
   }
 }

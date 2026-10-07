@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { FirebaseError } from "firebase/app";
 import type { User } from "firebase/auth";
 import { useEffect, useState, type FormEvent } from "react";
 import { useAuth } from "@/components/auth-provider";
@@ -10,6 +11,14 @@ import { card, input, primaryButton } from "@/components/ui";
 import { CITY_MAX, CITY_MIN, NAME_MAX, createAccount } from "@/lib/account";
 import { friendlyError } from "@/lib/auth-errors";
 import { MIN_AGE } from "@/lib/consent";
+import {
+  checkInvite,
+  inviterName,
+  pendingInvite,
+  refreshInvitePages,
+  setPendingInvite,
+  type OpenInvite,
+} from "@/lib/invites";
 
 export function WelcomeForm() {
   const { loading, user, consent, refresh } = useAuth();
@@ -33,6 +42,29 @@ function ConsentForm({ user, refresh }: { user: User; refresh: () => Promise<voi
   const [agreed, setAgreed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // The friend's invite they opened before signing in, if it can still be used.
+  const [invite, setInvite] = useState<{ open: OpenInvite; name: string | null } | null>(null);
+  const [inviteGone, setInviteGone] = useState(false);
+
+  useEffect(() => {
+    const code = pendingInvite();
+    if (!code) return;
+    let current = true;
+    checkInvite(code, user)
+      .then(async (check) => {
+        if (check.status === "open" && check.invite.from !== user.uid) {
+          const name = await inviterName(check.invite);
+          if (current) setInvite({ open: check.invite, name });
+        } else {
+          setPendingInvite(null);
+          if (current) setInviteGone(true);
+        }
+      })
+      .catch((e) => console.error("Could not check the invite", e)); // they join on their own
+    return () => {
+      current = false;
+    };
+  }, [user]);
 
   const nameOk = displayName.trim().length >= 1 && displayName.trim().length <= NAME_MAX;
   const cityOk = city.trim().length >= CITY_MIN && city.trim().length <= CITY_MAX;
@@ -44,10 +76,20 @@ function ConsentForm({ user, refresh }: { user: User; refresh: () => Promise<voi
     setError(null);
     setBusy(true);
     try {
-      await createAccount(user.uid, { displayName, city });
+      await createAccount(user.uid, { displayName, city }, invite?.open ?? null);
+      setPendingInvite(null);
+      if (invite) await refreshInvitePages(user, [invite.open.code]);
       await refresh();
     } catch (e) {
-      setError(friendlyError(e));
+      if (invite && e instanceof FirebaseError && e.code === "permission-denied") {
+        // Someone else used the invite a moment ago.
+        setPendingInvite(null);
+        setInvite(null);
+        setInviteGone(true);
+        setError("That invite was used by someone else a moment ago. Tap the button again to join on your own.");
+      } else {
+        setError(friendlyError(e));
+      }
       setBusy(false);
     }
   }
@@ -55,6 +97,18 @@ function ConsentForm({ user, refresh }: { user: User; refresh: () => Promise<voi
   return (
     <form onSubmit={submit} className={card} noValidate>
       <h1 className="text-2xl font-extrabold text-brand-red">Welcome! Before you begin</h1>
+      {invite && (
+        <p className="mt-4 rounded-2xl bg-brand-yellow/20 px-4 py-3 text-sm leading-relaxed text-ink">
+          You&apos;re joining through {invite.name ? <strong>{invite.name}</strong> : "a friend"}
+          &apos;s invite. They&apos;ll see that you joined, and the Memory Chain will show that they
+          passed the memory on to you.
+        </p>
+      )}
+      {inviteGone && !error && (
+        <p className="mt-4 rounded-2xl bg-paper px-4 py-3 text-sm text-ink">
+          The invite you opened has already been used, so you&apos;re joining on your own.
+        </p>
+      )}
       <p className="mt-2 text-ink-soft">
         Your memories are yours. Here is exactly what we show and what we keep private.
       </p>
@@ -66,6 +120,7 @@ function ConsentForm({ user, refresh }: { user: User; refresh: () => Promise<voi
             <li>The name you choose below</li>
             <li>Your city</li>
             <li>Stories you choose to publish, after review</li>
+            <li>Who invited you, if you join through a friend&apos;s invite</li>
           </ul>
         </section>
         <section className="rounded-2xl bg-paper p-4">
@@ -119,8 +174,8 @@ function ConsentForm({ user, refresh }: { user: User; refresh: () => Promise<voi
           className="mt-0.5 h-5 w-5 shrink-0 accent-brand-red"
         />
         <span>
-          I agree that my name, city and the stories I publish can be shown publicly, as
-          described in the{" "}
+          I agree that my name, city, the stories I publish and who invited me (if anyone did)
+          can be shown publicly, as described in the{" "}
           <Link href="/privacy" className="font-bold text-brand-red underline underline-offset-4">
             privacy notice
           </Link>

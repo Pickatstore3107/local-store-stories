@@ -12,6 +12,7 @@ import {
 import type { User } from "firebase/auth";
 import { FriendlyError } from "./auth-errors";
 import { getFirebase } from "./firebase";
+import { deleteStoryInvites } from "./invites";
 
 // Must match the list in firestore.rules.
 export const CATEGORIES = [
@@ -230,10 +231,14 @@ function deletePhoto(user: User, storyId: string) {
   });
 }
 
-/** Deletes a story's photo first, then the story itself. */
+/** Deletes a story's photo first, then the story itself, then its invite links. */
 export async function deleteStory(user: User, story: { id: string; status: StoryStatus }) {
   await deletePhoto(user, story.id);
   await deleteDoc(doc(getFirebase().db, "stories", story.id));
+  // They stop working with the memory gone; this tidies them away.
+  await deleteStoryInvites(user, story.id).catch((error) =>
+    console.error("Could not delete the memory's invites", error),
+  );
   if (story.status === "approved") await refreshWall(user, [story.id]);
 }
 
