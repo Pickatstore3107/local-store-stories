@@ -35,6 +35,19 @@ export default function PrivacyPage() {
         </section>
 
         <section>
+          <h2 className="text-lg font-bold">Who sees your stories</h2>
+          <p className="mt-2">
+            A moderator reads every story, with its photo and your public name and city,
+            before anyone else can see it. Moderators never see your email address. Once
+            approved, a story is shown to everyone, or only to people you share its link with
+            if you chose that. If a moderator doesn&apos;t approve a story or hides it later,
+            you&apos;ll see why on <strong>My account</strong>. We keep a short record of each
+            decision (the store&apos;s name, what was decided and why, but not your name) so we
+            can answer questions about it later.
+          </p>
+        </section>
+
+        <section>
           <h2 className="text-lg font-bold">What we never do</h2>
           <ul className="mt-2 list-disc space-y-1 pl-6">
             <li>We never sell your personal data.</li>

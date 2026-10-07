@@ -169,7 +169,7 @@ describe("reading stories before review", () => {
 describe("changing and deleting stories", () => {
   beforeEach(() => seedStory("asha", "s1"));
 
-  it("does not let anyone edit a story or change its status yet", async () => {
+  it("does not let the author edit a story or change its status", async () => {
     const db = asDb(env.authenticatedContext("asha").firestore());
     await assertFails(updateDoc(doc(db, "stories/s1"), { status: "approved" }));
     await assertFails(updateDoc(doc(db, "stories/s1"), { caption: "A different memory now." }));

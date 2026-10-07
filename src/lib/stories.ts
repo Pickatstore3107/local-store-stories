@@ -41,7 +41,7 @@ export const CAPTION_MAX = 1000;
 export const ORDERED_MAX = 80;
 export const YEAR_MIN = 1940;
 
-/** stories/{storyId}. Only its author can read it until a moderator approves it. */
+/** stories/{storyId}. Only its author and moderators can read it until it is approved. */
 export type Story = {
   authorId: string;
   storeName: string;
@@ -58,6 +58,11 @@ export type Story = {
   photoId: string;
   createdAt: Timestamp;
   updatedAt: Timestamp;
+  /** Set by a moderator; see src/lib/moderation.ts. */
+  reviewedAt?: Timestamp;
+  /** Why a moderator turned the story down or hid it, for the author. */
+  reviewNote?: string;
+  reviewLogId?: string;
 };
 
 export type StoryInput = {
@@ -113,7 +118,8 @@ export async function preparePhoto(file: File) {
   }
 }
 
-async function photoApi(user: User, path: string, init: RequestInit) {
+/** Calls one of our photo routes as the signed-in person. */
+export async function photoApi(user: User, path: string, init: RequestInit) {
   const response = await fetch(path, {
     ...init,
     headers: { ...init.headers, Authorization: `Bearer ${await user.getIdToken()}` },

@@ -22,6 +22,17 @@ service cloud.firestore {
       return '2026-10-v1';
     }
 
+    function isModerator() {
+      return signedIn()
+        && exists(/databases/$(database)/documents/moderators/$(request.auth.uid));
+    }
+
+    // Moderators are added by hand in the Firebase console, never by the app.
+    // People may check whether they are one; nobody can make themselves one.
+    match /moderators/{uid} {
+      allow get: if isOwner(uid);
+    }
+
     // Public profile. Anyone may read one profile; nobody may list them all.
     match /users/{uid} {
       function validProfile(data) {
@@ -63,8 +74,8 @@ service cloud.firestore {
       allow delete: if isOwner(uid);
     }
 
-    // A memory of a store. The author creates it as pending; only moderators
-    // (Step 4) will ever change its status or make it readable by others.
+    // A memory of a store. The author creates it as pending; only a moderator
+    // can change its status, and only an approved story is ever public.
     match /stories/{storyId} {
       function isAuthor() {
         return signedIn() && resource.data.authorId == request.auth.uid;
@@ -105,14 +116,80 @@ service cloud.firestore {
           && data.updatedAt == request.time;
       }
 
+      // Where a moderator may move a story from each status.
+      // Must match REVIEW_MOVES in src/lib/moderation.ts.
+      function reviewMoves() {
+        return {
+          'pending': ['approved', 'rejected'],
+          'approved': ['hidden'],
+          'rejected': ['approved'],
+          'hidden': ['approved']
+        };
+      }
+
+      function logEntry(id) {
+        return /databases/$(database)/documents/moderationLog/$(id);
+      }
+
+      // A moderator's decision. It changes only the review fields, and is
+      // written to the moderation log in the same batch.
+      function validReview(before, after) {
+        return isModerator()
+          && after.diff(before).affectedKeys()
+               .hasOnly(['status', 'reviewedAt', 'reviewNote', 'reviewLogId', 'updatedAt'])
+          && after.status in reviewMoves().get(before.status, [])
+          // The author is told why a story was not approved or was hidden.
+          // Must match REVIEW_NOTE_MIN and REVIEW_NOTE_MAX in src/lib/moderation.ts.
+          && (after.status == 'approved'
+              ? !('reviewNote' in after)
+              : isText(after.reviewNote, 5, 300))
+          && after.reviewedAt == request.time
+          && after.updatedAt == request.time
+          && after.reviewLogId is string
+          && !exists(logEntry(after.reviewLogId))
+          && getAfter(logEntry(after.reviewLogId)).data.storyId == storyId
+          && getAfter(logEntry(after.reviewLogId)).data.action == after.status;
+      }
+
       // Only people who have given consent can share.
       allow create: if signedIn()
         && exists(/databases/$(database)/documents/usersPrivate/$(request.auth.uid))
         && validNewStory(request.resource.data);
 
-      // Authors can read and list only their own stories, for now.
-      allow get, list: if isAuthor();
+      // Anyone can open an approved story; the Wall lists only those shared
+      // with everyone. Authors always see their own, moderators see all.
+      allow get: if resource.data.status == 'approved' || isAuthor() || isModerator();
+      allow list: if (resource.data.status == 'approved' && resource.data.visibility == 'public')
+        || isAuthor()
+        || isModerator();
+
+      allow update: if validReview(resource.data, request.resource.data);
       allow delete: if isAuthor();
+    }
+
+    // Every moderation decision, for accountability. Moderators can read it;
+    // nobody can change or delete an entry. The moderator's ID lives only
+    // here, never on the story, so authors can't see who reviewed them.
+    match /moderationLog/{logId} {
+      function story(id) {
+        return /databases/$(database)/documents/stories/$(id);
+      }
+
+      function validEntry(entry) {
+        return entry.keys().hasOnly(['storyId', 'storeName', 'action', 'from', 'by', 'at', 'note'])
+          && entry.keys().hasAll(['storyId', 'storeName', 'action', 'from', 'by', 'at'])
+          && entry.storyId is string
+          && entry.by == request.auth.uid
+          && entry.at == request.time
+          // Written together with the story's change (checked there too).
+          && getAfter(story(entry.storyId)).data.reviewLogId == logId
+          && entry.from == get(story(entry.storyId)).data.status
+          && entry.storeName == getAfter(story(entry.storyId)).data.storeName
+          && entry.get('note', null) == getAfter(story(entry.storyId)).data.get('reviewNote', null);
+      }
+
+      allow get, list: if isModerator();
+      allow create: if isModerator() && validEntry(request.resource.data);
     }
   }
 }

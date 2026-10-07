@@ -4,6 +4,9 @@ import { HttpError } from "./auth";
 // Firestore's automatic document IDs.
 const STORY_ID = /^[A-Za-z0-9]{20}$/;
 
+// Any story's photo ID, as photoId() makes them.
+const ANY_PHOTO_ID = /^lss\/stories\/[A-Za-z0-9]{1,128}\/[A-Za-z0-9]{20}$/;
+
 export const MAX_PHOTO_BYTES = 4 * 1024 * 1024;
 
 function client() {
@@ -51,15 +54,25 @@ export async function deleteAllPhotos(uid: string) {
   await client().api.delete_resources_by_prefix(`lss/stories/${uid}/`, privateImage);
 }
 
-/** A signed link to a small square version of the photo. */
-export function thumbnailUrl(uid: string, storyId: string) {
-  return client().url(photoId(uid, storyId), {
+function signedUrl(id: string, transformation: { width: number; height: number; crop: string }) {
+  return client().url(id, {
     ...privateImage,
     sign_url: true,
     secure: true,
     format: "jpg",
-    transformation: [{ width: 320, height: 320, crop: "fill" }],
+    transformation: [transformation],
   });
+}
+
+/** A signed link to a small square version of the photo. */
+export function thumbnailUrl(uid: string, storyId: string) {
+  return signedUrl(photoId(uid, storyId), { width: 320, height: 320, crop: "fill" });
+}
+
+/** A signed link to a larger version of any story's photo, for moderators. */
+export function reviewPhotoUrl(id: string) {
+  if (!ANY_PHOTO_ID.test(id)) throw new HttpError(400, "That photo could not be found.");
+  return signedUrl(id, { width: 800, height: 800, crop: "limit" });
 }
 
 /** True for JPEG bytes, whatever the browser claims the file is. */
