@@ -15,7 +15,6 @@ import {
   checkInvite,
   inviterName,
   pendingInvite,
-  refreshInvitePages,
   setPendingInvite,
   type OpenInvite,
 } from "@/lib/invites";
@@ -78,15 +77,14 @@ function ConsentForm({ user, refresh }: { user: User; refresh: () => Promise<voi
     try {
       await createAccount(user.uid, { displayName, city }, invite?.open ?? null);
       setPendingInvite(null);
-      if (invite) await refreshInvitePages(user, [invite.open.code]);
       await refresh();
     } catch (e) {
       if (invite && e instanceof FirebaseError && e.code === "permission-denied") {
-        // Someone else used the invite a moment ago.
+        // The memory was deleted a moment ago, and its link with it.
         setPendingInvite(null);
         setInvite(null);
         setInviteGone(true);
-        setError("That invite was used by someone else a moment ago. Tap the button again to join on your own.");
+        setError("That invite link stopped working a moment ago. Tap the button again to join on your own.");
       } else {
         setError(friendlyError(e));
       }
@@ -106,7 +104,7 @@ function ConsentForm({ user, refresh }: { user: User; refresh: () => Promise<voi
       )}
       {inviteGone && !error && (
         <p className="mt-4 rounded-2xl bg-paper px-4 py-3 text-sm text-ink">
-          The invite you opened has already been used, so you&apos;re joining on your own.
+          The invite link you opened no longer works, so you&apos;re joining on your own.
         </p>
       )}
       <p className="mt-2 text-ink-soft">

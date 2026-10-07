@@ -5,8 +5,8 @@ import { inviteTag } from "@/lib/server/chain";
 
 /**
  * Rebuilds the pages of the invites named on their next visit. Called after
- * someone joins through an invite or its sender deletes it, so the page
- * stops showing it as open straight away.
+ * an invite's sender deletes it, so the page stops showing it as open
+ * straight away.
  */
 export async function POST(request: Request) {
   try {

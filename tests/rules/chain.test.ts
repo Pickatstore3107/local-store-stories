@@ -55,11 +55,11 @@ const consent = () => ({
   ageConfirmed: true,
 });
 
-// Ravi's approved memory "ramu" already has its three invites: "inv1" and
-// "inv2" are unused, and Asha joined through "inv3". His memory "letters",
-// shared only by link, has its invites "link1" to "link3". His memory "chai"
-// is waiting for review and has no invites yet, nor has "diary", shared only
-// by link. Priya hasn't joined.
+// Ravi's approved memory "ramu" has its invite link "inv1", and his memory
+// "letters", shared only by link, has "link1". His memory "chai" is waiting
+// for review and has no link yet, nor has "diary", shared only by link. His
+// memory "kulfi" is from before shared links: it has three invites that
+// worked once each, and Asha joined through "old3". Priya hasn't joined.
 async function seed() {
   await env.withSecurityRulesDisabled(async (ctx) => {
     const db = asDb(ctx.firestore());
@@ -75,6 +75,7 @@ async function seed() {
         city: "Hyderabad",
         createdAt: at,
         updatedAt: at,
+        ...(uid === "asha" && { invitedBy: "ravi", invitedVia: "kulfi", inviteCode: "old3" }),
       });
     }
     await setDoc(doc(db, "stories", "ramu"), story("ravi", "approved"));
@@ -82,7 +83,8 @@ async function seed() {
     await setDoc(doc(db, "stories", "bakery"), story("mallory", "approved"));
     await setDoc(doc(db, "stories", "letters"), story("ravi", "approved", "link"));
     await setDoc(doc(db, "stories", "diary"), story("ravi", "pending", "link"));
-    const sets = { ramu: ["inv1", "inv2", "inv3"], letters: ["link1", "link2", "link3"] };
+    await setDoc(doc(db, "stories", "kulfi"), story("ravi", "approved"));
+    const sets = { ramu: ["inv1"], letters: ["link1"], kulfi: ["old1", "old2", "old3"] };
     for (const [storyId, codes] of Object.entries(sets)) {
       const visibility = storyId === "letters" ? "link" : "public";
       for (const code of codes) {
@@ -90,9 +92,9 @@ async function seed() {
       }
       await setDoc(doc(db, "inviteSets", storyId), { from: "ravi", codes, createdAt: at });
     }
-    await setDoc(doc(db, "invites", "inv3"), {
+    await setDoc(doc(db, "invites", "old3"), {
       from: "ravi",
-      storyId: "ramu",
+      storyId: "kulfi",
       visibility: "public",
       createdAt: at,
       usedBy: "asha",
@@ -114,8 +116,8 @@ beforeEach(async () => {
   await seed();
 });
 
-/** The batch "Pass the memory" writes: three invites and the memory's set. */
-function makeInvites(
+/** The batch "Pass the memory" writes: the memory's invite and its set. */
+function makeInvite(
   db: Firestore,
   storyId: string,
   options: {
@@ -127,7 +129,7 @@ function makeInvites(
     leaveOut?: string;
   } = {},
 ) {
-  const codes = options.codes ?? ["new1", "new2", "new3"];
+  const codes = options.codes ?? ["new1"];
   const batch = writeBatch(db);
   for (const code of options.invites ?? codes) {
     const invite: Record<string, unknown> = {
@@ -151,16 +153,20 @@ function makeInvites(
   return batch.commit();
 }
 
-/** The batch the welcome screen writes when someone joins through an invite. */
+/**
+ * The batch the welcome screen writes when someone joins through an invite
+ * link: their consent, their profile, and the private record of the link.
+ */
 function join(
   db: Firestore,
   uid: string,
   code: string,
   options: {
     profile?: Record<string, unknown>;
-    use?: Record<string, unknown> | null;
+    record?: Record<string, unknown> | null;
     consent?: boolean;
-    leaveOut?: string;
+    /** Left out of the profile. */
+    leaveOut?: string[];
   } = {},
 ) {
   const batch = writeBatch(db);
@@ -172,91 +178,91 @@ function join(
     updatedAt: serverTimestamp(),
     invitedBy: "ravi",
     invitedVia: "ramu",
-    inviteCode: code,
     ...options.profile,
   };
-  if (options.leaveOut) delete profile[options.leaveOut];
+  const record: Record<string, unknown> = {
+    inviteCode: code,
+    invitedBy: "ravi",
+    joinedAt: serverTimestamp(),
+    ...options.record,
+  };
+  for (const key of options.leaveOut ?? []) delete profile[key];
   batch.set(doc(db, "users", uid), profile);
-  if (options.use !== null) {
-    batch.update(doc(db, "invites", code), {
-      usedBy: uid,
-      usedAt: serverTimestamp(),
-      ...options.use,
-    });
-  }
+  if (options.record !== null) batch.set(doc(db, "joins", uid), record);
   return batch.commit();
 }
 
-describe("making invites", () => {
-  it("lets an author make three invites for their memory, even before review", async () => {
-    await assertSucceeds(makeInvites(as("ravi"), "chai"));
+const joinedBy = (db: Firestore, uid: string) =>
+  query(collection(db, "joins"), where("invitedBy", "==", uid));
+
+describe("making a memory's invite link", () => {
+  it("lets an author make their memory's link, even before review", async () => {
+    await assertSucceeds(makeInvite(as("ravi"), "chai"));
   });
 
-  it("refuses invites for someone else's memory", async () => {
-    await assertFails(makeInvites(as("mallory"), "chai", { from: "mallory" }));
-    await assertFails(makeInvites(as("mallory"), "chai"));
+  it("refuses a link for someone else's memory", async () => {
+    await assertFails(makeInvite(as("mallory"), "chai", { from: "mallory" }));
+    await assertFails(makeInvite(as("mallory"), "chai"));
   });
 
-  it("never gives a memory more than three", async () => {
+  it("gives a memory only one link, made once", async () => {
     // "ramu" already has its set.
-    await assertFails(makeInvites(as("ravi"), "ramu"));
-    await assertFails(makeInvites(as("ravi"), "ramu", { set: null, invites: ["new1"] }));
-    await assertFails(makeInvites(as("ravi"), "chai", { codes: ["a", "b", "c", "d"] }));
-    await assertFails(
-      makeInvites(as("ravi"), "chai", { codes: ["a", "b", "c"], invites: ["a", "b", "c", "d"] }),
-    );
+    await assertFails(makeInvite(as("ravi"), "ramu"));
+    await assertFails(makeInvite(as("ravi"), "ramu", { set: null }));
+    await assertFails(makeInvite(as("ravi"), "chai", { codes: ["a", "b"] }));
+    await assertFails(makeInvite(as("ravi"), "chai", { codes: ["a"], invites: ["a", "b"] }));
+    await assertFails(makeInvite(as("ravi"), "chai", { codes: [] }));
+    await assertFails(makeInvite(as("ravi"), "chai", { set: null }));
   });
 
-  it("needs exactly three different invites, made together", async () => {
-    await assertFails(makeInvites(as("ravi"), "chai", { codes: ["a", "b"] }));
-    await assertFails(makeInvites(as("ravi"), "chai", { codes: ["a", "a", "b"], invites: ["a", "b"] }));
-    await assertFails(
-      makeInvites(as("ravi"), "chai", { codes: ["a", "b", "c", "c"], invites: ["a", "b", "c"] }),
-    );
-    await assertFails(makeInvites(as("ravi"), "chai", { codes: ["a", "b", "c"], invites: ["a", "b"] }));
-    await assertFails(makeInvites(as("ravi"), "chai", { set: null }));
-    // Another memory's invites can't fill this memory's set.
-    await assertFails(
-      makeInvites(as("ravi"), "chai", { codes: ["inv1", "inv2", "new1"], invites: ["new1"] }),
-    );
+  it("needs the link and the memory's set made together", async () => {
+    await assertFails(makeInvite(as("ravi"), "chai", { codes: ["a"], invites: [] }));
+    // Another memory's link can't fill this memory's set.
+    await assertFails(makeInvite(as("ravi"), "chai", { codes: ["inv1"], invites: [] }));
+    await assertFails(makeInvite(as("ravi"), "chai", { set: { codes: "new1" } }));
   });
 
   it("records truly whether the memory is shared with everyone", async () => {
-    await assertFails(makeInvites(as("ravi"), "chai", { invite: { visibility: "link" } }));
-    await assertFails(makeInvites(as("ravi"), "chai", { leaveOut: "visibility" }));
-    await assertFails(makeInvites(as("ravi"), "diary"));
-    await assertSucceeds(makeInvites(as("ravi"), "diary", { invite: { visibility: "link" } }));
+    await assertFails(makeInvite(as("ravi"), "chai", { invite: { visibility: "link" } }));
+    await assertFails(makeInvite(as("ravi"), "chai", { leaveOut: "visibility" }));
+    await assertFails(makeInvite(as("ravi"), "diary"));
+    await assertSucceeds(makeInvite(as("ravi"), "diary", { invite: { visibility: "link" } }));
   });
 
   it("refuses fields people may not set, and back-dated times", async () => {
-    await assertFails(makeInvites(as("ravi"), "chai", { invite: { usedBy: "asha" } }));
-    await assertFails(makeInvites(as("ravi"), "chai", { invite: { createdAt: new Date(2020, 0, 1) } }));
-    await assertFails(makeInvites(as("ravi"), "chai", { set: { createdAt: new Date(2020, 0, 1) } }));
-    await assertFails(makeInvites(as("ravi"), "chai", { set: { from: "mallory" } }));
-    await assertFails(makeInvites(as("ravi"), "chai", { invite: { from: "mallory" } }));
-    await assertFails(makeInvites(as("ravi"), "chai", { set: { note: "for my school friends" } }));
+    await assertFails(makeInvite(as("ravi"), "chai", { invite: { usedBy: "asha" } }));
+    await assertFails(makeInvite(as("ravi"), "chai", { invite: { createdAt: new Date(2020, 0, 1) } }));
+    await assertFails(makeInvite(as("ravi"), "chai", { set: { createdAt: new Date(2020, 0, 1) } }));
+    await assertFails(makeInvite(as("ravi"), "chai", { set: { from: "mallory" } }));
+    await assertFails(makeInvite(as("ravi"), "chai", { invite: { from: "mallory" } }));
+    await assertFails(makeInvite(as("ravi"), "chai", { set: { note: "for my school friends" } }));
   });
 
   it("needs consent, and a signed-in person", async () => {
     await env.withSecurityRulesDisabled(async (ctx) => {
       await deleteDoc(doc(asDb(ctx.firestore()), "usersPrivate/ravi"));
     });
-    await assertFails(makeInvites(as("ravi"), "chai"));
-    await assertFails(makeInvites(visitor(), "chai"));
+    await assertFails(makeInvite(as("ravi"), "chai"));
+    await assertFails(makeInvite(visitor(), "chai"));
   });
 
-  it("doesn't let anyone change an invite or a set", async () => {
+  it("doesn't let anyone change a link or a set, or mark a link used", async () => {
     await assertFails(updateDoc(doc(as("ravi"), "invites/inv1"), { storyId: "chai" }));
+    await assertFails(updateDoc(doc(as("ravi"), "inviteSets/ramu"), { codes: ["new1"] }));
     await assertFails(
-      updateDoc(doc(as("ravi"), "inviteSets/ramu"), { codes: ["inv1", "inv2", "new1"] }),
+      updateDoc(doc(as("mallory"), "invites/inv1"), { usedBy: "mallory", usedAt: serverTimestamp() }),
     );
   });
 });
 
-describe("reading invites", () => {
-  it("lets anyone with the link open an unused invite", async () => {
+describe("reading invite links", () => {
+  it("lets anyone with the link open it, however many people joined through it", async () => {
+    await assertSucceeds(getDoc(doc(visitor(), "invites/inv1")));
+    await assertSucceeds(join(as("priya"), "priya", "inv1"));
+    await assertSucceeds(join(as("dev"), "dev", "inv1"));
     await assertSucceeds(getDoc(doc(visitor(), "invites/inv1")));
     await assertSucceeds(getDoc(doc(as("mallory"), "invites/inv1")));
+    expect(await read("invites/inv1")).not.toHaveProperty("usedBy");
   });
 
   it("tells anyone that a code doesn't exist", async () => {
@@ -264,22 +270,23 @@ describe("reading invites", () => {
     expect(snapshot.exists()).toBe(false);
   });
 
-  it("shows who used an invite only to its sender and the person who used it", async () => {
-    await assertSucceeds(getDoc(doc(as("ravi"), "invites/inv3")));
-    await assertSucceeds(getDoc(doc(as("asha"), "invites/inv3")));
-    await assertFails(getDoc(doc(as("mallory"), "invites/inv3")));
-    await assertFails(getDoc(doc(visitor(), "invites/inv3")));
+  it("keeps a used invite from before shared links private to the two people it connects", async () => {
+    await assertSucceeds(getDoc(doc(as("ravi"), "invites/old3")));
+    await assertSucceeds(getDoc(doc(as("asha"), "invites/old3")));
+    await assertFails(getDoc(doc(as("mallory"), "invites/old3")));
+    await assertFails(getDoc(doc(visitor(), "invites/old3")));
+    await assertSucceeds(getDoc(doc(visitor(), "invites/old1")));
   });
 
-  it("lets people list only their own invites", async () => {
+  it("lets people list only their own links", async () => {
     const mine = query(collection(as("ravi"), "invites"), where("from", "==", "ravi"));
-    expect((await assertSucceeds(getDocs(mine))).size).toBe(6);
+    expect((await assertSucceeds(getDocs(mine))).size).toBe(5);
     const forStory = query(
       collection(as("ravi"), "invites"),
       where("from", "==", "ravi"),
       where("storyId", "==", "ramu"),
     );
-    expect((await assertSucceeds(getDocs(forStory))).size).toBe(3);
+    expect((await assertSucceeds(getDocs(forStory))).size).toBe(1);
     await assertFails(getDocs(query(collection(as("mallory"), "invites"), where("from", "==", "ravi"))));
     await assertFails(getDocs(collection(as("ravi"), "invites")));
     await assertFails(getDocs(query(collection(visitor(), "invites"), where("from", "==", "ravi"))));
@@ -297,52 +304,73 @@ describe("reading invites", () => {
   });
 });
 
-describe("joining through an invite", () => {
+describe("joining through an invite link", () => {
   it("links a new person to the friend who invited them", async () => {
     await assertSucceeds(join(as("priya"), "priya", "inv1"));
-    expect(await read("users/priya")).toMatchObject({
-      invitedBy: "ravi",
-      invitedVia: "ramu",
-      inviteCode: "inv1",
-    });
-    expect(await read("invites/inv1")).toMatchObject({ usedBy: "priya" });
+    const profile = await read("users/priya");
+    expect(profile).toMatchObject({ invitedBy: "ravi", invitedVia: "ramu" });
+    expect(await read("joins/priya")).toMatchObject({ inviteCode: "inv1", invitedBy: "ravi" });
+  });
+
+  it("lets any number of people join through the same link", async () => {
+    for (const uid of ["priya", "dev", "sam"]) {
+      await assertSucceeds(join(as(uid), uid, "inv1"));
+    }
+    await assertSucceeds(join(as("lata"), "lata", "link1", { leaveOut: ["invitedVia"] }));
+  });
+
+  it("keeps the link itself off the public profile", async () => {
+    // Anyone could read it there, and join through it, or find a link-only memory.
+    await assertFails(join(as("priya"), "priya", "inv1", { profile: { inviteCode: "inv1" } }));
+    await assertSucceeds(join(as("priya"), "priya", "inv1"));
+    expect(await read("users/priya")).not.toHaveProperty("inviteCode");
   });
 
   it("names a memory shared only by link nowhere on the public profile", async () => {
     // Its address is the link's secret.
     await assertFails(join(as("priya"), "priya", "link1", { profile: { invitedVia: "letters" } }));
     await assertFails(join(as("priya"), "priya", "link1", { profile: { invitedVia: "ramu" } }));
-    await assertSucceeds(join(as("priya"), "priya", "link1", { leaveOut: "invitedVia" }));
+    await assertSucceeds(join(as("priya"), "priya", "link1", { leaveOut: ["invitedVia"] }));
     const profile = await read("users/priya");
-    expect(profile).toMatchObject({ invitedBy: "ravi", inviteCode: "link1" });
+    expect(profile).toMatchObject({ invitedBy: "ravi" });
     expect(profile).not.toHaveProperty("invitedVia");
   });
 
   it("names a memory shared with everyone", async () => {
-    await assertFails(join(as("priya"), "priya", "inv1", { leaveOut: "invitedVia" }));
+    await assertFails(join(as("priya"), "priya", "inv1", { leaveOut: ["invitedVia"] }));
     await assertFails(join(as("priya"), "priya", "inv1", { profile: { invitedVia: null } }));
   });
 
-  it("lets each invite be used only once", async () => {
-    await assertFails(join(as("priya"), "priya", "inv3"));
-    await assertSucceeds(join(as("priya"), "priya", "inv1"));
-    await assertFails(join(as("dev"), "dev", "inv1"));
-    // Not even again by the person who used it.
-    await assertFails(
-      updateDoc(doc(as("priya"), "invites/inv1"), { usedBy: "priya", usedAt: serverTimestamp() }),
-    );
-    await deleteDoc(doc(as("priya"), "users/priya"));
-    await assertFails(join(as("priya"), "priya", "inv1", { use: null }));
+  it("refuses a chain link without a real invite link", async () => {
+    // Naming an inviter without the private record of their link.
+    await assertFails(join(as("priya"), "priya", "inv1", { record: null }));
+    await assertFails(join(as("priya"), "priya", "inv1", { leaveOut: ["invitedBy"], record: null }));
+    await assertFails(join(as("priya"), "priya", "nothing"));
+    // Or the other way round: a record of a link the public profile doesn't show.
+    await assertFails(join(as("priya"), "priya", "inv1", { leaveOut: ["invitedBy", "invitedVia"] }));
+    await assertFails(join(as("priya"), "priya", "inv1", { profile: { invitedBy: null } }));
   });
 
-  it("refuses a chain link without a real invite", async () => {
-    // Claiming an inviter without using an invite.
-    await assertFails(join(as("priya"), "priya", "inv1", { use: null }));
-    await assertFails(join(as("priya"), "priya", "nothing", { use: null }));
+  it("refuses a link to someone other than the link's sender or memory", async () => {
+    await assertFails(join(as("priya"), "priya", "inv1", { profile: { invitedBy: "mallory" } }));
+    await assertFails(
+      join(as("priya"), "priya", "inv1", {
+        profile: { invitedBy: "mallory" },
+        record: { invitedBy: "mallory" },
+      }),
+    );
+    await assertFails(join(as("priya"), "priya", "inv1", { profile: { invitedVia: "bakery" } }));
+    await assertFails(join(as("priya"), "priya", "inv1", { profile: { invitedVia: "chai" } }));
+  });
+
+  it("records the join honestly, with nothing else in it", async () => {
+    await assertFails(join(as("priya"), "priya", "inv1", { record: { joinedAt: new Date(2020, 0, 1) } }));
+    await assertFails(join(as("priya"), "priya", "inv1", { record: { note: "hi" } }));
+    await assertFails(join(as("priya"), "priya", "inv1", { record: { inviteCode: null } }));
     const db = as("priya");
-    const withoutCode = writeBatch(db);
-    withoutCode.set(doc(db, "usersPrivate/priya"), consent());
-    withoutCode.set(doc(db, "users/priya"), {
+    const withoutTime = writeBatch(db);
+    withoutTime.set(doc(db, "usersPrivate/priya"), consent());
+    withoutTime.set(doc(db, "users/priya"), {
       displayName: "Priya",
       city: "Pune",
       createdAt: serverTimestamp(),
@@ -350,50 +378,54 @@ describe("joining through an invite", () => {
       invitedBy: "ravi",
       invitedVia: "ramu",
     });
-    await assertFails(withoutCode.commit());
+    withoutTime.set(doc(db, "joins/priya"), { inviteCode: "inv1", invitedBy: "ravi" });
+    await assertFails(withoutTime.commit());
   });
 
-  it("refuses a link to someone other than the invite's sender or memory", async () => {
-    await assertFails(join(as("priya"), "priya", "inv1", { profile: { invitedBy: "mallory" } }));
-    await assertFails(join(as("priya"), "priya", "inv1", { profile: { invitedVia: "bakery" } }));
-    await assertFails(join(as("priya"), "priya", "inv1", { profile: { inviteCode: "inv2" } }));
-  });
-
-  it("uses an invite only while creating a new profile", async () => {
-    // Marking it used without joining.
+  it("joins only while creating a new profile", async () => {
+    // Asha joined before shared links, so she has no record. She can't add one now.
     await assertFails(
-      updateDoc(doc(as("priya"), "invites/inv1"), { usedBy: "priya", usedAt: serverTimestamp() }),
+      setDoc(doc(as("asha"), "joins/asha"), {
+        inviteCode: "inv1",
+        invitedBy: "ravi",
+        joinedAt: serverTimestamp(),
+      }),
     );
-    // Someone who already has an account.
     await assertFails(
-      updateDoc(doc(as("mallory"), "invites/inv1"), { usedBy: "mallory", usedAt: serverTimestamp() }),
+      setDoc(doc(as("mallory"), "joins/mallory"), {
+        inviteCode: "inv1",
+        invitedBy: "ravi",
+        joinedAt: serverTimestamp(),
+      }),
     );
     // Without consent, no profile can be made.
     await assertFails(join(as("priya"), "priya", "inv1", { consent: false }));
+    // Nor for someone else.
+    await assertFails(join(as("mallory"), "priya", "inv1"));
   });
 
-  it("doesn't let an author use their own invite", async () => {
+  it("doesn't let an author join through their own link", async () => {
     await env.withSecurityRulesDisabled(async (ctx) => {
       await deleteDoc(doc(asDb(ctx.firestore()), "users/ravi"));
     });
     await assertFails(join(as("ravi"), "ravi", "inv1"));
   });
 
-  it("refuses invites for a memory that was deleted", async () => {
+  it("refuses links for a memory that was deleted", async () => {
     await env.withSecurityRulesDisabled(async (ctx) => {
       await deleteDoc(doc(asDb(ctx.firestore()), "stories/ramu"));
     });
     await assertFails(join(as("priya"), "priya", "inv1"));
   });
 
-  it("records the use honestly, and changes nothing else", async () => {
-    await assertFails(join(as("priya"), "priya", "inv1", { use: { usedBy: "dev" } }));
-    await assertFails(join(as("priya"), "priya", "inv1", { use: { usedAt: new Date(2020, 0, 1) } }));
-    await assertFails(join(as("priya"), "priya", "inv1", { use: { storyId: "chai" } }));
-    await assertFails(join(as("priya"), "priya", "inv1", { use: { from: "priya" } }));
+  it("keeps a used invite from before shared links used, and the others open", async () => {
+    const via = { profile: { invitedVia: "kulfi" } };
+    await assertFails(join(as("priya"), "priya", "old3", via));
+    await assertSucceeds(join(as("priya"), "priya", "old1", via));
+    await assertSucceeds(join(as("dev"), "dev", "old1", via));
   });
 
-  it("never lets anyone change who invited them", async () => {
+  it("never lets anyone change how they joined", async () => {
     await assertSucceeds(join(as("priya"), "priya", "inv1"));
     const now = serverTimestamp();
     await assertSucceeds(updateDoc(doc(as("priya"), "users/priya"), { city: "Mumbai", updatedAt: now }));
@@ -401,32 +433,72 @@ describe("joining through an invite", () => {
       updateDoc(doc(as("priya"), "users/priya"), { invitedBy: "mallory", updatedAt: now }),
     );
     await assertFails(updateDoc(doc(as("priya"), "users/priya"), { invitedVia: "bakery", updatedAt: now }));
+    await assertFails(updateDoc(doc(as("priya"), "joins/priya"), { inviteCode: "link1" }));
+    await assertFails(deleteDoc(doc(as("priya"), "joins/priya")));
     await assertFails(
-      updateDoc(doc(as("asha"), "users/asha"), {
+      updateDoc(doc(as("mallory"), "users/mallory"), {
         invitedBy: "ravi",
         invitedVia: "ramu",
-        inviteCode: "inv2",
         updatedAt: now,
       }),
     );
+    // A new profile still names the friend from the record.
+    await deleteDoc(doc(as("priya"), "users/priya"));
+    const again = (profile: Record<string, unknown>) =>
+      setDoc(doc(as("priya"), "users/priya"), {
+        displayName: "Priya",
+        city: "Pune",
+        createdAt: now,
+        updatedAt: now,
+        ...profile,
+      });
+    await assertFails(again({ invitedBy: "mallory", invitedVia: "ramu" }));
+    await assertSucceeds(again({ invitedBy: "ravi", invitedVia: "ramu" }));
+  });
+});
+
+describe("who joined through a link", () => {
+  it("shows the friend who sent it, and the person who joined", async () => {
+    await join(as("priya"), "priya", "inv1");
+    await join(as("dev"), "dev", "link1", { leaveOut: ["invitedVia"] });
+    const joined = await assertSucceeds(getDocs(joinedBy(as("ravi"), "ravi")));
+    expect(joined.docs.map((d) => d.id).sort()).toEqual(["dev", "priya"]);
+    await assertSucceeds(getDoc(doc(as("ravi"), "joins/priya")));
+    await assertSucceeds(getDoc(doc(as("priya"), "joins/priya")));
+  });
+
+  it("keeps it from everyone else", async () => {
+    await join(as("priya"), "priya", "inv1");
+    await assertFails(getDoc(doc(as("mallory"), "joins/priya")));
+    await assertFails(getDoc(doc(as("dev"), "joins/priya")));
+    await assertFails(getDoc(doc(visitor(), "joins/priya")));
+    await assertFails(getDocs(joinedBy(as("mallory"), "ravi")));
+    await assertFails(getDocs(collection(as("ravi"), "joins")));
+    await assertFails(getDocs(joinedBy(visitor(), "ravi")));
+  });
+
+  it("tells people when they didn't join through a link", async () => {
+    const snapshot = await assertSucceeds(getDoc(doc(as("mallory"), "joins/mallory")));
+    expect(snapshot.exists()).toBe(false);
   });
 });
 
 describe("taking invites back", () => {
-  it("lets the author delete a memory's invites once the memory is gone", async () => {
+  it("lets the author delete a memory's links once the memory is gone", async () => {
     await assertFails(deleteDoc(doc(as("ravi"), "invites/inv1")));
     await assertFails(deleteDoc(doc(as("ravi"), "inviteSets/ramu")));
     await deleteDoc(doc(as("ravi"), "stories/ramu"));
     await assertSucceeds(deleteDoc(doc(as("ravi"), "invites/inv1")));
-    await assertSucceeds(deleteDoc(doc(as("ravi"), "invites/inv3")));
     await assertSucceeds(deleteDoc(doc(as("ravi"), "inviteSets/ramu")));
+    await deleteDoc(doc(as("ravi"), "stories/kulfi"));
+    await assertSucceeds(deleteDoc(doc(as("ravi"), "invites/old3")));
   });
 
-  it("doesn't let a deleted invite be made again", async () => {
+  it("doesn't let a deleted link be made again", async () => {
     await deleteDoc(doc(as("ravi"), "stories/ramu"));
-    await deleteDoc(doc(as("ravi"), "invites/inv3"));
+    await deleteDoc(doc(as("ravi"), "invites/inv1"));
     await assertFails(
-      setDoc(doc(as("ravi"), "invites/inv3"), {
+      setDoc(doc(as("ravi"), "invites/inv1"), {
         from: "ravi",
         storyId: "ramu",
         visibility: "public",
@@ -440,8 +512,26 @@ describe("taking invites back", () => {
       await deleteDoc(doc(asDb(ctx.firestore()), "stories/ramu"));
     });
     await assertFails(deleteDoc(doc(as("mallory"), "invites/inv1")));
-    await assertFails(deleteDoc(doc(as("asha"), "invites/inv3")));
     await assertFails(deleteDoc(doc(as("mallory"), "inviteSets/ramu")));
     await assertFails(deleteDoc(doc(visitor(), "invites/inv1")));
+  });
+
+  it("deletes how someone joined together with their account", async () => {
+    await join(as("priya"), "priya", "inv1");
+    const db = as("priya");
+    const batch = writeBatch(db);
+    batch.delete(doc(db, "users/priya"));
+    batch.delete(doc(db, "usersPrivate/priya"));
+    batch.delete(doc(db, "joins/priya"));
+    await assertSucceeds(batch.commit());
+    expect((await getDocs(joinedBy(as("ravi"), "ravi"))).size).toBe(0);
+  });
+
+  it("doesn't let anyone else delete how someone joined", async () => {
+    await join(as("priya"), "priya", "inv1");
+    await assertFails(deleteDoc(doc(as("ravi"), "joins/priya")));
+    await deleteDoc(doc(as("priya"), "users/priya"));
+    await assertFails(deleteDoc(doc(as("ravi"), "joins/priya")));
+    await assertFails(deleteDoc(doc(visitor(), "joins/priya")));
   });
 });

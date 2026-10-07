@@ -93,7 +93,7 @@ export function InviteActions({ code }: { code: string }) {
     </Link>
   );
 
-  if (check.status === "usedByMe") {
+  if (check.status === "joinedHere") {
     return (
       <div className={note}>
         <p>You joined through this invite. Which store do you still think about?</p>
@@ -106,18 +106,16 @@ export function InviteActions({ code }: { code: string }) {
     return (
       <div className={note}>
         {check.invite.from === user.uid ? (
-          <p>
-            This is one of your own invite links. Send it to a friend who hasn&apos;t joined yet.
-          </p>
+          <p>This is your own invite link. Send it to friends who haven&apos;t joined yet.</p>
         ) : (
           <p>
-            You&apos;ve already joined, so this invite stays free for someone new. You can still
-            share another memory.
+            You&apos;ve already joined, so this invite is for friends who haven&apos;t yet. You
+            can still share another memory.
           </p>
         )}
         {check.invite.from === user.uid ? (
           <Link href="/account#memories" className={`${primaryButton} mt-4`}>
-            See my invites
+            See my invite links
           </Link>
         ) : (
           shareLink
@@ -151,8 +149,7 @@ export function InviteActions({ code }: { code: string }) {
           </button>
         )}
         <p className="mt-3 text-sm text-ink-soft">
-          This invite is just for you and works once. You&apos;ll see exactly what is shown
-          publicly before you share anything.
+          You&apos;ll see exactly what is shown publicly before you share anything.
         </p>
         {inApp && !user && (
           <p className="mt-4 rounded-xl bg-brand-yellow/20 px-4 py-3 text-sm text-ink">
@@ -168,8 +165,8 @@ export function InviteActions({ code }: { code: string }) {
   return (
     <div className={note}>
       <p>
-        This invite has already been used, or the memory it was made for was deleted. You can
-        still join on your own and share the store you never forgot.
+        This invite link no longer works. You can still join on your own and share the store
+        you never forgot.
       </p>
       {user && consent ? (
         shareLink

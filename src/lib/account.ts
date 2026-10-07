@@ -24,7 +24,6 @@ export type Profile = {
   invitedBy?: string;
   /** The memory the invite was made for, if it's shared with everyone. */
   invitedVia?: string;
-  inviteCode?: string;
 };
 
 /** Private consent record, readable only by its owner: usersPrivate/{uid}. */
@@ -53,7 +52,8 @@ export async function loadAccount(uid: string) {
 /**
  * Records consent and creates the public profile in one atomic write,
  * so a profile can never exist without consent (enforced in the rules).
- * Joining through a friend's invite also uses the invite up, in the same write.
+ * Joining through a friend's invite link also records the link, privately,
+ * in the same write.
  */
 export async function createAccount(
   uid: string,
@@ -76,11 +76,15 @@ export async function createAccount(
       invitedBy: invite.from,
       // A memory shared only by link isn't named: its address is the link's secret.
       ...(invite.visibility === "public" && { invitedVia: invite.storyId }),
-      inviteCode: invite.code,
     }),
   });
   if (invite) {
-    batch.update(doc(db, "invites", invite.code), { usedBy: uid, usedAt: serverTimestamp() });
+    // Not on the public profile: anyone could read the link there.
+    batch.set(doc(db, "joins", uid), {
+      inviteCode: invite.code,
+      invitedBy: invite.from,
+      joinedAt: serverTimestamp(),
+    });
   }
   await batch.commit();
 }
@@ -105,7 +109,8 @@ export function signedInRecently(user: User) {
 
 /**
  * Deletes the person's stories and photos, takes back their loves, deletes their
- * reports, invites, profile and consent record, and then the sign-in account.
+ * reports, invites, profile, consent record and the record of the invite they
+ * joined through, and then the sign-in account.
  */
 export async function deleteAccount(user: User) {
   await deleteAllMyStories(user);
@@ -116,6 +121,7 @@ export async function deleteAccount(user: User) {
   const batch = writeBatch(db);
   batch.delete(doc(db, "users", user.uid));
   batch.delete(doc(db, "usersPrivate", user.uid));
+  batch.delete(doc(db, "joins", user.uid));
   await batch.commit();
   await deleteUser(user);
 }

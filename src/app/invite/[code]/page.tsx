@@ -18,7 +18,7 @@ export async function generateMetadata({ params }: PageProps<"/invite/[code]">):
   const invite = await loadInvite(code);
   const from = invite?.status === "open" ? invite.inviter?.name : null;
   const title = from ? `${from} passed you a memory` : "Pass the memory";
-  const description = "Share a memory of a local store you never forgot. This invite is just for you.";
+  const description = "Share a memory of a local store you never forgot, and pass it on.";
   return {
     title: `${title} · ${SITE}`,
     description,

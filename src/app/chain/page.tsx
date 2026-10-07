@@ -23,8 +23,8 @@ export default async function ChainPage() {
             The Memory Chain
           </h1>
           <p className="mt-3 text-lg leading-relaxed text-ink-soft">
-            Every memory comes with three invites to pass on. Follow how one person&apos;s memory
-            led their friends to share theirs, and their friends after them.
+            Every memory comes with an invite link to pass on. Follow how one person&apos;s
+            memory led their friends to share theirs, and their friends after them.
           </p>
         </div>
         <Link href="/share" className={primaryButton}>
@@ -40,7 +40,7 @@ export default async function ChainPage() {
         <div className="mt-16 text-center">
           <p className="font-hand text-2xl text-ink">The first chain hasn&apos;t started yet.</p>
           <p className="mx-auto mt-2 max-w-md text-ink-soft">
-            Share a memory, then pass it on with your three invites. When a friend joins and
+            Share a memory, then pass it on with your invite link. When a friend joins and
             their memory is on the Wall, your chain begins here.
           </p>
         </div>

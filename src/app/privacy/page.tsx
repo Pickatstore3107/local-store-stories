@@ -31,7 +31,7 @@ export default function PrivacyPage() {
             <li>Photos are resized on your phone and the location hidden inside them is removed before upload. They are stored privately with our image provider, Cloudinary, until they are approved.</li>
             <li>Which memories you love. Only you can see this; the person who shared a memory sees only how many people loved it.</li>
             <li>Reports you send about a memory. Only moderators can read them.</li>
-            <li>The invite links you make, and who joined through them. If you joined through a friend&apos;s invite, who invited you.</li>
+            <li>The invite links you make, and who joined through them. If you joined through a friend&apos;s invite link, who invited you and through which link.</li>
             <li>When you agreed to this notice, and that you confirmed you are 18 or older.</li>
           </ul>
         </section>
@@ -57,9 +57,12 @@ export default function PrivacyPage() {
         <section>
           <h2 className="text-lg font-bold">Invites and the Memory Chain</h2>
           <p className="mt-2">
-            Each memory comes with three personal invite links for you to send to friends. Each
-            link works once. When a friend joins through yours, you see their name next to that
-            invite, and the Memory Chain shows that you passed the memory on to them.
+            Each memory comes with an invite link for you to send to friends, and they can pass
+            it on. Anyone with the link can join through it and, once the memory is approved,
+            see it, even if you shared it only by link. When friends join through yours, you see
+            their names under that memory, and the Memory Chain shows that you passed the memory
+            on to them. Which link someone joined through is visible only to them and to the
+            friend who sent it.
           </p>
           <p className="mt-2">
             The Memory Chain is public. It names people only through memories they chose to
