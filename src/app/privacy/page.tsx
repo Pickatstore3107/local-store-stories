@@ -26,7 +26,7 @@ export default function PrivacyPage() {
         <section>
           <h2 className="text-lg font-bold">What we collect</h2>
           <ul className="mt-2 list-disc space-y-1 pl-6">
-            <li>Your phone number or Google email, to sign you in. Never shown publicly.</li>
+            <li>Your Google email address, to sign you in. Never shown publicly.</li>
             <li>The name and city you choose. Shown publicly with your stories.</li>
             <li>Stories, photos and videos you choose to share, once they are approved.</li>
             <li>When you agreed to this notice, and that you confirmed you are 18 or older.</li>
@@ -37,7 +37,7 @@ export default function PrivacyPage() {
           <h2 className="text-lg font-bold">What we never do</h2>
           <ul className="mt-2 list-disc space-y-1 pl-6">
             <li>We never sell your personal data.</li>
-            <li>We never show your phone number, email or home location.</li>
+            <li>We never show your email address or home location.</li>
             <li>We never use your stories to target ads at you.</li>
           </ul>
         </section>

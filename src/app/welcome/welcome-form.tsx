@@ -71,7 +71,7 @@ function ConsentForm({ user, refresh }: { user: User; refresh: () => Promise<voi
         <section className="rounded-2xl bg-paper p-4">
           <h2 className="font-bold text-ink">Always private</h2>
           <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-ink-soft">
-            <li>Your phone number or email</li>
+            <li>Your email address</li>
             <li>Your exact location</li>
             <li>We never sell your data</li>
           </ul>
