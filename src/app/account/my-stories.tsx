@@ -5,14 +5,26 @@ import type { User } from "firebase/auth";
 import { useEffect, useState } from "react";
 import { card, primaryButton } from "@/components/ui";
 import { friendlyError } from "@/lib/auth-errors";
+import { memoryPath } from "@/lib/memories";
 import { deleteStory, loadMyStories, type MyStory, type StoryStatus } from "@/lib/stories";
 
 const statusLabels: Record<StoryStatus, string> = {
   pending: "Waiting for review",
-  approved: "Approved",
+  approved: "On the Wall",
   rejected: "Not approved",
   hidden: "Hidden by a moderator",
 };
+
+function statusLabel(story: MyStory) {
+  if (story.status === "approved" && story.visibility === "link") return "Shared by link";
+  return statusLabels[story.status];
+}
+
+/** Only the author sees this. */
+function lovedBy(count: number | undefined) {
+  if (!count) return null;
+  return count === 1 ? "Loved by 1 person" : `Loved by ${count} people`;
+}
 
 const statusStyles: Record<StoryStatus, string> = {
   pending: "bg-brand-yellow/25 text-ink",
@@ -24,6 +36,7 @@ const statusStyles: Record<StoryStatus, string> = {
 export function MyStories({ user }: { user: User }) {
   const [stories, setStories] = useState<MyStory[] | null>(null);
   const [confirming, setConfirming] = useState<string | null>(null);
+  const [copied, setCopied] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -40,6 +53,15 @@ export function MyStories({ user }: { user: User }) {
       current = false;
     };
   }, [user]);
+
+  async function copyLink(story: MyStory) {
+    try {
+      await navigator.clipboard.writeText(`${window.location.origin}${memoryPath(story.id)}`);
+      setCopied(story.id);
+    } catch {
+      setError("Copying isn't allowed here. Open the memory and copy its address instead.");
+    }
+  }
 
   async function remove(story: MyStory) {
     setError(null);
@@ -94,8 +116,35 @@ export function MyStories({ user }: { user: User }) {
                 </p>
                 <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
                   <span className={`rounded-full px-2 py-0.5 font-bold ${statusStyles[story.status]}`}>
-                    {statusLabels[story.status]}
+                    {statusLabel(story)}
                   </span>
+                  {story.status === "approved" && story.featuredAt && (
+                    <span className="rounded-full bg-brand-yellow/25 px-2 py-0.5 font-bold text-ink">
+                      ★ Featured
+                    </span>
+                  )}
+                  {story.status === "approved" && lovedBy(story.reactionCount) && (
+                    <span className="text-ink-soft">{lovedBy(story.reactionCount)}</span>
+                  )}
+                </p>
+                <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+                  {story.status === "approved" && (
+                    <>
+                      <Link
+                        href={memoryPath(story.id)}
+                        className="font-bold text-brand-red underline underline-offset-4"
+                      >
+                        Open
+                      </Link>
+                      <button
+                        type="button"
+                        onClick={() => copyLink(story)}
+                        className="font-bold text-brand-red underline underline-offset-4"
+                      >
+                        {copied === story.id ? "Link copied" : "Copy link"}
+                      </button>
+                    </>
+                  )}
                   {confirming === story.id ? (
                     <>
                       <button

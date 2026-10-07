@@ -1,9 +1,23 @@
 import Link from "next/link";
-import { primaryButton } from "@/components/ui";
+import { PolaroidCard } from "@/components/polaroid";
+import { primaryButton, secondaryButton } from "@/components/ui";
+import type { WallMemory } from "@/lib/memories";
+import { loadWall } from "@/lib/server/wall";
 
-export default function Home() {
+const PREVIEW_SIZE = 3;
+
+export default async function Home() {
+  const wall = await loadWall();
+  // Featured memories first, then the newest.
+  const preview: WallMemory[] = wall
+    ? [...new Map([...wall.featured, ...wall.memories].map((m) => [m.id, m])).values()].slice(
+        0,
+        PREVIEW_SIZE,
+      )
+    : [];
+
   return (
-    <main className="flex flex-1 flex-col items-center justify-center px-6 py-16 text-center">
+    <main className="flex flex-1 flex-col items-center px-6 py-16 text-center">
       <p className="text-sm font-bold uppercase tracking-[0.2em] text-ink-soft">
         Pick at Store presents
       </p>
@@ -22,12 +36,41 @@ export default function Home() {
         kirana that kept your family&apos;s tab. Share yours in a photo and a
         few lines, and help us write down neighbourhood India.
       </p>
-      <Link href="/share" className={`${primaryButton} mt-12`}>
-        Share your memory
-      </Link>
+      <div className="mt-12 flex flex-wrap justify-center gap-3">
+        <Link href="/share" className={primaryButton}>
+          Share your memory
+        </Link>
+        <Link href="/wall" className={secondaryButton}>
+          See the Memory Wall
+        </Link>
+      </div>
       <p className="mt-4 text-sm text-ink-soft">
-        Every story is reviewed before it appears. The Memory Wall opens soon.
+        Every story is read by a person before it appears.
       </p>
+
+      {preview.length > 0 && (
+        <section aria-labelledby="preview-heading" className="mt-20 w-full max-w-4xl">
+          <h2
+            id="preview-heading"
+            className="text-sm font-bold uppercase tracking-[0.2em] text-ink-soft"
+          >
+            From the Memory Wall
+          </h2>
+          <ul className="mx-auto mt-10 grid max-w-sm grid-cols-1 gap-12 text-left sm:max-w-none sm:grid-cols-3 sm:gap-8">
+            {preview.map((memory) => (
+              <li key={memory.id}>
+                <PolaroidCard memory={memory} featured={!!memory.featuredAt} />
+              </li>
+            ))}
+          </ul>
+          <Link
+            href="/wall"
+            className="mt-10 inline-block font-bold text-brand-red underline underline-offset-4"
+          >
+            See every memory
+          </Link>
+        </section>
+      )}
     </main>
   );
 }

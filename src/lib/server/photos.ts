@@ -4,6 +4,10 @@ import { HttpError } from "./auth";
 // Firestore's automatic document IDs.
 const STORY_ID = /^[A-Za-z0-9]{20}$/;
 
+export function isStoryId(id: string) {
+  return STORY_ID.test(id);
+}
+
 // Any story's photo ID, as photoId() makes them.
 const ANY_PHOTO_ID = /^lss\/stories\/[A-Za-z0-9]{1,128}\/[A-Za-z0-9]{20}$/;
 
@@ -54,7 +58,15 @@ export async function deleteAllPhotos(uid: string) {
   await client().api.delete_resources_by_prefix(`lss/stories/${uid}/`, privateImage);
 }
 
-function signedUrl(id: string, transformation: { width: number; height: number; crop: string }) {
+type Transformation = {
+  width: number;
+  height: number;
+  crop: "fill" | "limit";
+  quality?: "auto";
+  fetch_format?: "auto";
+};
+
+function signedUrl(id: string, transformation: Transformation) {
   return client().url(id, {
     ...privateImage,
     sign_url: true,
@@ -64,6 +76,11 @@ function signedUrl(id: string, transformation: { width: number; height: number; 
   });
 }
 
+function checkedId(id: string) {
+  if (!ANY_PHOTO_ID.test(id)) throw new HttpError(400, "That photo could not be found.");
+  return id;
+}
+
 /** A signed link to a small square version of the photo. */
 export function thumbnailUrl(uid: string, storyId: string) {
   return signedUrl(photoId(uid, storyId), { width: 320, height: 320, crop: "fill" });
@@ -71,8 +88,27 @@ export function thumbnailUrl(uid: string, storyId: string) {
 
 /** A signed link to a larger version of any story's photo, for moderators. */
 export function reviewPhotoUrl(id: string) {
-  if (!ANY_PHOTO_ID.test(id)) throw new HttpError(400, "That photo could not be found.");
-  return signedUrl(id, { width: 800, height: 800, crop: "limit" });
+  return signedUrl(checkedId(id), { width: 800, height: 800, crop: "limit" });
+}
+
+// The links below are only ever made for approved stories, after the
+// security rules have let an anonymous visitor read them (src/lib/server/wall.ts).
+// In the browser, Cloudinary picks the smallest format the browser supports.
+const forBrowsers = { quality: "auto", fetch_format: "auto" } as const;
+
+/** A square photo for a card on the Wall. */
+export function cardPhotoUrl(id: string) {
+  return signedUrl(checkedId(id), { width: 600, height: 600, crop: "fill", ...forBrowsers });
+}
+
+/** The whole photo, for a memory's own page. */
+export function fullPhotoUrl(id: string) {
+  return signedUrl(checkedId(id), { width: 1200, height: 1200, crop: "limit", ...forBrowsers });
+}
+
+/** A JPEG in the shape WhatsApp and other apps show when a link is shared. */
+export function sharePhotoUrl(id: string) {
+  return signedUrl(checkedId(id), { width: 1200, height: 630, crop: "fill", quality: "auto" });
 }
 
 /** True for JPEG bytes, whatever the browser claims the file is. */

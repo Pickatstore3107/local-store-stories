@@ -72,6 +72,31 @@ service cloud.firestore {
       allow get: if isOwner(uid);
       allow create, update: if isOwner(uid) && validConsent(request.resource.data);
       allow delete: if isOwner(uid);
+
+      // The memories this person loved. Only they can see these; a memory's
+      // author sees how many people loved it, never who.
+      match /reactions/{storyId} {
+        function story() {
+          return /databases/$(database)/documents/stories/$(storyId);
+        }
+
+        function loves(storyDoc) {
+          return storyDoc.data.get('reactionCount', 0);
+        }
+
+        allow get, list: if isOwner(uid);
+
+        // Written in the same batch as the memory's count (checked there too).
+        allow create: if isOwner(uid)
+          && exists(/databases/$(database)/documents/usersPrivate/$(uid))
+          && request.resource.data.keys().hasOnly(['at'])
+          && request.resource.data.at == request.time
+          && loves(getAfter(story())) == loves(get(story())) + 1;
+
+        // Once the memory is deleted there is no count left to change.
+        allow delete: if isOwner(uid)
+          && (!exists(story()) || loves(getAfter(story())) == loves(get(story())) - 1);
+      }
     }
 
     // A memory of a store. The author creates it as pending; only a moderator
@@ -151,6 +176,35 @@ service cloud.firestore {
           && getAfter(logEntry(after.reviewLogId)).data.action == after.status;
       }
 
+      // A moderator picks memories for the Featured row on the Wall, or
+      // takes them out of it.
+      function validFeature(before, after) {
+        return isModerator()
+          && after.diff(before).affectedKeys().hasOnly(['featuredAt'])
+          && (!('featuredAt' in after)
+              || (after.featuredAt == request.time
+                  && before.status == 'approved'
+                  && before.visibility == 'public'));
+      }
+
+      function myReaction() {
+        return /databases/$(database)/documents/usersPrivate/$(request.auth.uid)/reactions/$(storyId);
+      }
+
+      // Loving a memory adds one to its count, in the same batch as the
+      // person's private reaction record; taking it back takes one away.
+      function validReactionCount(before, after) {
+        return signedIn()
+          && after.diff(before).affectedKeys().hasOnly(['reactionCount'])
+          && ((after.reactionCount == before.get('reactionCount', 0) + 1
+                && before.status == 'approved'
+                && !exists(myReaction())
+                && existsAfter(myReaction()))
+            || (after.reactionCount == before.get('reactionCount', 0) - 1
+                && exists(myReaction())
+                && !existsAfter(myReaction())));
+      }
+
       // Only people who have given consent can share.
       allow create: if signedIn()
         && exists(/databases/$(database)/documents/usersPrivate/$(request.auth.uid))
@@ -163,7 +217,9 @@ service cloud.firestore {
         || isAuthor()
         || isModerator();
 
-      allow update: if validReview(resource.data, request.resource.data);
+      allow update: if validReview(resource.data, request.resource.data)
+        || validFeature(resource.data, request.resource.data)
+        || validReactionCount(resource.data, request.resource.data);
       allow delete: if isAuthor();
     }
 
@@ -190,6 +246,65 @@ service cloud.firestore {
 
       allow get, list: if isModerator();
       allow create: if isModerator() && validEntry(request.resource.data);
+    }
+
+    // A report about a memory on the Wall. Each person can report a memory
+    // once. Moderators read reports and close them; the memory's author never
+    // sees who reported it.
+    match /reports/{reportId} {
+      function story(id) {
+        return /databases/$(database)/documents/stories/$(id);
+      }
+
+      // Must match REPORT_REASONS in src/lib/reports.ts.
+      function reasons() {
+        return ['unkind', 'private', 'notStore', 'rights', 'other'];
+      }
+
+      // Must match REPORT_DETAILS_MIN and REPORT_DETAILS_MAX in src/lib/reports.ts.
+      function validReport(report) {
+        return report.keys().hasOnly(['storyId', 'reason', 'details', 'by', 'at', 'status'])
+          && report.keys().hasAll(['storyId', 'reason', 'by', 'at', 'status'])
+          && report.storyId is string
+          && reportId == report.storyId + '_' + request.auth.uid
+          && report.reason in reasons()
+          // "Something else" needs a few words; other reasons may add some.
+          && (report.reason == 'other'
+              ? isText(report.get('details', null), 5, 500)
+              : (!('details' in report) || isText(report.details, 1, 500)))
+          && report.by == request.auth.uid
+          && report.at == request.time
+          && report.status == 'open'
+          && get(story(report.storyId)).data.status == 'approved';
+      }
+
+      // A moderator closes a report once the memory is hidden, kept up after
+      // a look, or gone because its author deleted it.
+      function validClose(before, after) {
+        return isModerator()
+          && after.diff(before).affectedKeys().hasOnly(['status', 'outcome', 'closedBy', 'closedAt'])
+          && before.status == 'open'
+          && after.status == 'closed'
+          && after.closedBy == request.auth.uid
+          && after.closedAt == request.time
+          && (after.outcome == 'gone'
+              ? !existsAfter(story(before.storyId))
+              : (after.outcome in ['hidden', 'kept']
+                 && getAfter(story(before.storyId)).data.status
+                      == (after.outcome == 'hidden' ? 'hidden' : 'approved')));
+      }
+
+      // Only people who have given consent can report.
+      allow create: if signedIn()
+        && exists(/databases/$(database)/documents/usersPrivate/$(request.auth.uid))
+        && validReport(request.resource.data);
+
+      // People can find and take back their own reports, for example when
+      // they delete their account.
+      allow get: if isModerator();
+      allow list: if isModerator() || (signedIn() && resource.data.by == request.auth.uid);
+      allow update: if validClose(resource.data, request.resource.data);
+      allow delete: if signedIn() && resource.data.by == request.auth.uid;
     }
   }
 }

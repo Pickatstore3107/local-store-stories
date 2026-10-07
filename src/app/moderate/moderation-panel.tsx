@@ -7,21 +7,26 @@ import { Loading } from "@/components/require-account";
 import { card, secondaryButton } from "@/components/ui";
 import { friendlyError } from "@/lib/auth-errors";
 import {
+  countOpenReports,
   countWaiting,
   isModerator,
+  loadReports,
   loadReviewQueue,
   QUEUE_LIMIT,
+  type ReportGroup,
   type ReviewAction,
   type ReviewStory,
 } from "@/lib/moderation";
 import type { StoryStatus } from "@/lib/stories";
 import { ModerationLog } from "./moderation-log";
+import { ReportCard, type ReportOutcome } from "./report-card";
 import { ReviewCard } from "./review-card";
 
-type Tab = StoryStatus | "log";
+type Tab = StoryStatus | "reports" | "log";
 
 const TABS: { key: Tab; label: string; empty: string }[] = [
   { key: "pending", label: "Waiting", empty: "Nothing is waiting. Every memory has been reviewed." },
+  { key: "reports", label: "Reports", empty: "No open reports. Nobody has flagged a memory." },
   { key: "approved", label: "Approved", empty: "No approved memories yet." },
   { key: "rejected", label: "Not approved", empty: "No memories have been turned down." },
   { key: "hidden", label: "Hidden", empty: "No memories are hidden." },
@@ -32,6 +37,12 @@ const done: Record<ReviewAction, (name: string) => string> = {
   approved: (name) => `Approved “${name}”.`,
   rejected: (name) => `Turned down “${name}”. Its author will see your note.`,
   hidden: (name) => `Hid “${name}”. Its author will see your note.`,
+};
+
+const closed: Record<ReportOutcome, (name: string) => string> = {
+  hidden: (name) => `Hid “${name}” and closed its reports.`,
+  kept: (name) => `Kept “${name}” up and closed its reports.`,
+  gone: () => "Closed the reports about a deleted memory.",
 };
 
 export function ModerationPanel() {
@@ -60,8 +71,10 @@ export function ModerationPanel() {
 function ReviewQueue({ user }: { user: User }) {
   const [tab, setTab] = useState<Tab>("pending");
   const [stories, setStories] = useState<ReviewStory[] | null>(null);
+  const [groups, setGroups] = useState<ReportGroup[] | null>(null);
   const [more, setMore] = useState(false);
   const [waiting, setWaiting] = useState<number | null>(null);
+  const [reported, setReported] = useState<number | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [round, setRound] = useState(0);
@@ -81,7 +94,22 @@ function ReviewQueue({ user }: { user: User }) {
     countWaiting()
       .then((count) => current && setWaiting(count))
       .catch((e) => console.error("Could not count the queue", e));
-    if (tab !== "log") {
+    countOpenReports()
+      .then((count) => current && setReported(count))
+      .catch((e) => console.error("Could not count the reports", e));
+    if (tab === "reports") {
+      loadReports(user)
+        .then((found) => {
+          if (!current) return;
+          setGroups(found.groups);
+          setMore(found.more);
+        })
+        .catch((e) => {
+          if (!current) return;
+          setGroups([]);
+          setError(friendlyError(e));
+        });
+    } else if (tab !== "log") {
       loadReviewQueue(user, tab)
         .then((queue) => {
           if (!current) return;
@@ -103,6 +131,7 @@ function ReviewQueue({ user }: { user: User }) {
     if (next === tab) return;
     setTab(next);
     setStories(null);
+    setGroups(null);
     setMessage(null);
     setError(null);
   }
@@ -111,6 +140,12 @@ function ReviewQueue({ user }: { user: User }) {
     setStories((list) => list?.filter((s) => s.id !== story.id) ?? null);
     if (story.status === "pending") setWaiting((n) => (n === null ? n : Math.max(0, n - 1)));
     setMessage(done[action](story.storeName));
+  }
+
+  function reportsClosed(group: ReportGroup, outcome: ReportOutcome) {
+    setGroups((list) => list?.filter((g) => g.storyId !== group.storyId) ?? null);
+    setReported((n) => (n === null ? n : Math.max(0, n - group.reports.length)));
+    setMessage(closed[outcome](group.story?.storeName ?? ""));
   }
 
   const current = TABS.find((t) => t.key === tab)!;
@@ -139,6 +174,7 @@ function ReviewQueue({ user }: { user: User }) {
             >
               {t.label}
               {t.key === "pending" && waiting !== null && ` (${waiting})`}
+              {t.key === "reports" && reported !== null && ` (${reported})`}
             </button>
           ))}
         </div>
@@ -154,6 +190,24 @@ function ReviewQueue({ user }: { user: User }) {
       <div role="tabpanel" aria-label={current.label} className="flex flex-col gap-6">
         {tab === "log" ? (
           <ModerationLog />
+        ) : tab === "reports" ? (
+          groups === null ? (
+            <Loading />
+          ) : groups.length === 0 ? (
+            <p className="py-10 text-center text-ink-soft">{current.empty}</p>
+          ) : (
+            <>
+              {groups.map((group) => (
+                <ReportCard key={group.storyId} user={user} group={group} onClosed={reportsClosed} />
+              ))}
+              {more && (
+                <p className="text-center text-sm text-ink-soft">
+                  Showing the first {QUEUE_LIMIT} reports. Refresh after dealing with these to see
+                  more.
+                </p>
+              )}
+            </>
+          )
         ) : stories === null ? (
           <Loading />
         ) : stories.length === 0 ? (
@@ -170,7 +224,7 @@ function ReviewQueue({ user }: { user: User }) {
             )}
           </>
         )}
-        {tab !== "log" && stories !== null && (
+        {tab !== "log" && (tab === "reports" ? groups : stories) !== null && (
           <button
             type="button"
             onClick={() => {

@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Nunito } from "next/font/google";
+import { Kalam, Nunito } from "next/font/google";
 import Link from "next/link";
 import { AuthProvider } from "@/components/auth-provider";
 import { SiteHeader } from "@/components/site-header";
@@ -9,6 +9,13 @@ import "./globals.css";
 const nunito = Nunito({
   variable: "--font-nunito",
   subsets: ["latin"],
+});
+
+// Handwriting for the memories themselves, in Hindi and English.
+const kalam = Kalam({
+  variable: "--font-kalam",
+  weight: ["400", "700"],
+  subsets: ["latin", "devanagari"],
 });
 
 export const metadata: Metadata = {
@@ -23,7 +30,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`${nunito.variable} h-full antialiased`}>
+    <html lang="en" className={`${nunito.variable} ${kalam.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col font-sans">
         <AuthProvider>
           <SiteHeader />
