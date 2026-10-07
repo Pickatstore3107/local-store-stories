@@ -11,10 +11,10 @@ const messages: Record<string, string> = {
   "auth/network-request-failed": "No connection. Please check your internet and try again.",
   "auth/requires-recent-login": "For your safety, please sign in again and then retry.",
   "permission-denied": "You don't have permission to do that.",
-  "storage/unauthorized": "You don't have permission to upload this photo.",
-  "storage/retry-limit-exceeded": "The upload took too long. Please check your internet and try again.",
-  "storage/canceled": "The upload was stopped. Please try again.",
 };
+
+/** An error whose message is already written for people to read. */
+export class FriendlyError extends Error {}
 
 /**
  * A message people can act on. Unknown errors keep their code visible so
@@ -22,6 +22,7 @@ const messages: Record<string, string> = {
  */
 export function friendlyError(error: unknown) {
   console.error(error);
+  if (error instanceof FriendlyError) return error.message;
   const code = error instanceof FirebaseError ? error.code : null;
   const message = code && messages[code];
   if (message) return `${message} (${code})`;

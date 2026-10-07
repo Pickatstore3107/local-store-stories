@@ -89,7 +89,7 @@ export function signedInRecently(user: User) {
  * and then the sign-in account.
  */
 export async function deleteAccount(user: User) {
-  await deleteAllMyStories(user.uid);
+  await deleteAllMyStories(user);
   const { db } = getFirebase();
   const batch = writeBatch(db);
   batch.delete(doc(db, "users", user.uid));

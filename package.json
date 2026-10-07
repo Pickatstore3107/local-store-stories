@@ -12,7 +12,9 @@
     "test:rules": "firebase emulators:exec --only firestore,storage --project demo-local-store-stories \"vitest run\""
   },
   "dependencies": {
+    "cloudinary": "^2.11.0",
     "firebase": "^12.19.0",
+    "jose": "^6.2.12",
     "next": "16.4.0",
     "react": "19.3.0",
     "react-dom": "19.3.0"

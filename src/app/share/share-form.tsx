@@ -22,7 +22,7 @@ import {
   type Visibility,
 } from "@/lib/stories";
 
-type Photo = { photo: Blob; thumb: Blob; preview: string };
+type Photo = { jpeg: Blob; preview: string };
 
 const label = "mt-5 block text-sm font-bold text-ink";
 const hint = "font-normal text-ink-soft";
@@ -101,9 +101,9 @@ function StoryForm({
     setError(null);
     setPreparing(true);
     try {
-      const media = await preparePhoto(file);
+      const jpeg = await preparePhoto(file);
       if (photo) URL.revokeObjectURL(photo.preview);
-      setPhoto({ ...media, preview: URL.createObjectURL(media.thumb) });
+      setPhoto({ jpeg, preview: URL.createObjectURL(jpeg) });
     } catch (e) {
       setError(
         e instanceof UnreadablePhotoError
@@ -126,9 +126,9 @@ function StoryForm({
     setBusy(true);
     try {
       await shareStory(
-        user.uid,
+        user,
         { storeName, category, city, neighbourhood, caption, year: yearNumber, ordered, visibility },
-        photo,
+        photo.jpeg,
       );
       setShared(true);
       onShared();

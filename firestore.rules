@@ -82,13 +82,11 @@ service cloud.firestore {
       }
 
       function validNewStory(data) {
-        let folder = 'uploads/' + request.auth.uid + '/' + storyId + '/';
         return data.keys().hasOnly(['authorId', 'storeName', 'category', 'city',
             'neighbourhood', 'caption', 'year', 'ordered', 'visibility',
-            'rightsConfirmed', 'status', 'photoPath', 'thumbPath', 'createdAt', 'updatedAt'])
+            'rightsConfirmed', 'status', 'photoId', 'createdAt', 'updatedAt'])
           && data.keys().hasAll(['authorId', 'storeName', 'category', 'city', 'caption',
-            'visibility', 'rightsConfirmed', 'status', 'photoPath', 'thumbPath',
-            'createdAt', 'updatedAt'])
+            'visibility', 'rightsConfirmed', 'status', 'photoId', 'createdAt', 'updatedAt'])
           && data.authorId == request.auth.uid
           && isText(data.storeName, 2, 80)
           && data.category in categories()
@@ -101,8 +99,8 @@ service cloud.firestore {
           && data.visibility in ['public', 'link']
           && data.rightsConfirmed == true
           && data.status == 'pending'
-          && data.photoPath == folder + 'photo.jpg'
-          && data.thumbPath == folder + 'thumb.jpg'
+          // The photo's ID at Cloudinary; must match photoId() in src/lib/server/photos.ts.
+          && data.photoId == 'lss/stories/' + request.auth.uid + '/' + storyId
           && data.createdAt == request.time
           && data.updatedAt == request.time;
       }

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import type { User } from "firebase/auth";
 import { useEffect, useState } from "react";
 import { card, primaryButton } from "@/components/ui";
 import { friendlyError } from "@/lib/auth-errors";
@@ -13,7 +14,7 @@ const statusLabels: Record<StoryStatus, string> = {
   hidden: "Hidden",
 };
 
-export function MyStories({ uid }: { uid: string }) {
+export function MyStories({ user }: { user: User }) {
   const [stories, setStories] = useState<MyStory[] | null>(null);
   const [confirming, setConfirming] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -21,7 +22,7 @@ export function MyStories({ uid }: { uid: string }) {
 
   useEffect(() => {
     let current = true;
-    loadMyStories(uid)
+    loadMyStories(user)
       .then((list) => current && setStories(list))
       .catch((e) => {
         if (!current) return;
@@ -31,13 +32,13 @@ export function MyStories({ uid }: { uid: string }) {
     return () => {
       current = false;
     };
-  }, [uid]);
+  }, [user]);
 
   async function remove(story: MyStory) {
     setError(null);
     setBusy(true);
     try {
-      await deleteStory(story);
+      await deleteStory(user, story);
       setStories((list) => list?.filter((s) => s.id !== story.id) ?? null);
       setConfirming(null);
     } catch (e) {
@@ -69,7 +70,7 @@ export function MyStories({ uid }: { uid: string }) {
           {stories.map((story) => (
             <li key={story.id} className="flex gap-4">
               {story.thumbUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element -- private, signed link
+                // eslint-disable-next-line @next/next/no-img-element -- private, signed link from our server
                 <img
                   src={story.thumbUrl}
                   alt=""
