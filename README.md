@@ -37,6 +37,20 @@ To work fully offline against local Firebase, set
 
 All four run in GitHub Actions on every pull request.
 
+## Moderators
+
+Every story waits for a moderator at `/moderate` before anyone else can see it.
+The app can't make anyone a moderator; that is done by hand in the Firebase
+console:
+
+1. The new moderator signs in, opens `/moderate` and copies the code it shows.
+2. In the Firebase console, open **Firestore Database**, then the `moderators`
+   collection (choose **Start collection** the first time).
+3. Add a document whose **Document ID** is that code, with one string field
+   `name` holding their name.
+
+Every decision is written to `moderationLog`, which nobody can edit or delete.
+
 ## Security rules
 
 `firestore.rules` and `storage.rules` deny everything by default (Firebase

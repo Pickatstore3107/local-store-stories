@@ -47,22 +47,35 @@ export async function verifyUser(request: Request) {
 }
 
 /**
- * Only people who have given consent may upload. Reads their consent record
- * with their own token, so the Firestore security rules decide.
+ * Whether one of the person's own documents exists. Reads it with their own
+ * token, so the Firestore security rules decide.
  */
-export async function requireConsent(uid: string, token: string) {
+async function ownDocExists(collection: string, uid: string, token: string) {
   const host = useEmulators ? "http://127.0.0.1:8080" : "https://firestore.googleapis.com";
   const response = await fetch(
-    `${host}/v1/projects/${projectId}/databases/(default)/documents/usersPrivate/${uid}`,
+    `${host}/v1/projects/${projectId}/databases/(default)/documents/${collection}/${uid}`,
     { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" },
   );
-  if (response.status === 404) {
-    throw new HttpError(403, "Please finish setting up your account first.");
-  }
+  if (response.status === 404) return false;
   if (response.status === 401 || response.status === 403) {
     throw new HttpError(401, "Please sign in again.");
   }
   if (!response.ok) throw new HttpError(502, "We couldn't check your account. Please try again.");
+  return true;
+}
+
+/** Only people who have given consent may upload. */
+export async function requireConsent(uid: string, token: string) {
+  if (!(await ownDocExists("usersPrivate", uid, token))) {
+    throw new HttpError(403, "Please finish setting up your account first.");
+  }
+}
+
+/** Only moderators, listed in moderators/{uid}, may see photos waiting for review. */
+export async function requireModerator(uid: string, token: string) {
+  if (!(await ownDocExists("moderators", uid, token))) {
+    throw new HttpError(403, "Only moderators can do that.");
+  }
 }
 
 /** Turns an error into a JSON response the browser can show. */

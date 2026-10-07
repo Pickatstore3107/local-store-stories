@@ -9,9 +9,16 @@ import { deleteStory, loadMyStories, type MyStory, type StoryStatus } from "@/li
 
 const statusLabels: Record<StoryStatus, string> = {
   pending: "Waiting for review",
-  approved: "Published",
+  approved: "Approved",
   rejected: "Not approved",
-  hidden: "Hidden",
+  hidden: "Hidden by a moderator",
+};
+
+const statusStyles: Record<StoryStatus, string> = {
+  pending: "bg-brand-yellow/25 text-ink",
+  approved: "bg-emerald-100 text-emerald-900",
+  rejected: "bg-brand-red/10 text-brand-red-deep",
+  hidden: "bg-brand-red/10 text-brand-red-deep",
 };
 
 export function MyStories({ user }: { user: User }) {
@@ -86,7 +93,7 @@ export function MyStories({ user }: { user: User }) {
                   {story.category}
                 </p>
                 <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
-                  <span className="rounded-full bg-brand-yellow/25 px-2 py-0.5 font-bold text-ink">
+                  <span className={`rounded-full px-2 py-0.5 font-bold ${statusStyles[story.status]}`}>
                     {statusLabels[story.status]}
                   </span>
                   {confirming === story.id ? (
@@ -117,6 +124,11 @@ export function MyStories({ user }: { user: User }) {
                     </button>
                   )}
                 </p>
+                {story.reviewNote && story.status !== "approved" && (
+                  <p className="mt-2 text-sm text-ink">
+                    <span className="font-bold">From the moderator:</span> {story.reviewNote}
+                  </p>
+                )}
               </div>
             </li>
           ))}

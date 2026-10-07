@@ -15,6 +15,7 @@ import {
 } from "@/lib/account";
 import { friendlyError } from "@/lib/auth-errors";
 import { getFirebase } from "@/lib/firebase";
+import { ModeratorCard } from "./moderator-card";
 import { MyStories } from "./my-stories";
 
 // Set before asking someone to sign in again, so the delete step reopens after.
@@ -175,6 +176,8 @@ export function AccountPanel() {
           Sign out
         </button>
       </section>
+
+      <ModeratorCard user={user} />
 
       <MyStories user={user} />
 
