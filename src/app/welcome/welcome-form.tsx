@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import type { User } from "firebase/auth";
 import { useEffect, useState, type FormEvent } from "react";
 import { useAuth } from "@/components/auth-provider";
-import { Loading } from "@/components/require-account";
+import { Loading, returnPath } from "@/components/require-account";
 import { card, input, primaryButton } from "@/components/ui";
 import { CITY_MAX, CITY_MIN, NAME_MAX, createAccount } from "@/lib/account";
 import { friendlyError } from "@/lib/auth-errors";
@@ -18,7 +18,7 @@ export function WelcomeForm() {
   useEffect(() => {
     if (loading) return;
     if (!user) router.replace("/signin");
-    else if (consent) router.replace("/account");
+    else if (consent) router.replace(returnPath() ?? "/account");
   }, [loading, user, consent, router]);
 
   if (loading || !user || consent) return <Loading />;

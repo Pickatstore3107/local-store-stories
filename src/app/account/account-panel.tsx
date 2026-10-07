@@ -15,6 +15,7 @@ import {
 } from "@/lib/account";
 import { friendlyError } from "@/lib/auth-errors";
 import { getFirebase } from "@/lib/firebase";
+import { MyStories } from "./my-stories";
 
 // Set before asking someone to sign in again, so the delete step reopens after.
 const PENDING_DELETE = "lss:pending-delete";
@@ -175,11 +176,13 @@ export function AccountPanel() {
         </button>
       </section>
 
+      <MyStories uid={user.uid} />
+
       <section className={card}>
         <h2 className="text-lg font-extrabold text-ink">Delete my account</h2>
         <p className="mt-2 text-sm text-ink-soft">
-          This permanently removes your profile, your consent record and your sign-in. It
-          cannot be undone.
+          This permanently removes your profile, your memories and photos, your consent
+          record and your sign-in. It cannot be undone.
         </p>
         {!confirmingDelete ? (
           <button

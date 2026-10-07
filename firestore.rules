@@ -62,5 +62,59 @@ service cloud.firestore {
       allow create, update: if isOwner(uid) && validConsent(request.resource.data);
       allow delete: if isOwner(uid);
     }
+
+    // A memory of a store. The author creates it as pending; only moderators
+    // (Step 4) will ever change its status or make it readable by others.
+    match /stories/{storyId} {
+      function isAuthor() {
+        return signedIn() && resource.data.authorId == request.auth.uid;
+      }
+
+      function optionalText(data, key, min, max) {
+        return !(key in data) || isText(data[key], min, max);
+      }
+
+      // Must match CATEGORIES in src/lib/stories.ts.
+      function categories() {
+        return ['Tea Stalls', 'Bakeries', 'School Canteens', 'Kirana Stores', 'Bookstores',
+          '₹10 Treats', 'Festival Memories', 'Family Traditions', 'Local Legends',
+          'Stores We Miss'];
+      }
+
+      function validNewStory(data) {
+        let folder = 'uploads/' + request.auth.uid + '/' + storyId + '/';
+        return data.keys().hasOnly(['authorId', 'storeName', 'category', 'city',
+            'neighbourhood', 'caption', 'year', 'ordered', 'visibility',
+            'rightsConfirmed', 'status', 'photoPath', 'thumbPath', 'createdAt', 'updatedAt'])
+          && data.keys().hasAll(['authorId', 'storeName', 'category', 'city', 'caption',
+            'visibility', 'rightsConfirmed', 'status', 'photoPath', 'thumbPath',
+            'createdAt', 'updatedAt'])
+          && data.authorId == request.auth.uid
+          && isText(data.storeName, 2, 80)
+          && data.category in categories()
+          && isText(data.city, 2, 60)
+          && optionalText(data, 'neighbourhood', 2, 60)
+          && isText(data.caption, 10, 1000)
+          && optionalText(data, 'ordered', 1, 80)
+          && (!('year' in data)
+              || (data.year is int && data.year >= 1940 && data.year <= request.time.year()))
+          && data.visibility in ['public', 'link']
+          && data.rightsConfirmed == true
+          && data.status == 'pending'
+          && data.photoPath == folder + 'photo.jpg'
+          && data.thumbPath == folder + 'thumb.jpg'
+          && data.createdAt == request.time
+          && data.updatedAt == request.time;
+      }
+
+      // Only people who have given consent can share.
+      allow create: if signedIn()
+        && exists(/databases/$(database)/documents/usersPrivate/$(request.auth.uid))
+        && validNewStory(request.resource.data);
+
+      // Authors can read and list only their own stories, for now.
+      allow get, list: if isAuthor();
+      allow delete: if isAuthor();
+    }
   }
 }
