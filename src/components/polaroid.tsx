@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { CSSProperties } from "react";
 import { memoryPath, placeLine, textLang, tilt, type WallMemory } from "@/lib/memories";
+import { personPath } from "@/lib/people";
 
 /** A strip of tape holding the print to the wall, with a star when featured. */
 function Tape({ featured }: { featured?: boolean }) {
@@ -66,7 +67,8 @@ export function PolaroidPhoto({
 
 /**
  * A memory as a polaroid print pinned to the Wall. The whole print opens
- * the memory's page; the flag in its corner opens it ready to report.
+ * the memory's page; the flag in its corner opens it ready to report, and
+ * the author's name opens their profile.
  */
 export function PolaroidCard({
   memory,
@@ -109,7 +111,17 @@ export function PolaroidCard({
             <span className="sr-only">Report this memory</span>
           </Link>
           {memory.authorName && (
-            <p className="truncate text-sm text-ink-soft">— {memory.authorName}</p>
+            <p className="truncate text-sm text-ink-soft">
+              —{" "}
+              <Link
+                href={personPath(memory.authorId)}
+                prefetch={false}
+                lang={textLang(memory.authorName)}
+                className="relative z-10 underline decoration-ink/25 underline-offset-4 hover:text-brand-red hover:decoration-brand-red focus-visible:text-brand-red"
+              >
+                {memory.authorName}
+              </Link>
+            </p>
           )}
         </div>
       </div>

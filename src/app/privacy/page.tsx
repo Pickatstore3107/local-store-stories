@@ -32,6 +32,9 @@ export default function PrivacyPage() {
             <li>Which memories you love. Only you can see this; the person who shared a memory sees only how many people loved it.</li>
             <li>Reports you send about a memory. Only moderators can read them.</li>
             <li>The invite links you make, and who joined through them. If you joined through a friend&apos;s invite link, who invited you and through which link.</li>
+            <li>Who you follow and who follows you. Anyone can see this, as on Instagram.</li>
+            <li>The people you block. Only you can see this, and they aren&apos;t told.</li>
+            <li>When someone last followed you and when you last opened your activity, to show the dot on the bell. Only you can see this.</li>
             <li>When you agreed to this notice, and that you confirmed you are 18 or older.</li>
           </ul>
         </section>
@@ -73,6 +76,25 @@ export default function PrivacyPage() {
         </section>
 
         <section>
+          <h2 className="text-lg font-bold">Profiles and following</h2>
+          <p className="mt-2">
+            Everyone who joins has a profile page with the name and city they chose, the
+            memories they shared on the Wall, and how many people they follow and are followed
+            by. Anyone, even without an account, can open a profile and see who that person
+            follows and who follows them. A memory you shared only by link never appears on
+            your profile. We ask search engines not to list profiles.
+          </p>
+          <p className="mt-2">
+            You can follow anyone who has joined, unfollow them at any time, remove someone who
+            follows you, or block someone. Blocking ends any follow between you and stops them
+            following you; it&apos;s private, and they aren&apos;t told. If you join through a
+            friend&apos;s invite link, you follow that friend, and you can unfollow them. Your
+            activity page, with who followed you and who joined through your links, is only for
+            you.
+          </p>
+        </section>
+
+        <section>
           <h2 className="text-lg font-bold">Reporting a memory</h2>
           <p className="mt-2">
             If a memory is unkind, shows private details, or uses your photo or your store
@@ -96,9 +118,10 @@ export default function PrivacyPage() {
           <h2 className="text-lg font-bold">Your choices</h2>
           <p className="mt-2">
             You can see and edit your public details, and delete your account and everything
-            linked to it (your memories and photos, your invite links, the list of memories you
-            loved and the reports you sent), from <strong>My account</strong> at any time. You can
-            also write to us to access, correct or erase your data.
+            linked to it (your memories and photos, your invite links, who you follow and who
+            follows you, the people you blocked, the list of memories you loved and the reports
+            you sent), from <strong>My account</strong> at any time. You can also write to us to
+            access, correct or erase your data.
           </p>
         </section>
 

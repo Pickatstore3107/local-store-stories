@@ -1,5 +1,6 @@
 import { cacheLife, cacheTag } from "next/cache";
 import { excerpt, type MemoryResult, type Wall, type WallMemory } from "@/lib/memories";
+import { isUserId } from "@/lib/people";
 import type { Category, Visibility } from "@/lib/stories";
 import {
   getPublicDocument,
@@ -99,7 +100,6 @@ export type PublicMemories = {
   complete: boolean;
 };
 
-const USER_ID = /^[A-Za-z0-9]{1,128}$/;
 // How far up an invite chain to look, and how many profiles to read at once.
 const CHAIN_ROUNDS = 25;
 const PROFILES_PER_READ = 100;
@@ -123,7 +123,7 @@ async function loadPeople(uids: string[]) {
       }
     }
     const inviters = next.flatMap((uid) => people[uid]?.invitedBy ?? []);
-    next = [...new Set(inviters)].filter((uid) => USER_ID.test(uid) && !asked.has(uid));
+    next = [...new Set(inviters)].filter((uid) => isUserId(uid) && !asked.has(uid));
   }
   return people;
 }
@@ -184,6 +184,7 @@ export async function loadWall(): Promise<Wall | null> {
       neighbourhood: story.neighbourhood,
       caption: excerpt(story.caption, CARD_CAPTION_MAX),
       year: story.year,
+      authorId: story.authorId,
       authorName: data.people[story.authorId]?.name ?? null,
       photoUrl: safely(() => cardPhotoUrl(story.photoId)),
       approvedAt: story.approvedAt,
@@ -228,7 +229,7 @@ export async function loadMemory(id: string): Promise<MemoryResult> {
         year: story.year,
         ordered: story.ordered,
         visibility: story.visibility,
-        author: name ? { name, city: author?.city ?? "" } : null,
+        author: name ? { uid: story.authorId, name, city: author?.city ?? "" } : null,
         sharedAt: story.sharedAt,
         approvedAt: story.approvedAt,
         featuredAt: story.featuredAt,

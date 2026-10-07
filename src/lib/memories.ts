@@ -12,6 +12,8 @@ export type WallMemory = {
   /** The start of the memory, for the card. */
   caption: string;
   year: number | null;
+  /** Their profile is at personPath(authorId). */
+  authorId: string;
   authorName: string | null;
   photoUrl: string | null;
   approvedAt: number;
@@ -21,10 +23,10 @@ export type WallMemory = {
 export type Wall = { memories: WallMemory[]; featured: WallMemory[] };
 
 /** Everything shown on a memory's own page. */
-export type Memory = Omit<WallMemory, "authorName"> & {
+export type Memory = Omit<WallMemory, "authorId" | "authorName"> & {
   ordered: string | null;
   visibility: Visibility;
-  author: { name: string; city: string } | null;
+  author: { uid: string; name: string; city: string } | null;
   sharedAt: number;
   shareImageUrl: string | null;
 };

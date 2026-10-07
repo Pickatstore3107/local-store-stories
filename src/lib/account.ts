@@ -9,6 +9,7 @@ import {
 } from "firebase/firestore";
 import { CONSENT_VERSION } from "./consent";
 import { getFirebase } from "./firebase";
+import { deleteMyFollows, refreshPeople } from "./follows";
 import { deleteMyInvites, type OpenInvite } from "./invites";
 import { deleteMyReactions } from "./reactions";
 import { deleteMyReports } from "./reports";
@@ -53,7 +54,7 @@ export async function loadAccount(uid: string) {
  * Records consent and creates the public profile in one atomic write,
  * so a profile can never exist without consent (enforced in the rules).
  * Joining through a friend's invite link also records the link, privately,
- * in the same write.
+ * and follows the friend, in the same write.
  */
 export async function createAccount(
   uid: string,
@@ -85,6 +86,13 @@ export async function createAccount(
       invitedBy: invite.from,
       joinedAt: serverTimestamp(),
     });
+    // They follow the friend who sent it, which rings that friend's bell.
+    batch.set(doc(db, "follows", `${uid}_${invite.from}`), {
+      from: uid,
+      to: invite.from,
+      createdAt: serverTimestamp(),
+    });
+    batch.set(doc(db, "bells", invite.from), { ringAt: serverTimestamp() }, { merge: true });
   }
   await batch.commit();
 }
@@ -109,19 +117,24 @@ export function signedInRecently(user: User) {
 
 /**
  * Deletes the person's stories and photos, takes back their loves, deletes their
- * reports, invites, profile, consent record and the record of the invite they
- * joined through, and then the sign-in account.
+ * reports and invites, ends every follow to and from them and their blocks,
+ * deletes their profile, consent record, bell and the record of the invite
+ * they joined through, and then the sign-in account.
  */
 export async function deleteAccount(user: User) {
   await deleteAllMyStories(user);
   await deleteMyReactions(user);
   await deleteMyReports(user);
   await deleteMyInvites(user);
+  await deleteMyFollows(user);
   const { db } = getFirebase();
   const batch = writeBatch(db);
   batch.delete(doc(db, "users", user.uid));
   batch.delete(doc(db, "usersPrivate", user.uid));
   batch.delete(doc(db, "joins", user.uid));
+  batch.delete(doc(db, "bells", user.uid));
   await batch.commit();
+  // Their profile page goes straight away too.
+  await refreshPeople(user, [user.uid]);
   await deleteUser(user);
 }

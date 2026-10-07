@@ -2,8 +2,11 @@
 
 import Link from "next/link";
 import { useDeferredValue, useMemo } from "react";
+import { useAuth } from "@/components/auth-provider";
 import { PolaroidCard } from "@/components/polaroid";
-import { input, secondaryButton } from "@/components/ui";
+import { setReturnPath } from "@/components/require-account";
+import { input, primaryButton, secondaryButton } from "@/components/ui";
+import { useMyFollows } from "@/components/use-my-follows";
 import type { Wall, WallMemory } from "@/lib/memories";
 import { CATEGORIES, type Category } from "@/lib/stories";
 import { setWallFilters, useWallFilters } from "./use-wall-filters";
@@ -21,21 +24,31 @@ function matches(memory: WallMemory, words: string[]) {
 const chip = "shrink-0 rounded-full px-4 py-2 text-sm font-bold transition";
 const chipOff = "bg-white text-brand-red ring-1 ring-brand-red/25 hover:bg-brand-red/5";
 const chipOn = "bg-brand-red text-white ring-1 ring-brand-red";
+const tab = "-mb-px border-b-2 px-1 pb-2 text-base font-extrabold transition";
 
-/** Search, categories, the Featured row and every memory, newest first. */
+/**
+ * Everyone's memories or only those of people you follow, then search,
+ * categories, the Featured row and every memory, newest first.
+ */
 export function WallBrowser({ wall }: { wall: Wall }) {
   const filters = useWallFilters();
   const query = useDeferredValue(filters.query);
-  const { category } = filters;
+  const { category, following } = filters;
+  const { user, consent } = useAuth();
+  const myFollows = useMyFollows();
+  const member = !!user && !!consent;
 
   const words = useMemo(() => fold(query).split(/\s+/).filter(Boolean), [query]);
-  const filtering = words.length > 0 || category !== null;
+  const filtering = words.length > 0 || category !== null || following;
   const shown = useMemo(
     () =>
       wall.memories.filter(
-        (m) => (!category || m.category === category) && (!words.length || matches(m, words)),
+        (m) =>
+          (!following || myFollows.following.has(m.authorId)) &&
+          (!category || m.category === category) &&
+          (!words.length || matches(m, words)),
       ),
-    [wall.memories, category, words],
+    [wall.memories, following, myFollows.following, category, words],
   );
   // Only categories that have memories, plus the one in the address.
   const categories = CATEGORIES.filter(
@@ -46,18 +59,43 @@ export function WallBrowser({ wall }: { wall: Wall }) {
   const rest = shown.filter((m) => !featuredIds.has(m.id));
 
   function pick(next: Category | null) {
-    setWallFilters({ query: filters.query, category: next });
+    setWallFilters({ ...filters, category: next });
   }
+
+  // The Following tab: who they follow, or why it's empty.
+  const followingNote = !following
+    ? null
+    : !member
+      ? "signIn"
+      : !myFollows.ready
+        ? "loading"
+        : myFollows.following.size === 0
+          ? "nobody"
+          : null;
 
   return (
     <>
+      <div role="group" aria-label="Whose memories" className="mt-8 flex gap-6 border-b border-ink/10">
+        {([false, true] as const).map((each) => (
+          <button
+            key={String(each)}
+            type="button"
+            aria-pressed={following === each}
+            onClick={() => setWallFilters({ ...filters, following: each })}
+            className={`${tab} ${following === each ? "border-brand-red text-brand-red" : "border-transparent text-ink-soft hover:text-ink"}`}
+          >
+            {each ? "Following" : "Everyone"}
+          </button>
+        ))}
+      </div>
+
       <form
         role="search"
         onSubmit={(event) => {
           event.preventDefault();
           (document.activeElement as HTMLElement | null)?.blur(); // closes the phone keyboard
         }}
-        className="mt-8"
+        className="mt-6"
       >
         <label htmlFor="wall-search" className="sr-only">
           Search by store, area or city
@@ -68,7 +106,7 @@ export function WallBrowser({ wall }: { wall: Wall }) {
           enterKeyHint="search"
           autoComplete="off"
           value={filters.query}
-          onChange={(event) => setWallFilters({ query: event.target.value, category })}
+          onChange={(event) => setWallFilters({ ...filters, query: event.target.value })}
           placeholder="Search by store, area or city"
           className={`${input} max-w-xl`}
         />
@@ -102,6 +140,7 @@ export function WallBrowser({ wall }: { wall: Wall }) {
 
       <p role="status" className="sr-only">
         {filtering &&
+          !followingNote &&
           (shown.length === 1 ? "1 memory found." : `${shown.length} memories found.`)}
       </p>
 
@@ -121,14 +160,20 @@ export function WallBrowser({ wall }: { wall: Wall }) {
         </section>
       )}
 
-      {shown.length === 0 ? (
+      {followingNote ? (
+        <FollowingNote note={followingNote} />
+      ) : shown.length === 0 ? (
         <div className="py-16 text-center">
-          <p className="font-hand text-2xl text-ink">No memories match yet.</p>
+          <p className="font-hand text-2xl text-ink">
+            {following && !words.length && !category
+              ? "The people you follow haven't shared a memory on the Wall yet."
+              : "No memories match yet."}
+          </p>
           <p className="mt-2 text-ink-soft">Know one? It could be the first.</p>
           <div className="mt-6 flex flex-wrap justify-center gap-3">
             <button
               type="button"
-              onClick={() => setWallFilters({ query: "", category: null })}
+              onClick={() => setWallFilters({ query: "", category: null, following: false })}
               className={secondaryButton}
             >
               Show all memories
@@ -161,5 +206,39 @@ export function WallBrowser({ wall }: { wall: Wall }) {
         )
       )}
     </>
+  );
+}
+
+/** What the Following tab shows before there's anything to filter. */
+function FollowingNote({ note }: { note: "signIn" | "loading" | "nobody" }) {
+  const { user } = useAuth();
+  if (note === "loading") {
+    return (
+      <p role="status" className="py-16 text-center text-ink-soft">
+        Loading…
+      </p>
+    );
+  }
+  return (
+    <div className="py-16 text-center">
+      <p className="font-hand text-2xl text-ink">
+        {note === "signIn"
+          ? "See memories from the people you follow."
+          : "You're not following anyone yet."}
+      </p>
+      <p className="mx-auto mt-2 max-w-md text-ink-soft">
+        Tap a name on any memory to open their profile, then tap Follow. Their memories will
+        show here.
+      </p>
+      {note === "signIn" && (
+        <Link
+          href={user ? "/welcome" : "/signin"}
+          onClick={() => setReturnPath("/wall?following=1")}
+          className={`${primaryButton} mt-6`}
+        >
+          {user ? "Finish joining" : "Sign in"}
+        </Link>
+      )}
+    </div>
   );
 }

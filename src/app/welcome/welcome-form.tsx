@@ -11,6 +11,7 @@ import { card, input, primaryButton } from "@/components/ui";
 import { CITY_MAX, CITY_MIN, NAME_MAX, createAccount } from "@/lib/account";
 import { friendlyError } from "@/lib/auth-errors";
 import { MIN_AGE } from "@/lib/consent";
+import { refreshPeople } from "@/lib/follows";
 import {
   checkInvite,
   inviterName,
@@ -77,6 +78,8 @@ function ConsentForm({ user, refresh }: { user: User; refresh: () => Promise<voi
     try {
       await createAccount(user.uid, { displayName, city }, invite?.open ?? null);
       setPendingInvite(null);
+      // Their friend's profile now counts one more follower.
+      if (invite) await refreshPeople(user, [user.uid, invite.open.from]);
       await refresh();
     } catch (e) {
       if (invite && e instanceof FirebaseError && e.code === "permission-denied") {
@@ -98,8 +101,9 @@ function ConsentForm({ user, refresh }: { user: User; refresh: () => Promise<voi
       {invite && (
         <p className="mt-4 rounded-2xl bg-brand-yellow/20 px-4 py-3 text-sm leading-relaxed text-ink">
           You&apos;re joining through {invite.name ? <strong>{invite.name}</strong> : "a friend"}
-          &apos;s invite. They&apos;ll see that you joined, and the Memory Chain will show that they
-          passed the memory on to you.
+          &apos;s invite. You&apos;ll follow {invite.name ?? "them"}, so their memories show in
+          your Following tab, and they&apos;ll see that you joined. The Memory Chain will show
+          that they passed the memory on to you. You can unfollow at any time.
         </p>
       )}
       {inviteGone && !error && (
@@ -118,6 +122,7 @@ function ConsentForm({ user, refresh }: { user: User; refresh: () => Promise<voi
             <li>The name you choose below</li>
             <li>Your city</li>
             <li>Stories you choose to publish, after review</li>
+            <li>Who you follow, and who follows you</li>
             <li>Who invited you, if you join through a friend&apos;s invite</li>
           </ul>
         </section>
@@ -172,8 +177,8 @@ function ConsentForm({ user, refresh }: { user: User; refresh: () => Promise<voi
           className="mt-0.5 h-5 w-5 shrink-0 accent-brand-red"
         />
         <span>
-          I agree that my name, city, the stories I publish and who invited me (if anyone did)
-          can be shown publicly, as described in the{" "}
+          I agree that my name, city, the stories I publish, who I follow and who follows me,
+          and who invited me (if anyone did) can be shown publicly, as described in the{" "}
           <Link href="/privacy" className="font-bold text-brand-red underline underline-offset-4">
             privacy notice
           </Link>

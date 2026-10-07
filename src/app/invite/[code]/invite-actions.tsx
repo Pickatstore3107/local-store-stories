@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/components/auth-provider";
+import { FollowButton } from "@/components/follow-button";
 import { setReturnPath } from "@/components/require-account";
 import { primaryButton } from "@/components/ui";
 import { friendlyError } from "@/lib/auth-errors";
@@ -16,8 +17,11 @@ const note = "rounded-2xl bg-white px-5 py-4 text-ink shadow-sm ring-1 ring-ink/
 // Google blocks its sign-in inside these apps' own browsers.
 const IN_APP_BROWSER = /Instagram|FBAN|FBAV/;
 
-/** Joining through the invite, or what to do when it can't be used. */
-export function InviteActions({ code }: { code: string }) {
+/**
+ * Joining through the invite, or what to do when it can't be used. Members
+ * who have already joined can follow the person who sent it instead.
+ */
+export function InviteActions({ code, inviterName }: { code: string; inviterName: string | null }) {
   const { loading, user, consent } = useAuth();
   const router = useRouter();
   const [check, setCheck] = useState<InviteCheck | null>(null);
@@ -97,29 +101,45 @@ export function InviteActions({ code }: { code: string }) {
     return (
       <div className={note}>
         <p>You joined through this invite. Which store do you still think about?</p>
-        {shareLink}
+        <div className="mt-4 flex flex-wrap items-start gap-3">
+          <Link href="/share" className={primaryButton}>
+            Share a memory
+          </Link>
+          {inviterName && <FollowButton uid={check.from} name={inviterName} />}
+        </div>
+      </div>
+    );
+  }
+
+  if (check.status === "open" && user && consent && check.invite.from === user.uid) {
+    return (
+      <div className={note}>
+        <p>This is your own invite link. Send it to friends who haven&apos;t joined yet.</p>
+        <Link href="/account#memories" className={`${primaryButton} mt-4`}>
+          See my invite links
+        </Link>
       </div>
     );
   }
 
   if (check.status === "open" && user && consent) {
+    const from = inviterName ?? "your friend";
     return (
       <div className={note}>
-        {check.invite.from === user.uid ? (
-          <p>This is your own invite link. Send it to friends who haven&apos;t joined yet.</p>
-        ) : (
-          <p>
-            You&apos;ve already joined, so this invite is for friends who haven&apos;t yet. You
-            can still share another memory.
-          </p>
-        )}
-        {check.invite.from === user.uid ? (
-          <Link href="/account#memories" className={`${primaryButton} mt-4`}>
-            See my invite links
+        <p>
+          You&apos;ve already joined, so you can follow {from} instead. Their memories will
+          show in the Following tab on the Memory Wall.
+        </p>
+        <div className="mt-4 flex flex-wrap items-start gap-3">
+          <FollowButton uid={check.invite.from} name={from} />
+          <Link
+            href="/share"
+            className="inline-flex items-center px-2 py-2.5 font-bold text-brand-red underline underline-offset-4"
+          >
+            Share a memory
           </Link>
-        ) : (
-          shareLink
-        )}
+        </div>
+        <p className="mt-3 text-sm text-ink-soft">Anyone can see who you follow.</p>
       </div>
     );
   }

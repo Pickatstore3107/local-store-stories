@@ -11,6 +11,8 @@ export type ChainPerson = {
   key: string;
   /** Null for people without a public memory yet: they show as "a friend". */
   name: string | null;
+  /** For their profile's address. Null when they show as "a friend". */
+  uid: string | null;
   city: string | null;
   /** Their public memories, newest first. */
   memories: ChainMemory[];

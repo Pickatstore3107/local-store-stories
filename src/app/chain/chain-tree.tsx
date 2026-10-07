@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { CSSProperties } from "react";
 import type { ChainPerson } from "@/lib/chain";
 import { memoryPath, textLang, tilt } from "@/lib/memories";
+import { personPath } from "@/lib/people";
 
 const MEMORIES_SHOWN = 3;
 
@@ -35,7 +36,17 @@ function Person({ person }: { person: ChainPerson }) {
         <div className="aspect-square w-full bg-paper" />
       )}
       <p lang={textLang(person.name)} className="mt-2 px-1 font-hand text-lg font-bold leading-tight">
-        {person.name}
+        {person.uid ? (
+          <Link
+            href={personPath(person.uid)}
+            prefetch={false}
+            className="underline decoration-ink/25 underline-offset-4 hover:text-brand-red hover:decoration-brand-red"
+          >
+            {person.name}
+          </Link>
+        ) : (
+          person.name
+        )}
       </p>
       {person.city && <p className="px-1 text-xs text-ink-soft">{person.city}</p>}
       <ul className="mt-1 space-y-0.5 px-1 text-sm leading-snug">
