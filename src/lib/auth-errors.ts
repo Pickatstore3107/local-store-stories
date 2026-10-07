@@ -11,6 +11,9 @@ const messages: Record<string, string> = {
   "auth/network-request-failed": "No connection. Please check your internet and try again.",
   "auth/requires-recent-login": "For your safety, please sign in again and then retry.",
   "permission-denied": "You don't have permission to do that.",
+  "storage/unauthorized": "You don't have permission to upload this photo.",
+  "storage/retry-limit-exceeded": "The upload took too long. Please check your internet and try again.",
+  "storage/canceled": "The upload was stopped. Please try again.",
 };
 
 /**

@@ -19,14 +19,14 @@ export default function Home() {
       />
       <p className="mt-10 max-w-md text-base leading-relaxed text-ink-soft">
         The chai stall outside school, the bakery that smelled of Sunday, the
-        kirana that kept your family&apos;s tab. Soon you can pin yours to the
-        map of India and pass the memory on.
+        kirana that kept your family&apos;s tab. Share yours in a photo and a
+        few lines, and help us write down neighbourhood India.
       </p>
-      <Link href="/signin" className={`${primaryButton} mt-12`}>
-        Join the campaign
+      <Link href="/share" className={`${primaryButton} mt-12`}>
+        Share your memory
       </Link>
       <p className="mt-4 text-sm text-ink-soft">
-        Sharing stories opens soon. Join now to be among the first.
+        Every story is reviewed before it appears. The Memory Wall opens soon.
       </p>
     </main>
   );

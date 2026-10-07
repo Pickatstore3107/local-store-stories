@@ -4,6 +4,7 @@ import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/components/auth-provider";
+import { returnPath } from "@/components/require-account";
 import { card, primaryButton } from "@/components/ui";
 import { friendlyError } from "@/lib/auth-errors";
 import { getFirebase } from "@/lib/firebase";
@@ -14,9 +15,10 @@ export function SignInForm() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Once signed in, continue to consent (first time) or the account page.
+  // Once signed in, continue to consent (first time), or back to where
+  // they were going, or the account page.
   useEffect(() => {
-    if (!loading && user) router.replace(consent ? "/account" : "/welcome");
+    if (!loading && user) router.replace(consent ? (returnPath() ?? "/account") : "/welcome");
   }, [loading, user, consent, router]);
 
   async function withGoogle() {

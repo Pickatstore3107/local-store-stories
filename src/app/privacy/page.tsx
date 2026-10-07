@@ -29,6 +29,7 @@ export default function PrivacyPage() {
             <li>Your Google email address, to sign you in. Never shown publicly.</li>
             <li>The name and city you choose. Shown publicly with your stories.</li>
             <li>Stories, photos and videos you choose to share, once they are approved.</li>
+            <li>Photos are resized on your phone and the location hidden inside them is removed before upload.</li>
             <li>When you agreed to this notice, and that you confirmed you are 18 or older.</li>
           </ul>
         </section>
