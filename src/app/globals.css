@@ -21,6 +21,7 @@
   --font-sans: var(--font-nunito), ui-rounded, system-ui, sans-serif;
 }
 
+html,
 body {
   background: var(--paper);
   color: var(--ink);

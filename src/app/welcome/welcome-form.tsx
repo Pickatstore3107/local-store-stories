@@ -1,0 +1,142 @@
+"use client";
+
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import type { User } from "firebase/auth";
+import { useEffect, useState, type FormEvent } from "react";
+import { useAuth } from "@/components/auth-provider";
+import { Loading } from "@/components/require-account";
+import { card, input, primaryButton } from "@/components/ui";
+import { CITY_MAX, CITY_MIN, NAME_MAX, createAccount } from "@/lib/account";
+import { friendlyError } from "@/lib/auth-errors";
+import { MIN_AGE } from "@/lib/consent";
+
+export function WelcomeForm() {
+  const { loading, user, consent, refresh } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (loading) return;
+    if (!user) router.replace("/signin");
+    else if (consent) router.replace("/account");
+  }, [loading, user, consent, router]);
+
+  if (loading || !user || consent) return <Loading />;
+  return <ConsentForm user={user} refresh={refresh} />;
+}
+
+function ConsentForm({ user, refresh }: { user: User; refresh: () => Promise<void> }) {
+  // Start from the name on the Google account, if there is one.
+  const [displayName, setDisplayName] = useState(user.displayName?.slice(0, NAME_MAX) ?? "");
+  const [city, setCity] = useState("");
+  const [adult, setAdult] = useState(false);
+  const [agreed, setAgreed] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const nameOk = displayName.trim().length >= 1 && displayName.trim().length <= NAME_MAX;
+  const cityOk = city.trim().length >= CITY_MIN && city.trim().length <= CITY_MAX;
+  const ready = nameOk && cityOk && adult && agreed;
+
+  async function submit(event: FormEvent) {
+    event.preventDefault();
+    if (!ready) return;
+    setError(null);
+    setBusy(true);
+    try {
+      await createAccount(user.uid, { displayName, city });
+      await refresh();
+    } catch (e) {
+      setError(friendlyError(e));
+      setBusy(false);
+    }
+  }
+
+  return (
+    <form onSubmit={submit} className={card} noValidate>
+      <h1 className="text-2xl font-extrabold text-brand-red">Welcome! Before you begin</h1>
+      <p className="mt-2 text-ink-soft">
+        Your memories are yours. Here is exactly what we show and what we keep private.
+      </p>
+
+      <div className="mt-6 grid gap-3 sm:grid-cols-2">
+        <section className="rounded-2xl bg-brand-yellow/15 p-4">
+          <h2 className="font-bold text-ink">Shown publicly</h2>
+          <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-ink-soft">
+            <li>The name you choose below</li>
+            <li>Your city</li>
+            <li>Stories you choose to publish, after review</li>
+          </ul>
+        </section>
+        <section className="rounded-2xl bg-paper p-4">
+          <h2 className="font-bold text-ink">Always private</h2>
+          <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-ink-soft">
+            <li>Your phone number or email</li>
+            <li>Your exact location</li>
+            <li>We never sell your data</li>
+          </ul>
+        </section>
+      </div>
+
+      <label htmlFor="displayName" className="mt-6 block text-sm font-bold text-ink">
+        Name to show on your stories
+      </label>
+      <input
+        id="displayName"
+        value={displayName}
+        maxLength={NAME_MAX}
+        onChange={(e) => setDisplayName(e.target.value)}
+        placeholder="e.g. Priya S."
+        className={`${input} mt-2`}
+      />
+
+      <label htmlFor="city" className="mt-4 block text-sm font-bold text-ink">
+        Your city
+      </label>
+      <input
+        id="city"
+        value={city}
+        maxLength={CITY_MAX}
+        onChange={(e) => setCity(e.target.value)}
+        placeholder="e.g. Hyderabad"
+        className={`${input} mt-2`}
+      />
+
+      <label className="mt-6 flex items-start gap-3 text-sm text-ink">
+        <input
+          type="checkbox"
+          checked={adult}
+          onChange={(e) => setAdult(e.target.checked)}
+          className="mt-0.5 h-5 w-5 shrink-0 accent-brand-red"
+        />
+        I am {MIN_AGE} years or older.
+      </label>
+      <label className="mt-3 flex items-start gap-3 text-sm text-ink">
+        <input
+          type="checkbox"
+          checked={agreed}
+          onChange={(e) => setAgreed(e.target.checked)}
+          className="mt-0.5 h-5 w-5 shrink-0 accent-brand-red"
+        />
+        <span>
+          I agree that my name, city and the stories I publish can be shown publicly, as
+          described in the{" "}
+          <Link href="/privacy" className="font-bold text-brand-red underline underline-offset-4">
+            privacy notice
+          </Link>
+          . I can edit or delete them, and my account, at any time.
+        </span>
+      </label>
+
+      <button type="submit" disabled={!ready || busy} className={`${primaryButton} mt-6 w-full`}>
+        {busy ? "Saving…" : "Agree and continue"}
+      </button>
+
+      {error && (
+        <p role="alert" className="mt-4 rounded-xl bg-brand-red/10 px-4 py-3 text-sm text-brand-red-deep">
+          {error}
+        </p>
+      )}
+    </form>
+  );
+}

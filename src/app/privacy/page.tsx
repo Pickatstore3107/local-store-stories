@@ -1,0 +1,71 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Privacy · Local Stores & Their Stories",
+};
+
+const GRIEVANCE_EMAIL = "krishna@pickatstore.in";
+
+export default function PrivacyPage() {
+  return (
+    <main className="mx-auto w-full max-w-2xl flex-1 px-5 py-12 text-ink">
+      <h1 className="text-3xl font-extrabold text-brand-red">Privacy notice</h1>
+      <p className="mt-2 text-sm text-ink-soft">
+        Draft for the pilot. Last updated 7 October 2026.
+      </p>
+
+      <div className="mt-8 space-y-6 leading-relaxed">
+        <section>
+          <h2 className="text-lg font-bold">Who we are</h2>
+          <p className="mt-2">
+            Local Stores &amp; Their Stories is a campaign run by Pick at Store. We collect
+            only what we need to let you share memories of local stores.
+          </p>
+        </section>
+
+        <section>
+          <h2 className="text-lg font-bold">What we collect</h2>
+          <ul className="mt-2 list-disc space-y-1 pl-6">
+            <li>Your phone number or Google email, to sign you in. Never shown publicly.</li>
+            <li>The name and city you choose. Shown publicly with your stories.</li>
+            <li>Stories, photos and videos you choose to share, once they are approved.</li>
+            <li>When you agreed to this notice, and that you confirmed you are 18 or older.</li>
+          </ul>
+        </section>
+
+        <section>
+          <h2 className="text-lg font-bold">What we never do</h2>
+          <ul className="mt-2 list-disc space-y-1 pl-6">
+            <li>We never sell your personal data.</li>
+            <li>We never show your phone number, email or home location.</li>
+            <li>We never use your stories to target ads at you.</li>
+          </ul>
+        </section>
+
+        <section>
+          <h2 className="text-lg font-bold">Your choices</h2>
+          <p className="mt-2">
+            You can see and edit your public details, and delete your account and everything
+            linked to it, from <strong>My account</strong> at any time. You can also write to
+            us to access, correct or erase your data.
+          </p>
+        </section>
+
+        <section>
+          <h2 className="text-lg font-bold">Questions or complaints</h2>
+          <p className="mt-2">
+            Contact our grievance officer at{" "}
+            <a
+              href={`mailto:${GRIEVANCE_EMAIL}`}
+              className="font-bold text-brand-red underline underline-offset-4"
+            >
+              {GRIEVANCE_EMAIL}
+            </a>
+            . We will reply as quickly as we can and within the time India&apos;s Digital
+            Personal Data Protection law requires.
+          </p>
+        </section>
+      </div>
+    </main>
+  );
+}
