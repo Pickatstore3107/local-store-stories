@@ -8,7 +8,8 @@ Product and build plan: https://claude.ai/code/artifact/d75832d4-2701-4e44-9837-
 ## Stack
 
 - Next.js (App Router, TypeScript, Tailwind CSS), deployed on Vercel while we build
-- Firebase: Authentication, Cloud Firestore, Cloud Storage
+- Firebase: Authentication (Google) and Cloud Firestore, on the free Spark plan
+- Cloudinary (free plan) for story photos, private until approved, through `src/app/api/photos`
 - Firebase projects: `pas-dev-7786f` (dev, default) and `pas-prod-c8190` (prod)
 
 ## Run it locally
@@ -38,7 +39,8 @@ All four run in GitHub Actions on every pull request.
 
 ## Security rules
 
-`firestore.rules` and `storage.rules` deny everything by default. Each build
+`firestore.rules` and `storage.rules` deny everything by default (Firebase
+Storage is not used). Each build
 step opens only what its screens need, and adds tests under `tests/rules`
 proving the rest stays closed. Deploy rules with:
 

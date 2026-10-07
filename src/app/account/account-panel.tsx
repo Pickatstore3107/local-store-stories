@@ -176,7 +176,7 @@ export function AccountPanel() {
         </button>
       </section>
 
-      <MyStories uid={user.uid} />
+      <MyStories user={user} />
 
       <section className={card}>
         <h2 className="text-lg font-extrabold text-ink">Delete my account</h2>

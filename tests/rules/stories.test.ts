@@ -57,8 +57,7 @@ const story = (uid: string, id: string, overrides: Record<string, unknown> = {})
   visibility: "public",
   rightsConfirmed: true,
   status: "pending",
-  photoPath: `uploads/${uid}/${id}/photo.jpg`,
-  thumbPath: `uploads/${uid}/${id}/thumb.jpg`,
+  photoId: `lss/stories/${uid}/${id}`,
   createdAt: serverTimestamp(),
   updatedAt: serverTimestamp(),
   ...overrides,
@@ -106,10 +105,10 @@ describe("sharing a story", () => {
     await assertFails(share(db, "asha", "s1", { status: "approved" }));
   });
 
-  it("refuses photos outside the author's own folder for this story", async () => {
+  it("refuses a photo that belongs to someone else or another story", async () => {
     const db = env.authenticatedContext("asha").firestore();
-    await assertFails(share(db, "asha", "s1", { photoPath: "uploads/mallory/x/photo.jpg" }));
-    await assertFails(share(db, "asha", "s1", { thumbPath: "uploads/asha/s2/thumb.jpg" }));
+    await assertFails(share(db, "asha", "s1", { photoId: "lss/stories/mallory/s1" }));
+    await assertFails(share(db, "asha", "s1", { photoId: "lss/stories/asha/s2" }));
   });
 
   it("refuses unknown categories, visibility and extra fields", async () => {

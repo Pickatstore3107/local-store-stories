@@ -1,25 +1,11 @@
 rules_version = '2';
 
-// Everything is denied unless a rule below allows it.
-// Tests for every rule live in tests/rules.
+// Not used: story photos are stored at Cloudinary (see src/lib/server/photos.ts).
+// Everything stays denied.
 service firebase.storage {
   match /b/{bucket}/o {
-
-    // Story photos, resized and stripped of location on the phone before
-    // upload. Private to their owner until moderation (Step 4) publishes
-    // a checked copy.
-    match /uploads/{uid}/{storyId}/{file} {
-      function isOwner() {
-        return request.auth != null && request.auth.uid == uid;
-      }
-
-      allow read, delete: if isOwner();
-
-      // Replacing a file is harmless: moderation publishes its own copy.
-      allow create, update: if isOwner()
-        && file in ['photo.jpg', 'thumb.jpg']
-        && request.resource.contentType == 'image/jpeg'
-        && request.resource.size <= (file == 'photo.jpg' ? 5 * 1024 * 1024 : 512 * 1024);
+    match /{allPaths=**} {
+      allow read, write: if false;
     }
   }
 }

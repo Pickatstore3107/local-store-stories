@@ -9,7 +9,8 @@ import {
   where,
   type Timestamp,
 } from "firebase/firestore";
-import { deleteObject, getDownloadURL, ref, uploadBytes } from "firebase/storage";
+import type { User } from "firebase/auth";
+import { FriendlyError } from "./auth-errors";
 import { getFirebase } from "./firebase";
 
 // Must match the list in firestore.rules.
@@ -53,8 +54,8 @@ export type Story = {
   visibility: Visibility;
   rightsConfirmed: true;
   status: StoryStatus;
-  photoPath: string;
-  thumbPath: string;
+  /** The photo's private ID at Cloudinary, our image host. */
+  photoId: string;
   createdAt: Timestamp;
   updatedAt: Timestamp;
 };
@@ -75,7 +76,6 @@ export type MyStory = Story & { id: string; thumbUrl: string | null };
 // Photos are resized and re-encoded on the phone before upload. Drawing to a
 // canvas drops all metadata, including the GPS location a camera may embed.
 const PHOTO_MAX_SIDE = 1600;
-const THUMB_MAX_SIDE = 480;
 
 async function toJpeg(image: ImageBitmap, maxSide: number, quality: number) {
   const scale = Math.min(1, maxSide / Math.max(image.width, image.height));
@@ -98,7 +98,7 @@ async function toJpeg(image: ImageBitmap, maxSide: number, quality: number) {
 
 export class UnreadablePhotoError extends Error {}
 
-/** Returns a location-free photo and thumbnail, both JPEG. */
+/** Returns a location-free JPEG, at most 1600 pixels on its longer side. */
 export async function preparePhoto(file: File) {
   let image: ImageBitmap;
   try {
@@ -107,14 +107,22 @@ export async function preparePhoto(file: File) {
     throw new UnreadablePhotoError(file.type);
   }
   try {
-    const [photo, thumb] = await Promise.all([
-      toJpeg(image, PHOTO_MAX_SIDE, 0.82),
-      toJpeg(image, THUMB_MAX_SIDE, 0.75),
-    ]);
-    return { photo, thumb };
+    return await toJpeg(image, PHOTO_MAX_SIDE, 0.82);
   } finally {
     image.close();
   }
+}
+
+async function photoApi(user: User, path: string, init: RequestInit) {
+  const response = await fetch(path, {
+    ...init,
+    headers: { ...init.headers, Authorization: `Bearer ${await user.getIdToken()}` },
+  });
+  if (!response.ok) {
+    const body = (await response.json().catch(() => null)) as { error?: string } | null;
+    throw new FriendlyError(body?.error ?? "Something went wrong with the photo. Please try again.");
+  }
+  return response;
 }
 
 function cleanInput(input: StoryInput) {
@@ -136,37 +144,29 @@ function cleanInput(input: StoryInput) {
 
 /**
  * Uploads the photo, then saves the story as pending review. Nobody but
- * the author can read either until a moderator approves it.
+ * the author can see either until a moderator approves it.
  */
-export async function shareStory(
-  uid: string,
-  input: StoryInput,
-  media: { photo: Blob; thumb: Blob },
-) {
-  const { db, storage } = getFirebase();
+export async function shareStory(user: User, input: StoryInput, photo: Blob) {
+  const { db } = getFirebase();
   const storyRef = doc(collection(db, "stories"));
-  const folder = `uploads/${uid}/${storyRef.id}`;
-  const photoRef = ref(storage, `${folder}/photo.jpg`);
-  const thumbRef = ref(storage, `${folder}/thumb.jpg`);
-  const metadata = { contentType: "image/jpeg" };
+  const form = new FormData();
+  form.set("storyId", storyRef.id);
+  form.set("photo", photo, "photo.jpg");
+  const response = await photoApi(user, "/api/photos", { method: "POST", body: form });
+  const { photoId } = (await response.json()) as { photoId: string };
 
-  await Promise.all([
-    uploadBytes(photoRef, media.photo, metadata),
-    uploadBytes(thumbRef, media.thumb, metadata),
-  ]);
   try {
     await setDoc(storyRef, {
-      authorId: uid,
+      authorId: user.uid,
       ...cleanInput(input),
       rightsConfirmed: true,
       status: "pending",
-      photoPath: photoRef.fullPath,
-      thumbPath: thumbRef.fullPath,
+      photoId,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     });
   } catch (error) {
-    await Promise.allSettled([deleteObject(photoRef), deleteObject(thumbRef)]);
+    await deletePhoto(user, storyRef.id).catch(() => {});
     throw error;
   }
   return storyRef.id;
@@ -178,35 +178,43 @@ async function myStoryDocs(uid: string) {
   return snapshot.docs.map((d) => ({ id: d.id, ...(d.data() as Story) }));
 }
 
-/** The author's own stories, newest first, with a thumbnail link each. */
-export async function loadMyStories(uid: string): Promise<MyStory[]> {
-  const { storage } = getFirebase();
-  const stories = await myStoryDocs(uid);
+/** The author's own stories, newest first, with a private thumbnail link each. */
+export async function loadMyStories(user: User): Promise<MyStory[]> {
+  const stories = await myStoryDocs(user.uid);
   stories.sort((a, b) => (b.createdAt?.toMillis() ?? 0) - (a.createdAt?.toMillis() ?? 0));
-  return Promise.all(
-    stories.map(async (story) => ({
-      ...story,
-      thumbUrl: await getDownloadURL(ref(storage, story.thumbPath)).catch(() => null),
-    })),
-  );
-}
-
-async function deleteFile(path: string) {
-  try {
-    await deleteObject(ref(getFirebase().storage, path));
-  } catch (error) {
-    // Already gone is fine; anything else should stop the delete.
-    if ((error as { code?: string }).code !== "storage/object-not-found") throw error;
+  let urls: Record<string, string> = {};
+  if (stories.length) {
+    try {
+      const response = await photoApi(user, "/api/photos/thumbnails", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ storyIds: stories.map((s) => s.id) }),
+      });
+      ({ urls } = (await response.json()) as { urls: Record<string, string> });
+    } catch (error) {
+      console.error("Could not load thumbnails", error); // the list still shows
+    }
   }
+  return stories.map((story) => ({ ...story, thumbUrl: urls[story.id] ?? null }));
 }
 
-/** Deletes a story's photos first, then the story itself. */
-export async function deleteStory(story: { id: string; photoPath: string; thumbPath: string }) {
-  await Promise.all([deleteFile(story.photoPath), deleteFile(story.thumbPath)]);
+function deletePhoto(user: User, storyId: string) {
+  return photoApi(user, `/api/photos?storyId=${encodeURIComponent(storyId)}`, {
+    method: "DELETE",
+  });
+}
+
+/** Deletes a story's photo first, then the story itself. */
+export async function deleteStory(user: User, story: { id: string }) {
+  await deletePhoto(user, story.id);
   await deleteDoc(doc(getFirebase().db, "stories", story.id));
 }
 
-export async function deleteAllMyStories(uid: string) {
-  const stories = await myStoryDocs(uid);
-  await Promise.all(stories.map(deleteStory));
+/** Deletes every photo and story the person has shared. */
+export async function deleteAllMyStories(user: User) {
+  const stories = await myStoryDocs(user.uid);
+  if (!stories.length) return;
+  await photoApi(user, "/api/photos", { method: "DELETE" });
+  const { db } = getFirebase();
+  await Promise.all(stories.map((story) => deleteDoc(doc(db, "stories", story.id))));
 }
