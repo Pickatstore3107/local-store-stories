@@ -129,7 +129,7 @@ export function BottomSheet({
     <section
       aria-label={label}
       style={style}
-      className={`absolute inset-x-0 bottom-0 z-20 flex h-(--sheet-h) translate-y-(--sheet-y) flex-col rounded-t-3xl bg-white shadow-[0_-12px_32px_-20px_rgba(43,29,26,0.7)] ring-1 ring-ink/5 sm:inset-x-auto sm:bottom-4 sm:left-4 sm:top-(--panel-top) sm:h-auto sm:w-[23rem] sm:translate-y-0 sm:rounded-3xl ${heights ? "" : "max-sm:invisible"}`}
+      className={`absolute inset-x-0 bottom-0 z-20 flex h-(--sheet-h) translate-y-(--sheet-y) flex-col rounded-t-3xl border-x-2 border-t-[3px] border-ink bg-[#fffaf0] sm:inset-x-auto sm:border-2 sm:pop-lg sm:bottom-4 sm:left-4 sm:top-(--panel-top) sm:h-auto sm:w-[23rem] sm:translate-y-0 sm:rounded-3xl ${heights ? "" : "max-sm:invisible"}`}
     >
       <div
         onPointerDown={down}
@@ -143,7 +143,7 @@ export function BottomSheet({
           }
           className="mx-auto flex h-5 w-16 cursor-grab items-center justify-center sm:hidden"
         >
-          <span className="block h-1.5 w-10 rounded-full bg-ink/20" />
+          <span className="block h-1.5 w-10 rounded-full bg-ink/40" />
         </button>
         {header}
       </div>

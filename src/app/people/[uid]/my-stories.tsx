@@ -109,7 +109,7 @@ export function MyStories({ user }: { user: User }) {
 
   return (
     <section className={card} id="memories">
-      <h2 className="text-lg font-extrabold text-ink">Manage my memories</h2>
+      <h2 className="font-display text-xl text-ink">Manage my memories</h2>
       <p className="mt-1 text-sm text-ink-soft">
         Only you can see this part: memories waiting for review, ones shared by link, and
         everyone&apos;s invite links.

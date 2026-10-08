@@ -11,7 +11,7 @@ import { friendlyError } from "@/lib/auth-errors";
 import { block } from "@/lib/follows";
 
 const small =
-  "inline-flex items-center justify-center rounded-full px-5 py-2.5 text-sm font-bold transition";
+  "inline-flex items-center justify-center rounded-full border-2 border-ink px-5 py-2 text-sm font-extrabold shadow-[2px_2px_0_var(--ink)] transition";
 const note = "mt-3 text-sm text-ink-soft";
 
 /** Follow and Block on someone's profile, or Edit on your own. */
@@ -34,7 +34,10 @@ export function ProfileActions({ uid, name }: { uid: string; name: string }) {
     return (
       <div className="flex flex-col items-center sm:items-start">
         <div className="flex flex-wrap justify-center gap-3">
-          <Link href="/account" className={`${small} bg-white text-ink ring-1 ring-ink/20 hover:bg-paper`}>
+          <Link
+            href="/account"
+            className={`${small} bg-cream text-ink hover:bg-white`}
+          >
             Edit profile
           </Link>
           <Link href="/share" className={`${small} bg-brand-red text-white hover:bg-brand-red-deep`}>
@@ -83,7 +86,7 @@ export function ProfileActions({ uid, name }: { uid: string; name: string }) {
         </button>
       )}
       {member && !isBlocked && confirming && (
-        <div className="mt-4 max-w-sm rounded-2xl bg-white p-4 text-left text-sm text-ink shadow-sm ring-1 ring-ink/10">
+        <div className="mt-4 max-w-sm rounded-2xl border-2 border-ink bg-[#fff8ea] p-4 text-left text-sm text-ink pop">
           <p>
             <strong>Block {name}?</strong> You&apos;ll stop following each other, and they
             won&apos;t be able to follow you. They won&apos;t be told.
@@ -100,7 +103,7 @@ export function ProfileActions({ uid, name }: { uid: string; name: string }) {
             <button
               type="button"
               onClick={() => setConfirming(false)}
-              className={`${small} bg-white text-ink ring-1 ring-ink/20 hover:bg-paper`}
+              className={`${small} bg-cream text-ink hover:bg-white`}
             >
               Cancel
             </button>

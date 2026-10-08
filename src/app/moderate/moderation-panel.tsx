@@ -4,7 +4,7 @@ import type { User } from "firebase/auth";
 import { useEffect, useLayoutEffect, useState } from "react";
 import { useAuth } from "@/components/auth-provider";
 import { Loading } from "@/components/require-account";
-import { card, secondaryButton } from "@/components/ui";
+import { card, pageTitle, secondaryButton } from "@/components/ui";
 import { friendlyError } from "@/lib/auth-errors";
 import {
   countOpenReports,
@@ -153,7 +153,7 @@ function ReviewQueue({ user }: { user: User }) {
   return (
     <div className="flex flex-col gap-6">
       <section className={card}>
-        <h1 className="text-xl font-extrabold text-brand-red sm:text-2xl">Review memories</h1>
+        <h1 className={pageTitle}>Review memories</h1>
         <p className="mt-2 text-ink-soft">
           Nothing is public until you approve it. If you turn a memory down or hide it, its
           author sees your note on their account page.
@@ -256,7 +256,7 @@ function NotModerator({ uid }: { uid: string }) {
 
   return (
     <section className={card}>
-      <h1 className="text-xl font-extrabold text-brand-red sm:text-2xl">Review memories</h1>
+      <h1 className={pageTitle}>Review memories</h1>
       <p className="mt-3 text-ink">This page is only for moderators.</p>
       <p className="mt-4 text-sm text-ink-soft">
         If you&apos;ve been asked to help moderate, send this code to the campaign team:

@@ -1,31 +1,99 @@
 @import "tailwindcss";
 
-/* Pick at Store brand colours, sampled from the official logo files
-   in public/brand. */
+/* Pick at Store brand colours, sampled from the official logo files in
+   public/brand, painted like a Hyderabad shop sign: red and cream awnings,
+   teal boards with gold letters. */
 :root {
   --brand-red: #a3171b;
   --brand-red-deep: #7d1114;
   --brand-yellow: #ffc000;
-  --paper: #fdf8ef;
+  --teal: #0e4a47;
+  --teal-deep: #0a3634;
+  --cream: #fff4dd;
+  --paper: #fbf0d8;
   --ink: #2b1d1a;
-  --ink-soft: #6e5a55;
+  --ink-soft: #6b4f45;
 }
 
 @theme inline {
   --color-brand-red: var(--brand-red);
   --color-brand-red-deep: var(--brand-red-deep);
   --color-brand-yellow: var(--brand-yellow);
+  --color-teal: var(--teal);
+  --color-teal-deep: var(--teal-deep);
+  --color-cream: var(--cream);
   --color-paper: var(--paper);
   --color-ink: var(--ink);
   --color-ink-soft: var(--ink-soft);
-  --font-sans: var(--font-nunito), ui-rounded, system-ui, sans-serif;
+  --font-sans: var(--font-baloo), ui-rounded, system-ui, sans-serif;
+  --font-display: var(--font-rozha), Georgia, serif;
   --font-hand: var(--font-kalam), "Segoe Print", "Bradley Hand", cursive;
 }
 
 html,
 body {
-  background: var(--paper);
+  background-color: var(--paper);
   color: var(--ink);
+}
+
+/* A faint dotted ground, like a painted wall. */
+body {
+  background-image: radial-gradient(
+    rgb(163 23 27 / 0.08) 1px,
+    transparent 1.3px
+  );
+  background-size: 14px 14px;
+}
+
+/* A shop's striped awning, its scalloped edge, and smaller ones for the
+   cards. */
+@utility awning {
+  background: repeating-linear-gradient(
+    90deg,
+    var(--brand-red) 0 24px,
+    var(--cream) 24px 48px
+  );
+}
+@utility scallop {
+  background:
+    radial-gradient(circle at 12px 0, var(--brand-red) 11.5px, transparent 12px)
+      0 0 / 48px 100% repeat-x,
+    radial-gradient(circle at 36px 0, var(--cream) 11.5px, transparent 12px) 0
+      0 / 48px 100% repeat-x;
+}
+@utility awning-sm {
+  background: repeating-linear-gradient(
+    90deg,
+    var(--awning, var(--teal)) 0 12px,
+    var(--cream) 12px 24px
+  );
+}
+@utility scallop-sm {
+  background:
+    radial-gradient(
+        circle at 6px 0,
+        var(--awning, var(--teal)) 5.5px,
+        transparent 6px
+      )
+      0 0 / 24px 100% repeat-x,
+    radial-gradient(circle at 18px 0, var(--cream) 5.5px, transparent 6px) 0 0 /
+      24px 100% repeat-x;
+}
+
+/* Letters painted on a board, with a red and dark shadow. */
+@utility painted {
+  text-shadow:
+    2px 2px 0 var(--brand-red),
+    3px 3px 0 var(--ink);
+}
+
+/* The hard shadow under buttons and cards, like a sign standing off the
+   wall. */
+@utility pop {
+  box-shadow: 3px 3px 0 var(--ink);
+}
+@utility pop-lg {
+  box-shadow: 4px 5px 0 var(--ink);
 }
 
 /* Text and spacing grow with the screen: 13px on a small phone, 15px on a
@@ -39,15 +107,15 @@ html {
   }
 }
 
-/* The menu at the top, and on a phone the bar of buttons at the bottom,
-   which stays clear of the phone's home bar. */
+/* The awning and menu at the top, and on a phone the bar of buttons at the
+   bottom, which stays clear of the phone's home bar. */
 :root {
-  --header-h: 3.25rem;
-  --bar-h: calc(3.75rem + env(safe-area-inset-bottom));
+  --header-h: 4.25rem;
+  --bar-h: calc(4.25rem + env(safe-area-inset-bottom));
 }
 @media (min-width: 640px) {
   :root {
-    --header-h: 4.5rem;
+    --header-h: 5.5rem;
     --bar-h: 0px;
   }
 }

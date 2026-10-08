@@ -76,7 +76,7 @@ async function FollowList({ uid, kind }: { uid: string; kind: FollowKind }) {
       <p className="mt-4 text-sm text-ink-soft">Anyone can see who follows whom.</p>
 
       {people.length === 0 ? (
-        <p className="py-16 text-center font-hand text-xl text-ink-soft">
+        <p className="py-16 text-center font-display text-xl text-ink-soft">
           {kind === "followers"
             ? `Nobody follows ${owner.name} yet.`
             : `${owner.name} isn't following anyone yet.`}

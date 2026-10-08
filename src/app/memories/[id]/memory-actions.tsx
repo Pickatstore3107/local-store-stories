@@ -23,8 +23,8 @@ import { GRIEVANCE_EMAIL } from "@/lib/site";
 type Props = { id: string; storeName: string; city: string };
 
 const pill =
-  "inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-bold ring-1 transition disabled:cursor-not-allowed disabled:opacity-60";
-const quietPill = `${pill} bg-white text-brand-red ring-brand-red/25 hover:bg-brand-red/5`;
+  "inline-flex items-center gap-2 rounded-full border-2 border-ink px-4 py-1.5 text-sm font-extrabold shadow-[2px_2px_0_var(--ink)] transition disabled:cursor-not-allowed disabled:opacity-60";
+const quietPill = `${pill} bg-cream text-ink hover:bg-white`;
 
 const noChanges = () => () => {};
 
@@ -190,7 +190,8 @@ function ShareButtons({ id, storeName, city }: Props) {
       </span>
       {copied === false && url && (
         <p className="w-full text-sm">
-          Copy this link: <span className="select-all break-all font-bold">{url}</span>
+          Copy this link:{" "}
+          <span className="select-all break-all font-bold">{url}</span>
         </p>
       )}
     </>
@@ -302,7 +303,7 @@ function ReportPanel({ id }: { id: string }) {
   return (
     <section
       aria-labelledby="report-heading"
-      className="mt-6 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-ink/5"
+      className="mt-6 rounded-3xl border-2 border-ink bg-[#fff8ea] p-6 pop-lg"
     >
       <div className="flex items-start justify-between gap-4">
         <h2
@@ -400,7 +401,8 @@ function ReportPanel({ id }: { id: string }) {
             {busy ? "Sending…" : "Send report"}
           </button>
           <p className="mt-3 text-xs text-ink-soft">
-            Is it about you, your photo or your store? You can also email {emailLink}.
+            Is it about you, your photo or your store? You can also email{" "}
+            {emailLink}.
           </p>
         </form>
       )}

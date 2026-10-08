@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useDeferredValue, useMemo } from "react";
 import { useAuth } from "./auth-provider";
-import { PolaroidCard } from "./polaroid";
+import { MemoryCard } from "./polaroid";
 import { setReturnPath } from "./require-account";
 import { input, primaryButton, secondaryButton } from "./ui";
 import { useMyFollows } from "./use-my-follows";
@@ -11,10 +11,14 @@ import { memoryMatches, searchWords, type Wall } from "@/lib/memories";
 import { CATEGORIES, type Category } from "@/lib/stories";
 import { setWallFilters, useWallFilters } from "./use-wall-filters";
 
-const chip = "shrink-0 rounded-full px-3.5 py-1.5 text-sm font-bold transition sm:px-4 sm:py-2";
-const chipOff = "bg-white text-brand-red ring-1 ring-brand-red/25 hover:bg-brand-red/5";
-const chipOn = "bg-brand-red text-white ring-1 ring-brand-red";
-const tab = "-mb-px border-b-2 px-1 pb-2 text-[0.95rem] font-extrabold transition sm:text-base";
+// Categories hang like price tags, tilted this way and that.
+const tag =
+  "relative shrink-0 rounded-l-md rounded-r-2xl border-2 border-ink py-1 pl-6 pr-3.5 text-sm font-extrabold transition sm:py-1.5 sm:text-base";
+const tagOff = "bg-cream text-ink hover:bg-white";
+const tagOn = "bg-brand-red text-cream";
+const tilts = ["-rotate-2", "rotate-2", "-rotate-1", "rotate-1"];
+const tab =
+  "rounded-full px-4 py-1.5 text-[0.95rem] font-extrabold transition sm:text-base";
 
 /**
  * Everyone's memories or only those of people you follow, then search,
@@ -65,14 +69,18 @@ export function WallBrowser({ wall }: { wall: Wall }) {
 
   return (
     <>
-      <div role="group" aria-label="Whose memories" className="mt-5 flex gap-6 border-b border-ink/10 sm:mt-8">
+      <div
+        role="group"
+        aria-label="Whose memories"
+        className="mt-6 inline-flex rounded-full border-2 border-ink bg-cream p-1 pop sm:mt-8"
+      >
         {([false, true] as const).map((each) => (
           <button
             key={String(each)}
             type="button"
             aria-pressed={following === each}
             onClick={() => setWallFilters({ ...filters, following: each })}
-            className={`${tab} ${following === each ? "border-brand-red text-brand-red" : "border-transparent text-ink-soft hover:text-ink"}`}
+            className={`${tab} ${following === each ? "bg-teal text-cream" : "text-ink-soft hover:text-ink"}`}
           >
             {each ? "Following" : "Everyone"}
           </button>
@@ -105,25 +113,21 @@ export function WallBrowser({ wall }: { wall: Wall }) {
       <div
         role="group"
         aria-label="Categories"
-        className="-mx-4 mt-3 flex gap-2 overflow-x-auto px-4 pb-2 pt-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0"
+        className="-mx-4 mt-3 flex gap-2.5 overflow-x-auto px-4 pb-2 pt-2 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0"
       >
-        <button
-          type="button"
-          aria-pressed={category === null}
-          onClick={() => pick(null)}
-          className={`${chip} ${category === null ? chipOn : chipOff}`}
-        >
-          All
-        </button>
-        {categories.map((c) => (
+        {[null, ...categories].map((c, i) => (
           <button
-            key={c}
+            key={c ?? "all"}
             type="button"
             aria-pressed={category === c}
             onClick={() => pick(category === c ? null : c)}
-            className={`${chip} ${category === c ? chipOn : chipOff}`}
+            className={`${tag} ${tilts[i % tilts.length]} ${category === c ? tagOn : tagOff}`}
           >
-            {c}
+            <span
+              aria-hidden="true"
+              className="absolute left-2 top-1/2 h-2 w-2 -translate-y-1/2 rounded-full border-[1.5px] border-ink bg-paper"
+            />
+            {c ?? "All"}
           </button>
         ))}
       </div>
@@ -136,14 +140,18 @@ export function WallBrowser({ wall }: { wall: Wall }) {
 
       {featured.length > 0 && (
         <section aria-labelledby="featured-heading" className="mt-6 sm:mt-10">
-          <h2 id="featured-heading" className="text-lg font-extrabold text-ink sm:text-xl">
+          <h2 id="featured-heading" className={sectionTitle}>
+            <StarIcon />
             Featured
+            <DashedRule />
           </h2>
-          <p className="mt-1 text-sm text-ink-soft">Picked by the campaign team.</p>
-          <ul className="-mx-4 mt-2 flex snap-x snap-mandatory gap-5 overflow-x-auto px-4 pb-8 pt-5 sm:-mx-5 sm:gap-8 sm:px-5 sm:pb-10 sm:pt-6">
+          <p className="mt-1 text-sm text-ink-soft">
+            Picked by the campaign team.
+          </p>
+          <ul className="-mx-4 mt-2 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-4 pt-2 sm:-mx-5 sm:gap-6 sm:px-5 sm:pb-6">
             {featured.map((memory, i) => (
               <li key={memory.id} className="w-48 shrink-0 snap-center sm:w-72">
-                <PolaroidCard memory={memory} featured eager={i < 2} compact />
+                <MemoryCard memory={memory} featured eager={i < 2} compact />
               </li>
             ))}
           </ul>
@@ -154,7 +162,7 @@ export function WallBrowser({ wall }: { wall: Wall }) {
         <FollowingNote note={followingNote} />
       ) : shown.length === 0 ? (
         <div className="py-16 text-center">
-          <p className="font-hand text-2xl text-ink">
+          <p className="font-display text-2xl text-ink">
             {following && !words.length && !category
               ? "The people you follow haven't shared a memory yet."
               : "No memories match yet."}
@@ -179,16 +187,24 @@ export function WallBrowser({ wall }: { wall: Wall }) {
       ) : (
         rest.length > 0 && (
           <section aria-labelledby="memories-heading" className="mt-6 sm:mt-10">
-            <h2
-              id="memories-heading"
-              className={featured.length ? "text-lg font-extrabold text-ink sm:text-xl" : "sr-only"}
-            >
-              {filtering ? "Memories found" : featured.length ? "More memories" : "All memories"}
+            <h2 id="memories-heading" className={sectionTitle}>
+              <StarIcon />
+              {filtering
+                ? "Memories found"
+                : featured.length
+                  ? "More from the street"
+                  : "Fresh on the street"}
+              <DashedRule />
             </h2>
-            <ul className="mt-5 grid grid-cols-2 gap-x-4 gap-y-8 sm:mt-6 sm:gap-x-8 sm:gap-y-12 lg:grid-cols-3 xl:grid-cols-4">
+            <ul className="mt-4 grid grid-cols-2 gap-x-3.5 gap-y-5 sm:mt-6 sm:gap-x-6 sm:gap-y-8 lg:grid-cols-3 xl:grid-cols-4">
               {rest.map((memory, i) => (
                 <li key={memory.id}>
-                  <PolaroidCard memory={memory} featured={!!memory.featuredAt} eager={i < 4} compact />
+                  <MemoryCard
+                    memory={memory}
+                    featured={!!memory.featuredAt}
+                    eager={i < 4}
+                    compact
+                  />
                 </li>
               ))}
             </ul>
@@ -211,7 +227,7 @@ function FollowingNote({ note }: { note: "signIn" | "loading" | "nobody" }) {
   }
   return (
     <div className="py-16 text-center">
-      <p className="font-hand text-2xl text-ink">
+      <p className="font-display text-2xl text-ink">
         {note === "signIn"
           ? "See memories from the people you follow."
           : "You're not following anyone yet."}
@@ -230,5 +246,31 @@ function FollowingNote({ note }: { note: "signIn" | "loading" | "nobody" }) {
         </Link>
       )}
     </div>
+  );
+}
+
+const sectionTitle =
+  "flex items-center gap-2.5 font-display text-2xl text-ink sm:text-3xl";
+
+/** The little painted star before a section's name. */
+function StarIcon() {
+  return (
+    <svg
+      viewBox="0 0 14 14"
+      aria-hidden="true"
+      className="h-3.5 w-3.5 shrink-0 text-brand-red"
+    >
+      <path d="M7 0 9 5l5 2-5 2-2 5-2-5-5-2 5-2Z" fill="currentColor" />
+    </svg>
+  );
+}
+
+/** A dashed line running out after a section's name. */
+function DashedRule() {
+  return (
+    <span
+      aria-hidden="true"
+      className="h-0.5 min-w-6 flex-1 bg-[repeating-linear-gradient(90deg,var(--ink)_0_6px,transparent_6px_10px)]"
+    />
   );
 }

@@ -39,7 +39,7 @@ export function ModeratorCard({ user }: { user: User }) {
 
   return (
     <section className={card}>
-      <h2 className="text-lg font-extrabold text-ink">Moderator</h2>
+      <h2 className="font-display text-xl text-ink">Moderator</h2>
       <p className="mt-2 text-sm text-ink-soft">
         {counts === null ? "Checking what's waiting…" : describe(counts.waiting, counts.reported)}
       </p>

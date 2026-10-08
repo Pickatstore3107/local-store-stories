@@ -30,7 +30,7 @@ export function BlockedPeople() {
   if (!ready || !uids.length) return null;
   return (
     <section className={card}>
-      <h2 className="text-lg font-extrabold text-ink">People you&apos;ve blocked</h2>
+      <h2 className="font-display text-xl text-ink">People you&apos;ve blocked</h2>
       <p className="mt-2 text-sm text-ink-soft">
         They can&apos;t follow you. Only you can see this list, and they weren&apos;t told.
       </p>

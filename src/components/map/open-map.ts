@@ -52,6 +52,7 @@ export async function openMap(
     map.keyboard.disableRotation();
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
   }
+  map.on("style.load", () => paintLikeTheApp(map));
   map.on("load", () => addPinImages(map));
   // Numbered circles are drawn as they're needed: "lss-cluster-12".
   map.on("styleimagemissing", ({ id }) => {
@@ -59,6 +60,47 @@ export async function openMap(
     if (count && !map.hasImage(id)) map.addImage(id, clusterImage(count), { pixelRatio: SCALE });
   });
   return map;
+}
+
+// The streets in the app's colours: warm paper land, cream roads with gold
+// main roads, teal water, soft green parks and dark ink names.
+const LAND = "#f3e3bd";
+const ROAD = "#fff8e8";
+const ROAD_EDGE = "#d9b77e";
+const MAIN_ROAD = "#ffd56b";
+const MAIN_ROAD_EDGE = "#b98f57";
+const WATER = "#7fb7bd";
+const WATER_NAME = "#1f5d63";
+const PARK = "#d3dfae";
+const BUILDING = "#ead2a2";
+const CREAM = "#fff4dd";
+
+function paintLikeTheApp(map: MapLibreMap) {
+  for (const layer of map.getStyle().layers ?? []) {
+    const { id, type } = layer;
+    const paint = (property: string, value: string) => {
+      try {
+        map.setPaintProperty(id, property, value);
+      } catch {
+        // A layer without that property keeps its own colour.
+      }
+    };
+    const main = /motorway|trunk|primary/.test(id);
+    if (type === "background") paint("background-color", LAND);
+    else if (type === "fill") {
+      if (/water/.test(id)) paint("fill-color", WATER);
+      else if (/park|wood|grass|wetland|pitch|cemetery/.test(id)) paint("fill-color", PARK);
+      else if (/building/.test(id)) paint("fill-color", BUILDING);
+    } else if (type === "fill-extrusion") paint("fill-extrusion-color", BUILDING);
+    else if (type === "line") {
+      if (/water/.test(id)) paint("line-color", WATER);
+      else if (/casing/.test(id) && /road|bridge|tunnel/.test(id)) paint("line-color", main ? MAIN_ROAD_EDGE : ROAD_EDGE);
+      else if (/road|bridge|tunnel/.test(id) && !/rail/.test(id)) paint("line-color", main ? MAIN_ROAD : ROAD);
+    } else if (type === "symbol" && !id.startsWith("lss-")) {
+      paint("text-color", /water/.test(id) ? WATER_NAME : INK);
+      paint("text-halo-color", CREAM);
+    }
+  }
 }
 
 const SCALE = 2;

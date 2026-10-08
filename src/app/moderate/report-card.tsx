@@ -78,7 +78,7 @@ export function ReportCard({
   if (!story) {
     return (
       <article className={card}>
-        <h2 className="text-xl font-extrabold text-ink">A deleted memory</h2>
+        <h2 className="font-display text-2xl leading-tight text-ink">A deleted memory</h2>
         <p className="mt-2 text-sm text-ink-soft">
           Its author deleted this memory after it was reported, so there&apos;s nothing left to
           check.

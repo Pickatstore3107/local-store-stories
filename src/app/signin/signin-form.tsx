@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/components/auth-provider";
 import { returnPath } from "@/components/require-account";
-import { card, primaryButton } from "@/components/ui";
+import { card, pageTitle, primaryButton } from "@/components/ui";
 import { friendlyError } from "@/lib/auth-errors";
 import { getFirebase } from "@/lib/firebase";
 
@@ -35,7 +35,7 @@ export function SignInForm() {
 
   return (
     <div className={card}>
-      <h1 className="text-xl font-extrabold text-brand-red sm:text-2xl">Join the campaign</h1>
+      <h1 className={pageTitle}>Join the campaign</h1>
       <p className="mt-2 text-ink-soft">
         Sign in with your Google account to share the store you never forgot. No new
         password needed.

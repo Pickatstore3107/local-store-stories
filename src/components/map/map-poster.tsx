@@ -3,14 +3,16 @@
 import type { Map as MapLibreMap } from "maplibre-gl";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { ArrowIcon } from "../icons";
 import { addMemoryLayers, setMemories, type PinnedMemory } from "./memory-map";
 import { openMap } from "./open-map";
 
 const plural = (n: number) => (n === 1 ? "1 memory" : `${n} memories`);
 
 /**
- * The top of Home: a live map of Hyderabad with the memory pins, like a
- * poster. It's only a picture; tapping anywhere on it opens the full map.
+ * The top of Home: a painted shop sign with the campaign's name over a live
+ * map of Hyderabad and its memory pins. The map is only a picture; tapping
+ * it opens the full map.
  */
 export function MapPoster({ memories }: { memories: PinnedMemory[] }) {
   const box = useRef<HTMLDivElement>(null);
@@ -52,21 +54,14 @@ export function MapPoster({ memories }: { memories: PinnedMemory[] }) {
     if (!spots.length) return;
     const lats = spots.map((s) => s.lat);
     const lngs = spots.map((s) => s.lng);
-    // The pins sit in the top part, clear of the words over the bottom.
-    const { clientWidth: width, clientHeight: height } = map.getContainer();
-    const side = width < 640 ? 36 : 64;
+    // Clear of the "pinned" stamp in the corner.
     map.fitBounds(
       [
         [Math.min(...lngs), Math.min(...lats)],
         [Math.max(...lngs), Math.max(...lats)],
       ],
       {
-        padding: {
-          top: Math.round(height * 0.2),
-          right: side,
-          bottom: Math.round(height * 0.5),
-          left: side,
-        },
+        padding: { top: 30, right: 76, bottom: 22, left: 30 },
         maxZoom: 12.5,
         animate: false,
       },
@@ -76,53 +71,86 @@ export function MapPoster({ memories }: { memories: PinnedMemory[] }) {
   return (
     <section
       aria-labelledby="poster-title"
-      className="relative isolate h-60 overflow-hidden rounded-3xl bg-[#efe4cf] shadow-[0_18px_40px_-24px_rgba(43,29,26,0.7)] ring-1 ring-ink/10 sm:h-80"
+      className="rounded-[1.25rem] border-[3px] border-ink bg-teal p-2.5 shadow-[5px_6px_0_var(--ink)] sm:p-3.5"
     >
-      {/* Streets in outline until the real map arrives. */}
-      <div
-        aria-hidden="true"
-        className="absolute inset-0 bg-[linear-gradient(115deg,transparent_47%,#fff9_47.5%,#fff9_49.5%,transparent_50%),linear-gradient(20deg,transparent_60%,#fff8_60.5%,#fff8_62%,transparent_62.5%),linear-gradient(160deg,transparent_30%,#fff7_30.5%,#fff7_31.5%,transparent_32%)]"
-      />
-      <div
-        ref={box}
-        aria-hidden="true"
-        className={`absolute inset-0 transition-opacity duration-700 ${map ? "opacity-100" : "opacity-0"}`}
-      />
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-ink/90 via-ink/35 to-transparent" />
-      {/* Anywhere on the poster opens the map; the button says so in words. */}
-      <Link
-        href="/map"
-        tabIndex={-1}
-        aria-hidden="true"
-        className="absolute inset-0"
-      />
-      <p className="pointer-events-none absolute right-2 top-2 rounded bg-white/80 px-1.5 py-0.5 text-[0.6rem] text-ink-soft">
-        © OpenStreetMap contributors · OpenFreeMap
-      </p>
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 p-4 sm:p-7">
-        <p className="text-[0.7rem] font-bold uppercase tracking-[0.2em] text-brand-yellow sm:text-xs">
+      <div className="relative rounded-xl border-2 border-brand-yellow px-3 pb-3 pt-3 sm:px-6 sm:pb-6 sm:pt-5">
+        <Bolts />
+        <p className="text-center text-[0.65rem] font-extrabold uppercase tracking-[0.3em] text-brand-yellow sm:text-xs">
           Pick at Store presents
         </p>
         <h1
           id="poster-title"
-          className="mt-1 text-2xl font-extrabold leading-tight text-white sm:text-4xl"
+          className="mt-1 text-center font-display leading-none"
         >
-          Local Stores &amp; Their Stories
+          <span className="painted block text-[2.5rem] text-cream sm:text-6xl">
+            Local Stores
+          </span>
+          <span className="painted mt-1 block text-[1.6rem] text-brand-yellow sm:text-4xl">
+            &amp; Their Stories
+          </span>
         </h1>
-        <div className="mt-2.5 flex items-center justify-between gap-3">
-          <p className="text-sm leading-snug text-white/85 sm:text-base">
-            {memories.length
-              ? `${plural(memories.length)} on the Hyderabad map`
-              : "Put Hyderabad's stores on the map"}
-          </p>
+
+        <div className="relative isolate mt-3 h-40 overflow-hidden rounded-lg border-2 border-ink bg-[#f3e3bd] sm:mt-5 sm:h-64">
+          {/* Streets in outline until the real map arrives. */}
+          <div
+            aria-hidden="true"
+            className="absolute inset-0 bg-[linear-gradient(115deg,transparent_47%,#fff4dd_47.5%,#fff4dd_49.5%,transparent_50%),linear-gradient(20deg,transparent_60%,#fff4dd_60.5%,#fff4dd_62%,transparent_62.5%),linear-gradient(160deg,transparent_30%,#7fb7bd_30.5%,#7fb7bd_32%,transparent_32.5%)]"
+          />
+          <div
+            ref={box}
+            aria-hidden="true"
+            className={`absolute inset-0 transition-opacity duration-700 ${map ? "opacity-100" : "opacity-0"}`}
+          />
+          {/* Anywhere on the map opens it; the button below says so in words. */}
           <Link
             href="/map"
-            className="pointer-events-auto shrink-0 rounded-full bg-brand-yellow px-4 py-2 text-sm font-extrabold text-ink shadow-md transition hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-yellow"
-          >
-            Open the map
-          </Link>
+            tabIndex={-1}
+            aria-hidden="true"
+            className="absolute inset-0"
+          />
+          {memories.length > 0 && (
+            <p className="pointer-events-none absolute right-2 top-2 flex h-16 w-16 rotate-[8deg] flex-col items-center justify-center rounded-full border-2 border-dashed border-brand-red bg-cream leading-none text-brand-red">
+              <span className="font-display text-2xl">{memories.length}</span>
+              <span className="text-[0.6rem] font-extrabold tracking-wider">
+                PINNED
+              </span>
+            </p>
+          )}
+          <p className="pointer-events-none absolute bottom-1 left-1 rounded bg-cream/90 px-1.5 py-0.5 text-[0.6rem] text-ink-soft">
+            © OpenStreetMap contributors · OpenFreeMap
+          </p>
         </div>
+
+        <Link
+          href="/map"
+          className="mt-3 flex h-11 items-center justify-center gap-2 rounded-full border-2 border-ink bg-brand-yellow font-extrabold text-ink pop transition hover:bg-[#ffcf33] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none sm:mt-5 sm:h-12 sm:text-lg"
+        >
+          {memories.length
+            ? `Walk the map of ${plural(memories.length)}`
+            : "Put Hyderabad's stores on the map"}
+          <ArrowIcon className="h-5 w-5" />
+        </Link>
       </div>
     </section>
+  );
+}
+
+/** The gold bolts holding the board up. */
+function Bolts() {
+  return (
+    <>
+      {[
+        "left-1.5 top-1.5",
+        "right-1.5 top-1.5",
+        "bottom-1.5 left-1.5",
+        "bottom-1.5 right-1.5",
+      ].map((at) => (
+        <span
+          key={at}
+          aria-hidden="true"
+          className={`absolute h-1.5 w-1.5 rounded-full bg-brand-yellow ${at}`}
+        />
+      ))}
+    </>
   );
 }

@@ -1,15 +1,23 @@
 import type { Metadata, Viewport } from "next";
-import { Kalam, Nunito } from "next/font/google";
+import { Baloo_2, Kalam, Rozha_One } from "next/font/google";
 import { AuthProvider } from "@/components/auth-provider";
 import { BottomBar } from "@/components/bottom-bar";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import "./globals.css";
 
-// Rounded sans that sits close to the Pick at Store wordmark.
-const nunito = Nunito({
-  variable: "--font-nunito",
-  subsets: ["latin"],
+// Rounded letters close to the Pick at Store wordmark, made in India, with
+// Hindi as well as English.
+const baloo = Baloo_2({
+  variable: "--font-baloo",
+  subsets: ["latin", "devanagari"],
+});
+
+// Titles, in the high-contrast letters of a hand-painted shop sign.
+const rozha = Rozha_One({
+  variable: "--font-rozha",
+  weight: "400",
+  subsets: ["latin", "devanagari"],
 });
 
 // Handwriting for the memories themselves, in Hindi and English.
@@ -33,7 +41,10 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`${nunito.variable} ${kalam.variable} h-full antialiased`}>
+    <html
+      lang="en"
+      className={`${baloo.variable} ${rozha.variable} ${kalam.variable} h-full antialiased`}
+    >
       <body className="flex min-h-full flex-col pb-(--bar-h) font-sans">
         <AuthProvider>
           <SiteHeader />

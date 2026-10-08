@@ -55,7 +55,7 @@ function Item({
         href={href}
         aria-label={spoken}
         aria-current={current ? "page" : undefined}
-        className={`flex h-full flex-col items-center justify-center gap-0.5 text-[0.7rem] font-bold transition ${current ? "text-brand-red" : "text-ink-soft hover:text-ink"}`}
+        className={`flex h-full flex-col items-center justify-center gap-0.5 text-[0.75rem] font-extrabold transition ${current ? "text-brand-red" : "text-ink-soft hover:text-ink"}`}
       >
         {children}
         <span>{label}</span>
@@ -81,9 +81,9 @@ export function BottomBar() {
   return (
     <nav
       aria-label="Main"
-      className={`fixed inset-x-0 bottom-0 z-40 border-t border-ink/10 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur transition-transform duration-200 sm:hidden ${typing ? "translate-y-full" : ""}`}
+      className={`fixed inset-x-0 bottom-0 z-40 border-t-[3px] border-ink bg-cream pb-[env(safe-area-inset-bottom)] transition-transform duration-200 sm:hidden ${typing ? "translate-y-[calc(100%+1.5rem)]" : ""}`}
     >
-      <ul className="mx-auto flex h-[3.75rem] max-w-lg items-stretch">
+      <ul className="mx-auto flex h-[4rem] max-w-lg items-stretch">
         <Item href="/" label="Home" current={pathname === "/"}>
           <HomeIcon className="h-6 w-6" />
         </Item>
@@ -91,8 +91,9 @@ export function BottomBar() {
           <MapIcon className="h-6 w-6" />
         </Item>
         <Item href="/share" label="Share" current={pathname === "/share"}>
-          <span className="flex h-7 w-11 items-center justify-center rounded-full bg-brand-red text-white shadow-sm">
-            <PlusIcon className="h-5 w-5" />
+          {/* Raised above the bar, like a badge nailed to the sign. */}
+          <span className="-mt-6 flex h-12 w-12 items-center justify-center rounded-full border-[3px] border-ink bg-brand-yellow text-brand-red pop">
+            <PlusIcon className="h-7 w-7" />
           </span>
         </Item>
         {me && (
@@ -105,14 +106,21 @@ export function BottomBar() {
             <span className="relative">
               <BellIcon className="h-6 w-6" />
               {unseen && (
-                <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-brand-red ring-2 ring-white" />
+                <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-brand-red ring-2 ring-cream" />
               )}
             </span>
           </Item>
         )}
         {me && mine ? (
-          <Item href={mine} label="Me" spoken="My profile" current={pathname === mine || pathname === "/account"}>
-            <span className={`rounded-full ring-2 ${pathname === mine ? "ring-brand-red" : "ring-transparent"}`}>
+          <Item
+            href={mine}
+            label="Me"
+            spoken="My profile"
+            current={pathname === mine || pathname === "/account"}
+          >
+            <span
+              className={`rounded-full ring-2 ring-offset-1 ring-offset-cream ${pathname === mine ? "ring-brand-red" : "ring-transparent"}`}
+            >
               <Avatar name={me.name} size="xxs" />
             </span>
           </Item>

@@ -13,7 +13,8 @@ import { personPath } from "@/lib/people";
 import { getFirebase } from "@/lib/firebase";
 import { checkInvite, pendingInvite, setPendingInvite, type InviteCheck } from "@/lib/invites";
 
-const note = "rounded-2xl bg-white px-5 py-4 text-ink shadow-sm ring-1 ring-ink/5";
+const note =
+  "rounded-2xl border-2 border-ink bg-[#fff8ea] px-5 py-4 text-ink pop";
 
 // Google blocks its sign-in inside these apps' own browsers.
 const IN_APP_BROWSER = /Instagram|FBAN|FBAV/;
@@ -174,8 +175,9 @@ export function InviteActions({ code, inviterName }: { code: string; inviterName
         </p>
         {inApp && !user && (
           <p className="mt-4 rounded-xl bg-brand-yellow/20 px-4 py-3 text-sm text-ink">
-            Google sign-in doesn&apos;t work inside the Instagram or Facebook app. Tap the ⋯ menu
-            and choose <strong>Open in browser</strong> first.
+            Google sign-in doesn&apos;t work inside the Instagram or Facebook
+            app. Tap the ⋯ menu and choose <strong>Open in browser</strong>{" "}
+            first.
           </p>
         )}
         {failed}

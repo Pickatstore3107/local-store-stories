@@ -76,19 +76,40 @@ async function MemoryContent({ id }: { id: string }) {
   return (
     <article className="mt-8">
       <figure
-        style={{ "--tilt": `${tilt(memory.id) / 2}deg` } as CSSProperties}
-        className="relative mx-auto max-w-lg rotate-(--tilt) bg-white p-4 pb-6 shadow-[0_18px_40px_-20px_rgba(43,29,26,0.6)] ring-1 ring-ink/5"
+        style={
+          {
+            "--awning":
+              tilt(memory.id) < 0 ? "var(--brand-red)" : "var(--teal)",
+          } as CSSProperties
+        }
+        className="mx-auto max-w-lg overflow-hidden rounded-2xl border-2 border-ink bg-[#fff8ea] pop-lg"
       >
-        <span
+        <div
           aria-hidden="true"
-          className="absolute -top-3 left-1/2 h-6 w-24 -translate-x-1/2 rotate-2 bg-brand-yellow/70 shadow-sm"
+          className="awning h-4 [--brand-red:var(--awning)]"
         />
-        <PolaroidPhoto url={memory.photoUrl} storeName={memory.storeName} whole eager />
-        <figcaption className="px-1 pt-4 font-hand text-ink">
-          <h1 lang={textLang(memory.storeName)} className="text-2xl font-bold leading-tight sm:text-3xl">
-            {memory.storeName}
+        <div
+          aria-hidden="true"
+          className="scallop h-3 [--brand-red:var(--awning)]"
+        />
+        <div className="-mt-3">
+          <PolaroidPhoto
+            url={memory.photoUrl}
+            storeName={memory.storeName}
+            whole
+            eager
+          />
+        </div>
+        <figcaption className="px-4 pb-5 pt-4">
+          <h1
+            lang={textLang(memory.storeName)}
+            className="font-display text-3xl leading-snug sm:text-4xl"
+          >
+            <span className="rounded-lg bg-(--awning) box-decoration-clone px-2.5 py-0.5 text-cream">
+              {memory.storeName}
+            </span>
           </h1>
-          <p className="mt-1 text-ink-soft">{placeLine(memory)}</p>
+          <p className="mt-2 font-bold text-ink-soft">{placeLine(memory)}</p>
         </figcaption>
       </figure>
 
@@ -166,7 +187,7 @@ function MemorySkeleton() {
   return (
     <div className="mt-8" role="status">
       <span className="sr-only">Loading the memory…</span>
-      <div className="mx-auto max-w-lg animate-pulse bg-white p-4 pb-6 shadow-sm ring-1 ring-ink/5">
+      <div className="mx-auto max-w-lg animate-pulse rounded-2xl border-2 border-ink/20 bg-[#fff8ea] p-4 pb-6">
         <div className="aspect-square w-full bg-paper" />
         <div className="mt-4 h-7 w-2/3 rounded bg-paper" />
         <div className="mt-2 h-4 w-1/2 rounded bg-paper" />

@@ -10,10 +10,13 @@ import { setReturnPath } from "./require-account";
 import { useMyFollows } from "./use-my-follows";
 
 const base =
-  "inline-flex shrink-0 items-center justify-center rounded-full font-bold transition disabled:cursor-not-allowed disabled:opacity-50";
-const sizes = { normal: "min-w-32 px-6 py-3", compact: "min-w-24 px-4 py-1.5 text-sm" };
-const filled = "bg-brand-red text-white hover:bg-brand-red-deep";
-const quiet = "bg-white text-ink ring-1 ring-ink/20 hover:bg-paper";
+  "inline-flex shrink-0 items-center justify-center rounded-full border-2 border-ink font-extrabold shadow-[2px_2px_0_var(--ink)] transition active:translate-x-px active:translate-y-px active:shadow-none disabled:cursor-not-allowed disabled:opacity-50";
+const sizes = {
+  normal: "min-w-32 px-6 py-2.5",
+  compact: "min-w-24 px-4 py-1 text-sm",
+};
+const filled = "bg-brand-red text-cream hover:bg-brand-red-deep";
+const quiet = "bg-cream text-ink hover:bg-white";
 
 /**
  * Follow, or Following to unfollow. Visitors are sent to sign in and come

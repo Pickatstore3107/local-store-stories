@@ -48,7 +48,7 @@ export function ModerationLog() {
 
   return (
     <section className={card}>
-      <h2 className="text-lg font-extrabold text-ink">Latest decisions</h2>
+      <h2 className="font-display text-xl text-ink">Latest decisions</h2>
       <ol className="mt-4 flex flex-col divide-y divide-ink/10">
         {entries.map((entry) => (
           <li key={entry.id} className="py-3">

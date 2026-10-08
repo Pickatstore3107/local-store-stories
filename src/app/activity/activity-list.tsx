@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/components/auth-provider";
 import { Avatar } from "@/components/avatar";
 import { FollowButton } from "@/components/follow-button";
-import { card, primaryButton } from "@/components/ui";
+import { card, pageTitle, primaryButton } from "@/components/ui";
 import { friendlyError } from "@/lib/auth-errors";
 import { loadActivity, markBellSeen, type Activity } from "@/lib/follows";
 import { shortDate, textLang } from "@/lib/memories";
@@ -53,7 +53,7 @@ export function ActivityList() {
 
   return (
     <section className={card}>
-      <h1 className="text-xl font-extrabold text-brand-red sm:text-2xl">Activity</h1>
+      <h1 className={pageTitle}>Activity</h1>
       <p className="mt-2 text-sm text-ink-soft">
         When someone follows you, or a friend joins through one of your invite links, it shows
         here. Only you can see this page.
@@ -69,7 +69,7 @@ export function ActivityList() {
         </p>
       ) : items.items.every((item) => !item.name) ? (
         <div className="mt-6 text-center">
-          <p className="font-hand text-xl text-ink">Nothing here yet.</p>
+          <p className="font-display text-2xl text-ink">Nothing here yet.</p>
           <p className="mt-2 text-sm text-ink-soft">
             Share a memory, then send its invite link to a friend who remembers the same stores.
           </p>

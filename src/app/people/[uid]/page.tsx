@@ -62,7 +62,10 @@ async function Profile({ uid }: { uid: string }) {
       <header className="flex flex-col items-center gap-5 text-center sm:flex-row sm:items-start sm:gap-8 sm:text-left">
         <Avatar name={person.name} size="lg" />
         <div className="min-w-0 flex-1">
-          <h1 lang={textLang(person.name)} className="break-words text-2xl font-extrabold text-ink sm:text-3xl">
+          <h1
+            lang={textLang(person.name)}
+            className="break-words font-display text-3xl leading-tight text-ink sm:text-4xl"
+          >
             {person.name}
           </h1>
           {person.city && <p className="mt-1 text-ink-soft">{person.city}</p>}
@@ -112,7 +115,7 @@ function MemoryGrid({ person }: { person: PublicPerson }) {
   const grid = (
     <>
       {person.memories.length === 0 ? (
-        <p className="py-12 text-center font-hand text-xl text-ink-soft">
+        <p className="py-12 text-center font-display text-xl text-ink-soft">
           No memories shared with everyone yet.
         </p>
       ) : (
@@ -122,7 +125,7 @@ function MemoryGrid({ person }: { person: PublicPerson }) {
               <Link
                 href={memoryPath(memory.id)}
                 title={memory.storeName}
-                className="block aspect-square overflow-hidden bg-white ring-1 ring-ink/5 transition hover:opacity-90 focus-visible:outline-4 focus-visible:outline-brand-red/40"
+                className="block aspect-square overflow-hidden rounded-lg border-2 border-ink bg-cream transition hover:opacity-90 focus-visible:outline-4 focus-visible:outline-brand-red/40"
               >
                 {memory.photoUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element -- a signed link from our image host, already sized
@@ -138,7 +141,7 @@ function MemoryGrid({ person }: { person: PublicPerson }) {
                 ) : (
                   <span
                     lang={textLang(memory.storeName)}
-                    className="flex h-full items-center justify-center bg-paper p-2 text-center font-hand text-sm text-ink-soft"
+                    className="flex h-full items-center justify-center bg-paper p-2 text-center font-display text-sm text-ink-soft"
                     aria-hidden="true"
                   >
                     {memory.storeName}
@@ -160,7 +163,7 @@ function MemoryGrid({ person }: { person: PublicPerson }) {
         <ProfileTabs name={person.name} pinned={pinned} grid={grid} />
       ) : (
         <>
-          <h2 id="memories-heading" className="text-sm font-bold uppercase tracking-wider text-ink-soft">
+          <h2 id="memories-heading" className="font-display text-2xl text-ink">
             Memories
           </h2>
           {grid}

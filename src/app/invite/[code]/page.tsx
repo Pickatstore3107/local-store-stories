@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
-import { PolaroidCard } from "@/components/polaroid";
+import { MemoryCard } from "@/components/polaroid";
 import { loadInvite } from "@/lib/server/invites";
 import { InviteActions } from "./invite-actions";
 
@@ -55,9 +55,13 @@ async function InviteContent({ code }: { code: string }) {
 
   return (
     <article>
-      <p className="text-sm font-bold uppercase tracking-[0.2em] text-ink-soft">Pass the memory</p>
-      <h1 className="mt-3 font-hand text-2xl font-bold leading-tight text-brand-red sm:text-4xl">
-        {open ? `${name ?? "A friend"} passed you a memory` : "Some places never leave us"}
+      <p className="text-sm font-bold uppercase tracking-[0.2em] text-ink-soft">
+        Pass the memory
+      </p>
+      <h1 className="mt-3 font-display text-3xl leading-tight text-brand-red sm:text-4xl">
+        {open
+          ? `${name ?? "A friend"} passed you a memory`
+          : "Some places never leave us"}
       </h1>
       {open && (
         <p className="mt-4 text-lg leading-relaxed text-ink">
@@ -69,7 +73,7 @@ async function InviteContent({ code }: { code: string }) {
 
       {open?.memory && (
         <div className="mx-auto mt-10 max-w-xs">
-          <PolaroidCard memory={open.memory} eager />
+          <MemoryCard memory={open.memory} eager />
         </div>
       )}
 

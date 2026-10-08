@@ -6,7 +6,7 @@ import { useLayoutEffect, useRef, useState, type FormEvent } from "react";
 import { useAuth } from "@/components/auth-provider";
 import { PinPicker } from "@/components/map/pin-picker";
 import { PassTheMemory } from "@/components/pass-the-memory";
-import { card, input, primaryButton } from "@/components/ui";
+import { card, input, pageTitle, primaryButton } from "@/components/ui";
 import { friendlyError } from "@/lib/auth-errors";
 import { personPath } from "@/lib/people";
 import { pinAt, type Pin } from "@/lib/pins";
@@ -172,7 +172,7 @@ function StoryForm({
   if (shared) {
     return (
       <div className={card}>
-        <h1 className="text-xl font-extrabold text-brand-red sm:text-2xl">Thank you for sharing</h1>
+        <h1 className={pageTitle}>Thank you for sharing</h1>
         <p className="mt-3 text-ink">
           Your memory of <strong>{storeName.trim()}</strong> is saved and waiting for review.
           Nobody else can see it until a moderator approves it.
@@ -204,7 +204,7 @@ function StoryForm({
 
   return (
     <form onSubmit={submit} noValidate className={card}>
-      <h1 className="text-xl font-extrabold text-brand-red sm:text-2xl">Share a memory</h1>
+      <h1 className={pageTitle}>Share a memory</h1>
       <p className="mt-2 text-ink-soft">
         The store you never forgot, in a photo and a few lines.
       </p>
@@ -313,7 +313,7 @@ function StoryForm({
           <button
             type="button"
             onClick={() => setMapOpen(true)}
-            className="mt-2 inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-bold text-brand-red ring-1 ring-brand-red/30 transition hover:bg-brand-red/5"
+            className="mt-2 inline-flex items-center gap-2 rounded-full border-2 border-ink bg-cream px-4 py-1.5 text-sm font-extrabold text-ink shadow-[2px_2px_0_var(--ink)] transition hover:bg-white"
           >
             Put the store on the map
           </button>

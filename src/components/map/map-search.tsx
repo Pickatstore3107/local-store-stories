@@ -7,7 +7,9 @@ import { MemoryThumb } from "./map-details";
 import type { PinnedMemory } from "./memory-map";
 import { searchPlaces, type Place } from "./place-search";
 
-export type Found = { type: "memory"; memory: PinnedMemory } | { type: "place"; place: Place };
+export type Found =
+  | { type: "memory"; memory: PinnedMemory }
+  | { type: "place"; place: Place };
 
 type Results = { query: string; places: Place[]; failed: boolean };
 
@@ -37,6 +39,12 @@ export function MapSearch({
     () => (words.length ? memories.filter((m) => memoryMatches(m, words)).slice(0, 4) : []),
     [memories, words],
   );
+
+  // The search button at the top of other pages opens the map ready to type.
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("search") === "1")
+      input.current?.focus();
+  }, []);
 
   // Asks Photon once typing pauses; a newer search cancels the one before.
   useEffect(() => {
@@ -96,9 +104,9 @@ export function MapSearch({
           event.preventDefault();
           pick(options[current]);
         }}
-        className="flex h-12 items-center gap-2 rounded-full bg-white pl-4 pr-1.5 shadow-[0_8px_24px_-12px_rgba(43,29,26,0.55)] ring-1 ring-ink/10 focus-within:ring-2 focus-within:ring-brand-red/40"
+        className="flex h-12 items-center gap-2 rounded-full border-2 border-ink bg-[#fffaf0] pl-4 pr-1.5 pop focus-within:ring-4 focus-within:ring-brand-yellow/60"
       >
-        <SearchIcon className="h-5 w-5 shrink-0 text-ink-soft" />
+        <SearchIcon className="h-5 w-5 shrink-0 text-ink" />
         <label htmlFor={`${id}-input`} className="sr-only">
           Search stores and places in Hyderabad
         </label>
@@ -144,7 +152,7 @@ export function MapSearch({
         <div
           // Keeps the box focused while a result is tapped.
           onPointerDown={(event) => event.preventDefault()}
-          className="absolute inset-x-0 top-14 z-30 max-h-[min(26rem,60dvh)] overflow-y-auto rounded-2xl bg-white py-2 shadow-[0_16px_40px_-16px_rgba(43,29,26,0.6)] ring-1 ring-ink/10"
+          className="absolute inset-x-0 top-15 z-30 max-h-[min(26rem,60dvh)] overflow-y-auto rounded-2xl border-2 border-ink bg-[#fffaf0] py-2 pop-lg"
         >
           <ul id={`${id}-list`} role="listbox" aria-label="Search results">
             {options.map((found, i) => (
@@ -154,7 +162,7 @@ export function MapSearch({
                 role="option"
                 aria-selected={i === current}
                 onClick={() => pick(found)}
-                className={`flex cursor-pointer items-center gap-3 px-4 py-2.5 ${i === current ? "bg-paper" : "hover:bg-paper/60"}`}
+                className={`flex cursor-pointer items-center gap-3 px-4 py-2.5 ${i === current ? "bg-brand-yellow/30" : "hover:bg-paper"}`}
               >
                 {found.type === "memory" ? <MemoryOption memory={found.memory} /> : <PlaceOption place={found.place} />}
               </li>
@@ -197,7 +205,7 @@ function PlaceOption({ place }: { place: Place }) {
   const Icon = place.store ? StoreIcon : PlaceIcon;
   return (
     <>
-      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-paper text-ink-soft">
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 border-ink bg-cream text-ink">
         <Icon className="h-5 w-5" />
       </span>
       <span className="min-w-0">

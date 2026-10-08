@@ -37,7 +37,7 @@ export function StoryDetails({ story, children }: { story: ReviewStory; children
   const onMap = pinLink(story.pin);
 
   return (
-    <article className="w-full overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-ink/5">
+    <article className="w-full overflow-hidden rounded-3xl border-2 border-ink bg-[#fff8ea] pop-lg">
       {story.photoUrl ? (
         // eslint-disable-next-line @next/next/no-img-element -- private, signed link from our server
         <img
@@ -52,7 +52,7 @@ export function StoryDetails({ story, children }: { story: ReviewStory; children
       )}
 
       <div className="p-6 sm:p-8">
-        <h2 className="text-xl font-extrabold text-ink">{story.storeName}</h2>
+        <h2 className="font-display text-2xl leading-tight text-ink">{story.storeName}</h2>
         <p className="text-sm text-ink-soft">
           {story.category} · {place}
         </p>

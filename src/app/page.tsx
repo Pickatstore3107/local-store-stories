@@ -19,8 +19,12 @@ export default async function Home() {
         </p>
       ) : wall.memories.length === 0 ? (
         <div className="mt-12 text-center">
-          <p className="font-hand text-2xl text-ink">The first memories are on their way.</p>
-          <p className="mt-2 text-ink-soft">Which store do you still think about?</p>
+          <p className="font-display text-2xl text-ink">
+            The first memories are on their way.
+          </p>
+          <p className="mt-2 text-ink-soft">
+            Which store do you still think about?
+          </p>
         </div>
       ) : (
         <WallBrowser wall={wall} />

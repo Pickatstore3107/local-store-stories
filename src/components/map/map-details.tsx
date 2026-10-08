@@ -17,9 +17,9 @@ import type { Shop } from "./shops";
 // details of whichever one is open.
 
 const smallButton =
-  "inline-flex items-center justify-center gap-1.5 rounded-full px-4 py-2 text-sm font-bold transition";
-export const redButton = `${smallButton} bg-brand-red text-white hover:bg-brand-red-deep`;
-export const outlineButton = `${smallButton} text-brand-red ring-1 ring-brand-red/30 hover:bg-brand-red/5`;
+  "inline-flex items-center justify-center gap-1.5 rounded-full border-2 border-ink px-4 py-1.5 text-sm font-extrabold shadow-[2px_2px_0_var(--ink)] transition active:translate-x-px active:translate-y-px active:shadow-none";
+export const redButton = `${smallButton} bg-brand-red text-cream hover:bg-brand-red-deep`;
+export const outlineButton = `${smallButton} bg-cream text-ink hover:bg-white`;
 
 /** A memory's photo, small, beside its name. */
 export function MemoryThumb({ memory, className = "w-11" }: { memory: PinnedMemory; className?: string }) {
@@ -37,7 +37,7 @@ export function MemoryThumb({ memory, className = "w-11" }: { memory: PinnedMemo
           className="aspect-square w-full bg-paper object-cover"
         />
       ) : (
-        <span className="flex aspect-square w-full items-center justify-center bg-brand-red/10 font-hand text-lg font-bold text-brand-red">
+        <span className="flex aspect-square w-full items-center justify-center bg-brand-red/10 font-display text-xl text-brand-red">
           {memory.storeName.charAt(0)}
         </span>
       )}
@@ -81,7 +81,10 @@ export function MemoryRow({
     <Row onClick={onOpen}>
       <MemoryThumb memory={memory} />
       <span className="min-w-0 flex-1">
-        <span lang={textLang(memory.storeName)} className="block truncate font-hand text-lg font-bold leading-tight text-ink">
+        <span
+          lang={textLang(memory.storeName)}
+          className="block truncate font-display text-lg leading-tight text-ink"
+        >
           {memory.storeName}
         </span>
         <span className="block truncate text-sm text-ink-soft">
@@ -112,7 +115,7 @@ function DetailHeader({ title, lang, onClose, children }: { title: string; lang?
   return (
     <div className="flex items-start gap-3">
       <div className="min-w-0 flex-1">
-        <h2 lang={lang} className="text-xl font-extrabold leading-tight text-ink">
+        <h2 lang={lang} className="font-display text-2xl leading-tight text-ink">
           {title}
         </h2>
         {children}

@@ -125,3 +125,11 @@ export function DirectionsIcon(props: IconProps) {
     </Icon>
   );
 }
+
+export function ArrowIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M5 12h14m-6-6 6 6-6 6" strokeWidth="2.4" />
+    </Icon>
+  );
+}

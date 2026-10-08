@@ -8,14 +8,16 @@ export const metadata: Metadata = {
 export default function PrivacyPage() {
   return (
     <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-6 sm:px-5 sm:py-12 text-ink">
-      <h1 className="text-2xl font-extrabold text-brand-red sm:text-3xl">Privacy notice</h1>
+      <h1 className="font-display text-3xl text-brand-red sm:text-4xl">
+        Privacy notice
+      </h1>
       <p className="mt-2 text-sm text-ink-soft">
         Draft for the pilot. Last updated 8 October 2026.
       </p>
 
       <div className="mt-8 space-y-6 leading-relaxed">
         <section>
-          <h2 className="text-lg font-bold">Who we are</h2>
+          <h2 className="font-display text-xl">Who we are</h2>
           <p className="mt-2">
             Local Stores &amp; Their Stories is a campaign run by Pick at Store. We collect
             only what we need to let you share memories of local stores.
@@ -23,7 +25,7 @@ export default function PrivacyPage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-bold">What we collect</h2>
+          <h2 className="font-display text-xl">What we collect</h2>
           <ul className="mt-2 list-disc space-y-1 pl-6">
             <li>Your Google email address, to sign you in. Never shown publicly.</li>
             <li>The name and city you choose. Shown publicly with your stories.</li>
@@ -41,7 +43,7 @@ export default function PrivacyPage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-bold">Who sees your stories</h2>
+          <h2 className="font-display text-xl">Who sees your stories</h2>
           <p className="mt-2">
             A moderator reads every story, with its photo and your public name and city,
             before anyone else can see it. Moderators never see your email address. Once
@@ -59,7 +61,7 @@ export default function PrivacyPage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-bold">The Hyderabad map</h2>
+          <h2 className="font-display text-xl">The Hyderabad map</h2>
           <p className="mt-2">
             Putting a memory on the map is optional. When you tap where the store was, we keep
             only which 500-metre square of the city you tapped, and the map shows the pin in the
@@ -88,7 +90,7 @@ export default function PrivacyPage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-bold">Instagram posts on Home</h2>
+          <h2 className="font-display text-xl">Instagram posts on Home</h2>
           <p className="mt-2">
             At the bottom of Home we show public Instagram posts about local stores, through a
             service called Curator. New posts appear on their own, without our team checking
@@ -100,7 +102,7 @@ export default function PrivacyPage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-bold">Invite links</h2>
+          <h2 className="font-display text-xl">Invite links</h2>
           <p className="mt-2">
             Each memory comes with an invite link for you to send to friends, and they can pass
             it on. Anyone with the link can join through it and, once the memory is approved,
@@ -113,7 +115,7 @@ export default function PrivacyPage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-bold">Profiles and following</h2>
+          <h2 className="font-display text-xl">Profiles and following</h2>
           <p className="mt-2">
             Everyone who joins has a profile page with the name and city they chose, the
             memories they shared with everyone, and how many people they follow and are followed
@@ -132,7 +134,7 @@ export default function PrivacyPage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-bold">Reporting a memory</h2>
+          <h2 className="font-display text-xl">Reporting a memory</h2>
           <p className="mt-2">
             If a memory is unkind, shows private details, or uses your photo or your store
             without your agreement, report it from the memory&apos;s page. A moderator reads
@@ -143,7 +145,7 @@ export default function PrivacyPage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-bold">What we never do</h2>
+          <h2 className="font-display text-xl">What we never do</h2>
           <ul className="mt-2 list-disc space-y-1 pl-6">
             <li>We never sell your personal data.</li>
             <li>We never show your email address or home location.</li>
@@ -152,18 +154,19 @@ export default function PrivacyPage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-bold">Your choices</h2>
+          <h2 className="font-display text-xl">Your choices</h2>
           <p className="mt-2">
-            You can see and edit your public details, and delete your account and everything
-            linked to it (your memories and photos, your invite links, who you follow and who
-            follows you, the people you blocked, the list of memories you loved and the reports
-            you sent), from <strong>Profile and settings</strong> on your profile at any time. You can also write to us to
-            access, correct or erase your data.
+            You can see and edit your public details, and delete your account
+            and everything linked to it (your memories and photos, your invite
+            links, who you follow and who follows you, the people you blocked,
+            the list of memories you loved and the reports you sent), from{" "}
+            <strong>Profile and settings</strong> on your profile at any time.
+            You can also write to us to access, correct or erase your data.
           </p>
         </section>
 
         <section>
-          <h2 className="text-lg font-bold">Questions or complaints</h2>
+          <h2 className="font-display text-xl">Questions or complaints</h2>
           <p className="mt-2">
             Contact our grievance officer at{" "}
             <a

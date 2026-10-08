@@ -85,8 +85,14 @@ export function MapExplorer({
                       memory.id === selected?.id ? "ring-2 ring-brand-yellow" : "ring-ink/5"
                     }`}
                   >
-                    <PolaroidPhoto url={memory.photoUrl} storeName={memory.storeName} />
-                    <span lang={textLang(memory.storeName)} className="mt-2 block font-hand text-base font-bold leading-tight text-ink">
+                    <PolaroidPhoto
+                      url={memory.photoUrl}
+                      storeName={memory.storeName}
+                    />
+                    <span
+                      lang={textLang(memory.storeName)}
+                      className="mt-2 block font-display text-base leading-tight text-ink"
+                    >
                       {memory.storeName}
                     </span>
                     <span className="block truncate text-xs text-ink-soft">
@@ -130,7 +136,10 @@ function MapCard({
         <PolaroidPhoto url={memory.photoUrl} storeName={memory.storeName} eager />
       </div>
       <div className="min-w-0 pr-6">
-        <h3 lang={textLang(memory.storeName)} className="font-hand text-xl font-bold leading-tight text-ink">
+        <h3
+          lang={textLang(memory.storeName)}
+          className="font-display text-xl leading-tight text-ink"
+        >
           {memory.storeName}
         </h3>
         <p className="mt-0.5 text-sm text-ink-soft">

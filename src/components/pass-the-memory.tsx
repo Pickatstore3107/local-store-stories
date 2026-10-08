@@ -101,8 +101,11 @@ export function PassTheMemory({
   }
 
   return (
-    <section aria-labelledby={`pass-${storyId}`} className="rounded-2xl bg-brand-yellow/15 p-5">
-      <h2 id={`pass-${storyId}`} className="font-hand text-2xl font-bold text-ink">
+    <section
+      aria-labelledby={`pass-${storyId}`}
+      className="rounded-2xl bg-brand-yellow/15 p-5"
+    >
+      <h2 id={`pass-${storyId}`} className="font-display text-2xl text-ink">
         Pass the memory
       </h2>
       <p className="mt-1 text-sm leading-relaxed text-ink-soft">
@@ -122,7 +125,7 @@ export function PassTheMemory({
           {busy ? "Making your link…" : "Get my invite link"}
         </button>
       ) : (
-        <div className="mt-4 rounded-xl bg-white px-4 py-3 text-sm ring-1 ring-ink/5">
+        <div className="mt-4 rounded-xl border-2 border-dashed border-ink/40 bg-[#fffaf0] px-4 py-3 text-sm">
           <p id={`link-${storyId}`} className="font-bold text-ink">
             Your invite link
           </p>

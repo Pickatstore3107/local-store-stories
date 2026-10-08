@@ -46,9 +46,9 @@ type Open =
   | null;
 
 const chip =
-  "shrink-0 rounded-full px-3.5 py-1.5 text-sm font-bold shadow-sm transition";
-const chipOff = "bg-white text-ink ring-1 ring-ink/10 hover:bg-paper";
-const chipOn = "bg-brand-red text-white ring-1 ring-brand-red";
+  "shrink-0 rounded-full border-2 border-ink px-3.5 py-1 text-sm font-extrabold shadow-[2px_2px_0_var(--ink)] transition";
+const chipOff = "bg-cream text-ink hover:bg-white";
+const chipOn = "bg-brand-red text-cream";
 
 const WIDE = "(min-width: 640px)";
 
@@ -423,7 +423,7 @@ export function MapScreen({
         onClick={findMe}
         aria-pressed={!!me}
         title="Show where I am"
-        className={`absolute right-3 z-20 flex h-12 w-12 items-center justify-center rounded-full bg-white shadow-[0_8px_20px_-8px_rgba(43,29,26,0.6)] ring-1 ring-ink/10 transition-[bottom] duration-300 hover:bg-paper max-sm:bottom-[calc(var(--sheet-px)+2.25rem)] sm:bottom-10 ${me ? "text-[#1a73e8]" : "text-ink"} ${!wide && sheetAt === "full" ? "max-sm:hidden" : ""}`}
+        className={`absolute right-3 z-20 flex h-12 w-12 items-center justify-center rounded-full border-2 border-ink bg-cream pop transition-[bottom] duration-300 hover:bg-white max-sm:bottom-[calc(var(--sheet-px)+2.25rem)] sm:bottom-10 ${me ? "text-[#1a73e8]" : "text-ink"} ${!wide && sheetAt === "full" ? "max-sm:hidden" : ""}`}
       >
         {location.status === "finding" ? (
           <span
@@ -445,7 +445,7 @@ export function MapScreen({
         header={
           !opened && (
             <div className="flex items-baseline justify-between gap-3">
-              <h2 className="text-lg font-extrabold text-ink">
+              <h2 className="font-display text-2xl text-ink">
                 {here ? "Near you" : "In this area"}
               </h2>
               <p role="status" className="truncate text-sm text-ink-soft">
@@ -494,7 +494,7 @@ export function MapScreen({
 
             {listed.length > 0 && (
               <section aria-label="Memories" className="mt-2">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-ink-soft">
+                <h3 className="text-xs font-extrabold uppercase tracking-wider text-brand-red">
                   Memories
                 </h3>
                 <ul className="-mx-2 mt-1">
@@ -512,7 +512,7 @@ export function MapScreen({
 
             {shopList.length > 0 && (
               <section aria-label="Shops" className="mt-4">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-ink-soft">
+                <h3 className="text-xs font-extrabold uppercase tracking-wider text-brand-red">
                   {here ? "Shops within 2 km" : "Shops here"}
                 </h3>
                 <ul className="-mx-2 mt-1">
@@ -592,7 +592,7 @@ function LocationNote({
   return (
     <div
       role={location.status === "off" ? undefined : "alert"}
-      className="mb-2 flex items-center gap-3 rounded-2xl bg-[#1a73e8]/8 px-4 py-3"
+      className="mb-2 flex items-center gap-3 rounded-2xl border-2 border-dashed border-ink/30 bg-paper px-4 py-3"
     >
       <p className="min-w-0 flex-1 text-sm text-ink">{text}</p>
       {location.status !== "outside" && (
@@ -611,7 +611,7 @@ function LocationNote({
 function MapNote({ note }: { note: "empty" | "signIn" | "nobody" }) {
   const { user } = useAuth();
   return (
-    <div className="mb-2 rounded-2xl bg-brand-yellow/15 px-4 py-3 text-sm text-ink">
+    <div className="mb-2 rounded-2xl border-2 border-dashed border-ink/30 bg-brand-yellow/20 px-4 py-3 text-sm text-ink">
       {note === "empty" && (
         <p>
           No pins yet. When you share a memory of a Hyderabad store, tap where

@@ -60,7 +60,10 @@ export function InstagramFeed() {
 
   return (
     <section aria-labelledby="instagram-heading" className="mt-10 sm:mt-16">
-      <h2 id="instagram-heading" className="text-lg font-extrabold text-ink sm:text-xl">
+      <h2
+        id="instagram-heading"
+        className="font-display text-2xl text-ink sm:text-3xl"
+      >
         From Instagram
       </h2>
       <p className="mt-1 text-sm text-ink-soft">
