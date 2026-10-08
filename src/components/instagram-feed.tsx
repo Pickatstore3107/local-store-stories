@@ -64,7 +64,7 @@ export function InstagramFeed() {
         From Instagram
       </h2>
       <p className="mt-1 text-sm text-ink-soft">
-        Posts about local stores, picked by the campaign team.
+        Public posts about local stores, straight from Instagram.
       </p>
       <div ref={box} className="mt-4 min-h-40" />
     </section>
