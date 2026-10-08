@@ -3,11 +3,19 @@
 import Link from "next/link";
 import type { User } from "firebase/auth";
 import { useEffect, useState } from "react";
+import { PinPicker } from "@/components/map/pin-picker";
 import { PassTheMemory } from "@/components/pass-the-memory";
 import { card } from "@/components/ui";
 import { friendlyError } from "@/lib/auth-errors";
 import { memoryPath } from "@/lib/memories";
-import { deleteStory, loadMyStories, type MyStory, type StoryStatus } from "@/lib/stories";
+import { mapPath, type Pin } from "@/lib/pins";
+import {
+  deleteStory,
+  loadMyStories,
+  setStoryPin,
+  type MyStory,
+  type StoryStatus,
+} from "@/lib/stories";
 
 const statusLabels: Record<StoryStatus, string> = {
   pending: "Waiting for review",
@@ -34,10 +42,14 @@ const statusStyles: Record<StoryStatus, string> = {
   hidden: "bg-brand-red/10 text-brand-red-deep",
 };
 
+const samePin = (a: Pin | null, b: Pin | null) => a?.row === b?.row && a?.col === b?.col;
+
 export function MyStories({ user }: { user: User }) {
   const [stories, setStories] = useState<MyStory[] | null>(null);
   const [confirming, setConfirming] = useState<string | null>(null);
   const [passing, setPassing] = useState<string | null>(null);
+  // The memory whose pin is being changed, and where it would go.
+  const [pinning, setPinning] = useState<{ id: string; pin: Pin | null } | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -62,6 +74,22 @@ export function MyStories({ user }: { user: User }) {
       setCopied(story.id);
     } catch {
       setError("Copying isn't allowed here. Open the memory and copy its address instead.");
+    }
+  }
+
+  async function savePin(story: MyStory, pin: Pin | null) {
+    setError(null);
+    setBusy(true);
+    try {
+      await setStoryPin(user, story, pin);
+      setStories(
+        (list) => list?.map((s) => (s.id === story.id ? { ...s, pin: pin ?? undefined } : s)) ?? null,
+      );
+      setPinning(null);
+    } catch (e) {
+      setError(friendlyError(e));
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -125,6 +153,11 @@ export function MyStories({ user }: { user: User }) {
                         ★ Featured
                       </span>
                     )}
+                    {story.pin && (
+                      <span className="rounded-full bg-paper px-2 py-0.5 font-bold text-ink">
+                        {story.status === "approved" && story.visibility === "public" ? "On the map" : "Pinned"}
+                      </span>
+                    )}
                     {story.status === "approved" && lovedBy(story.reactionCount) && (
                       <span className="text-ink-soft">{lovedBy(story.reactionCount)}</span>
                     )}
@@ -138,6 +171,20 @@ export function MyStories({ user }: { user: User }) {
                         className="font-bold text-brand-red underline underline-offset-4"
                       >
                         Pass the memory
+                      </button>
+                    )}
+                    {(story.status === "pending" || story.status === "approved") && (
+                      <button
+                        type="button"
+                        aria-expanded={pinning?.id === story.id}
+                        onClick={() =>
+                          setPinning(
+                            pinning?.id === story.id ? null : { id: story.id, pin: story.pin ?? null },
+                          )
+                        }
+                        className="font-bold text-brand-red underline underline-offset-4"
+                      >
+                        {story.pin ? "Move pin" : "Put on the map"}
                       </button>
                     )}
                     {story.status === "approved" && (
@@ -192,6 +239,45 @@ export function MyStories({ user }: { user: User }) {
                   )}
                 </div>
               </div>
+              {pinning?.id === story.id && (
+                <div className="mt-3 rounded-2xl bg-paper p-3">
+                  <PinPicker
+                    value={pinning.pin}
+                    onChange={(pin) => setPinning({ id: story.id, pin })}
+                    neighbourhood={story.neighbourhood}
+                  />
+                  <p className="mt-2 text-sm text-ink-soft">
+                    {story.visibility === "public"
+                      ? "The map shows memories shared with everyone, once they're approved."
+                      : "This memory is shared by link, so it won't show on the map. The pin is kept in case you share it with everyone later."}
+                  </p>
+                  <div className="mt-3 flex flex-wrap items-center gap-3">
+                    <button
+                      type="button"
+                      disabled={busy || samePin(pinning.pin, story.pin ?? null)}
+                      onClick={() => savePin(story, pinning.pin)}
+                      className="rounded-full bg-brand-red px-4 py-2 text-sm font-bold text-white transition hover:bg-brand-red-deep disabled:opacity-50"
+                    >
+                      {busy ? "Saving…" : pinning.pin || !story.pin ? "Save pin" : "Take it off the map"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPinning(null)}
+                      className="text-sm font-bold text-ink-soft underline underline-offset-4"
+                    >
+                      Cancel
+                    </button>
+                    {story.pin && story.status === "approved" && story.visibility === "public" && (
+                      <Link
+                        href={mapPath(story.id)}
+                        className="text-sm font-bold text-brand-red underline underline-offset-4"
+                      >
+                        See it on the map
+                      </Link>
+                    )}
+                  </div>
+                </div>
+              )}
               {passing === story.id && (
                 <div className="mt-3">
                   <PassTheMemory

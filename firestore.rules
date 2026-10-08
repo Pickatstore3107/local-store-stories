@@ -136,10 +136,20 @@ service cloud.firestore {
           'Stores We Miss'];
       }
 
+      // Where the store was, for the map: a square of about 500 metres in
+      // Hyderabad, never an exact spot. Must match src/lib/pins.ts.
+      function validPin(pin) {
+        return pin is map
+          && pin.keys().hasOnly(['row', 'col'])
+          && pin.keys().hasAll(['row', 'col'])
+          && pin.row is int && pin.row >= 3822 && pin.row <= 3922
+          && pin.col is int && pin.col >= 16638 && pin.col <= 16755;
+      }
+
       function validNewStory(data) {
         return data.keys().hasOnly(['authorId', 'storeName', 'category', 'city',
             'neighbourhood', 'caption', 'year', 'ordered', 'visibility',
-            'rightsConfirmed', 'status', 'photoId', 'createdAt', 'updatedAt'])
+            'rightsConfirmed', 'status', 'photoId', 'pin', 'createdAt', 'updatedAt'])
           && data.keys().hasAll(['authorId', 'storeName', 'category', 'city', 'caption',
             'visibility', 'rightsConfirmed', 'status', 'photoId', 'createdAt', 'updatedAt'])
           && data.authorId == request.auth.uid
@@ -152,6 +162,7 @@ service cloud.firestore {
           && (!('year' in data)
               || (data.year is int && data.year >= 1940 && data.year <= request.time.year()))
           && data.visibility in ['public', 'link']
+          && (!('pin' in data) || validPin(data.pin))
           && data.rightsConfirmed == true
           && data.status == 'pending'
           // The photo's ID at Cloudinary; must match photoId() in src/lib/server/photos.ts.
@@ -206,6 +217,14 @@ service cloud.firestore {
                   && before.visibility == 'public'));
       }
 
+      // The author puts their memory on the map, moves its pin or takes it off.
+      function validPinChange(before, after) {
+        return isAuthor()
+          && after.diff(before).affectedKeys().hasOnly(['pin', 'updatedAt'])
+          && (!('pin' in after) || validPin(after.pin))
+          && after.updatedAt == request.time;
+      }
+
       function myReaction() {
         return /databases/$(database)/documents/usersPrivate/$(request.auth.uid)/reactions/$(storyId);
       }
@@ -238,7 +257,8 @@ service cloud.firestore {
 
       allow update: if validReview(resource.data, request.resource.data)
         || validFeature(resource.data, request.resource.data)
-        || validReactionCount(resource.data, request.resource.data);
+        || validReactionCount(resource.data, request.resource.data)
+        || validPinChange(resource.data, request.resource.data);
       allow delete: if isAuthor();
     }
 

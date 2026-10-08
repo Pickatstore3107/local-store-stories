@@ -1,6 +1,7 @@
 import { cacheLife, cacheTag } from "next/cache";
 import { excerpt, type MemoryResult, type Wall, type WallMemory } from "@/lib/memories";
 import { isUserId } from "@/lib/people";
+import { isPin, pinCenter } from "@/lib/pins";
 import type { Category, Visibility } from "@/lib/stories";
 import {
   getPublicDocument,
@@ -60,6 +61,7 @@ export function readStory({ id, data }: PublicDocument) {
     sharedAt: number(data.createdAt) ?? 0,
     approvedAt: number(data.reviewedAt) ?? number(data.createdAt) ?? 0,
     featuredAt: number(data.featuredAt),
+    pin: isPin(data.pin) ? pinCenter(data.pin) : null,
   };
   const { authorId, storeName, category, city, caption, visibility, photoId } = story;
   if (
@@ -144,6 +146,25 @@ export async function loadPublicMemories(): Promise<PublicMemories | null> {
   }
 }
 
+/** An approved memory as a card on the Wall, the map or a profile. */
+export function wallMemory(story: PublicStory, authorName: string | null): WallMemory {
+  return {
+    id: story.id,
+    storeName: story.storeName,
+    category: story.category,
+    city: story.city,
+    neighbourhood: story.neighbourhood,
+    caption: excerpt(story.caption, CARD_CAPTION_MAX),
+    year: story.year,
+    authorId: story.authorId,
+    authorName,
+    photoUrl: safely(() => cardPhotoUrl(story.photoId)),
+    approvedAt: story.approvedAt,
+    featuredAt: story.featuredAt,
+    pin: story.pin,
+  };
+}
+
 /** Every approved memory shared with everyone, newest first. Null on error. */
 export async function loadWall(): Promise<Wall | null> {
   "use cache";
@@ -153,21 +174,8 @@ export async function loadWall(): Promise<Wall | null> {
     cacheLife(RETRY_LIFE);
     return null;
   }
-  const memories: WallMemory[] = data.stories
-    .map((story) => ({
-      id: story.id,
-      storeName: story.storeName,
-      category: story.category,
-      city: story.city,
-      neighbourhood: story.neighbourhood,
-      caption: excerpt(story.caption, CARD_CAPTION_MAX),
-      year: story.year,
-      authorId: story.authorId,
-      authorName: data.people[story.authorId]?.name ?? null,
-      photoUrl: safely(() => cardPhotoUrl(story.photoId)),
-      approvedAt: story.approvedAt,
-      featuredAt: story.featuredAt,
-    }))
+  const memories = data.stories
+    .map((story) => wallMemory(story, data.people[story.authorId]?.name ?? null))
     .sort((a, b) => b.approvedAt - a.approvedAt);
   const featured = memories
     .filter((memory) => memory.featuredAt)
@@ -210,6 +218,7 @@ export async function loadMemory(id: string): Promise<MemoryResult> {
         sharedAt: story.sharedAt,
         approvedAt: story.approvedAt,
         featuredAt: story.featuredAt,
+        pin: story.pin,
         photoUrl: safely(() => fullPhotoUrl(story.photoId)),
         shareImageUrl: safely(() => sharePhotoUrl(story.photoId)),
       },

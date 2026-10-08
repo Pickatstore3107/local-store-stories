@@ -26,7 +26,7 @@ function PersonIcon() {
 }
 
 /**
- * Home, the bell and your profile, like Instagram. Visitors get Sign in, and
+ * Home, the map, the bell and your profile, like Instagram. Visitors get Sign in, and
  * people who signed in but haven't finished joining are sent to finish.
  */
 export function SiteHeader() {
@@ -49,6 +49,9 @@ export function SiteHeader() {
       <nav aria-label="Main" className="flex items-center gap-1 sm:gap-3">
         <Link href="/" aria-current={pathname === "/" ? "page" : undefined} className={navLink}>
           Home
+        </Link>
+        <Link href="/map" aria-current={pathname === "/map" ? "page" : undefined} className={navLink}>
+          Map
         </Link>
         {!loading && me && <BellLink />}
         {!loading && me && (

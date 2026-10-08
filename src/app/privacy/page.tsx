@@ -29,6 +29,7 @@ export default function PrivacyPage() {
             <li>The name and city you choose. Shown publicly with your stories.</li>
             <li>Stories, photos and videos you choose to share, once they are approved.</li>
             <li>Photos are resized on your phone and the location hidden inside them is removed before upload. They are stored privately with our image provider, Cloudinary, until they are approved.</li>
+            <li>If you put a memory on the Hyderabad map, the 500-metre square of the city you tapped, never the exact spot.</li>
             <li>Which memories you love. Only you can see this; the person who shared a memory sees only how many people loved it.</li>
             <li>Reports you send about a memory. Only moderators can read them.</li>
             <li>The invite links you make, and who joined through them. If you joined through a friend&apos;s invite link, who invited you and through which link.</li>
@@ -54,6 +55,21 @@ export default function PrivacyPage() {
             Once a story is approved, its photo is shown through a web link. If a moderator
             hides the story later, anyone who saved that link can still open the photo until
             you delete the story.
+          </p>
+        </section>
+
+        <section>
+          <h2 className="text-lg font-bold">The Hyderabad map</h2>
+          <p className="mt-2">
+            Putting a memory on the map is optional. When you tap where the store was, we keep
+            only which 500-metre square of the city you tapped, and the map shows the pin in the
+            middle of that square, so it&apos;s within about 500 metres of the store and never
+            marks a door or a home. We never use the location from your phone or your photo.
+            Only approved memories shared with everyone appear on the map. You can move the pin
+            or take it off from your profile at any time. The map itself comes from
+            OpenStreetMap, through a free service called OpenFreeMap. When a map opens, your
+            phone or computer asks OpenFreeMap for the streets to draw, so it sees your
+            internet address, as any website would. It never sees who you are or your memories.
           </p>
         </section>
 

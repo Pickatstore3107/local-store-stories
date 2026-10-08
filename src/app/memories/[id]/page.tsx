@@ -5,6 +5,7 @@ import { Suspense, type CSSProperties } from "react";
 import { PolaroidPhoto } from "@/components/polaroid";
 import { excerpt, placeLine, shortDate, textLang, tilt } from "@/lib/memories";
 import { personPath } from "@/lib/people";
+import { mapPath } from "@/lib/pins";
 import { loadMemory } from "@/lib/server/wall";
 import { MemoryActions } from "./memory-actions";
 
@@ -124,6 +125,16 @@ async function MemoryContent({ id }: { id: string }) {
         </p>
         {memory.featuredAt && (
           <p className="mt-1 text-sm font-bold text-brand-red-deep">★ Featured on Home</p>
+        )}
+        {memory.pin && memory.visibility === "public" && (
+          <p className="mt-3 text-sm">
+            <Link
+              href={mapPath(memory.id)}
+              className="font-bold text-brand-red underline underline-offset-4"
+            >
+              See it on the Hyderabad map
+            </Link>
+          </p>
         )}
         {memory.visibility === "link" && (
           <p className="mt-6 rounded-xl bg-brand-yellow/15 px-4 py-3 text-sm text-ink">

@@ -3,10 +3,12 @@
 import Link from "next/link";
 import { useLayoutEffect, useRef, useState, type FormEvent } from "react";
 import { useAuth } from "@/components/auth-provider";
+import { PinPicker } from "@/components/map/pin-picker";
 import { PassTheMemory } from "@/components/pass-the-memory";
 import { card, input, primaryButton } from "@/components/ui";
 import { friendlyError } from "@/lib/auth-errors";
 import { personPath } from "@/lib/people";
+import type { Pin } from "@/lib/pins";
 import {
   CAPTION_MAX,
   CAPTION_MIN,
@@ -72,6 +74,8 @@ function StoryForm({
   const [category, setCategory] = useState<Category | "">("");
   const [city, setCity] = useState(profile?.city ?? "");
   const [neighbourhood, setNeighbourhood] = useState("");
+  const [mapOpen, setMapOpen] = useState(false);
+  const [pin, setPin] = useState<Pin | null>(null);
   const [caption, setCaption] = useState("");
   const [year, setYear] = useState("");
   const [ordered, setOrdered] = useState("");
@@ -130,7 +134,7 @@ function StoryForm({
     try {
       const storyId = await shareStory(
         user,
-        { storeName, category, city, neighbourhood, caption, year: yearNumber, ordered, visibility },
+        { storeName, category, city, neighbourhood, caption, year: yearNumber, ordered, visibility, pin },
         photo.jpeg,
       );
       setShared(storyId);
@@ -149,6 +153,7 @@ function StoryForm({
         <p className="mt-3 text-ink">
           Your memory of <strong>{storeName.trim()}</strong> is saved and waiting for review.
           Nobody else can see it until a moderator approves it.
+          {pin && visibility === "public" && " Then it goes on the Hyderabad map too."}
         </p>
         <div className="mt-6">
           <PassTheMemory
@@ -273,6 +278,29 @@ function StoryForm({
         </div>
       </div>
 
+      <div>
+        <span className={label}>
+          On the Hyderabad map <span className={hint}>(optional)</span>
+        </span>
+        {mapOpen ? (
+          <div className="mt-2">
+            <PinPicker value={pin} onChange={setPin} neighbourhood={neighbourhood} />
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setMapOpen(true)}
+            className="mt-2 inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-bold text-brand-red ring-1 ring-brand-red/30 transition hover:bg-brand-red/5"
+          >
+            Put the store on the map
+          </button>
+        )}
+        <p className="mt-2 text-xs text-ink-soft">
+          For stores in Hyderabad. The map shows the area, never the exact spot, and only
+          memories shared with everyone.
+        </p>
+      </div>
+
       <label htmlFor="caption" className={label}>
         Your memory
       </label>
@@ -324,7 +352,7 @@ function StoryForm({
         {(
           [
             ["public", "Everyone", "On Home and my profile"],
-            ["link", "Only people I share the link with", "Not on Home or my profile"],
+            ["link", "Only people I share the link with", "Not on Home, my profile or the map"],
           ] as const
         ).map(([value, title, detail]) => (
           <label

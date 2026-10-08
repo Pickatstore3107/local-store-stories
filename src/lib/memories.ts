@@ -1,5 +1,6 @@
 // What visitors see of approved memories, shared by the server pages and the
 // browser. Plain data and helpers only: no Firebase here.
+import type { LatLng } from "./pins";
 import type { Category, Visibility } from "./stories";
 
 /** A card on the Wall. Times are milliseconds. */
@@ -18,6 +19,8 @@ export type WallMemory = {
   photoUrl: string | null;
   approvedAt: number;
   featuredAt: number | null;
+  /** The middle of its pin's square on the map, if it has one. */
+  pin: LatLng | null;
 };
 
 export type Wall = { memories: WallMemory[]; featured: WallMemory[] };

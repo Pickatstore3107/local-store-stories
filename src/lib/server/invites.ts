@@ -1,13 +1,10 @@
 import { cacheLife, cacheTag } from "next/cache";
 import { isInviteCode, type InviteLanding } from "@/lib/invite-links";
-import { excerpt } from "@/lib/memories";
 import { getPublicDocument, hasDatabase } from "./firestore";
-import { cardPhotoUrl, isStoryId, sharePhotoUrl } from "./photos";
-import { MEMORY_LIFE, RETRY_LIFE, memoryTag, readPerson, readStory, safely, text } from "./wall";
+import { isStoryId, sharePhotoUrl } from "./photos";
+import { MEMORY_LIFE, RETRY_LIFE, memoryTag, readPerson, readStory, safely, text, wallMemory } from "./wall";
 
 export const inviteTag = (code: string) => `invite-${code}`;
-
-const CARD_CAPTION_MAX = 240;
 
 /**
  * What an invite link's page shows: who sent it and the memory it was made
@@ -42,22 +39,7 @@ export async function loadInvite(code: string): Promise<InviteLanding | null> {
     return {
       status: "open",
       inviter: inviter?.name ? { name: inviter.name, city: inviter.city } : null,
-      memory: story
-        ? {
-            id: story.id,
-            storeName: story.storeName,
-            category: story.category,
-            city: story.city,
-            neighbourhood: story.neighbourhood,
-            caption: excerpt(story.caption, CARD_CAPTION_MAX),
-            year: story.year,
-            authorId: story.authorId,
-            authorName: inviter?.name ?? null,
-            photoUrl: safely(() => cardPhotoUrl(story.photoId)),
-            approvedAt: story.approvedAt,
-            featuredAt: story.featuredAt,
-          }
-        : null,
+      memory: story ? wallMemory(story, inviter?.name ?? null) : null,
       shareImageUrl: story ? safely(() => sharePhotoUrl(story.photoId)) : null,
     };
   } catch (error) {
