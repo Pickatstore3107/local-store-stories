@@ -48,7 +48,7 @@ export async function generateMetadata({ params }: PageProps<"/memories/[id]">):
 
 export default function MemoryPage({ params }: PageProps<"/memories/[id]">) {
   return (
-    <main className="mx-auto w-full max-w-2xl flex-1 px-5 py-10">
+    <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-6 sm:px-5 sm:py-10">
       <Link href="/" className="text-sm font-bold text-brand-red underline-offset-4 hover:underline">
         ← Home
       </Link>

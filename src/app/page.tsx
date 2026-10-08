@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { InstagramFeed } from "@/components/instagram-feed";
 import { primaryButton } from "@/components/ui";
 import { WallBrowser } from "@/components/wall-browser";
 import { loadWall } from "@/lib/server/wall";
@@ -8,16 +9,16 @@ export default async function Home() {
   const wall = await loadWall();
 
   return (
-    <main className="mx-auto w-full max-w-6xl flex-1 px-5 py-10 sm:py-12">
-      <div className="flex flex-wrap items-end justify-between gap-6">
+    <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-5 sm:py-12">
+      <div className="flex flex-wrap items-end justify-between gap-4 sm:gap-6">
         <div className="max-w-2xl">
-          <p className="text-sm font-bold uppercase tracking-[0.2em] text-ink-soft">
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-ink-soft sm:text-sm">
             Pick at Store presents
           </p>
-          <h1 className="mt-3 text-4xl font-extrabold leading-tight text-brand-red sm:text-5xl">
+          <h1 className="mt-2 text-3xl font-extrabold leading-tight text-brand-red sm:mt-3 sm:text-5xl">
             Local Stores &amp; Their Stories
           </h1>
-          <p className="mt-3 text-lg leading-relaxed text-ink-soft">
+          <p className="mt-2 leading-relaxed text-ink-soft sm:mt-3 sm:text-lg">
             The chai stall outside school, the bakery that smelled of Sunday, the kirana that
             kept your family&apos;s tab. Every memory here was read by a person before it was
             pinned up.
@@ -40,6 +41,8 @@ export default async function Home() {
       ) : (
         <WallBrowser wall={wall} />
       )}
+
+      <InstagramFeed />
     </main>
   );
 }

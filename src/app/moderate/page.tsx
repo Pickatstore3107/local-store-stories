@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 
 export default function ModeratePage() {
   return (
-    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-5 py-12">
+    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-4 py-6 sm:px-5 sm:py-12">
       <RequireAccount>
         <ModerationPanel />
       </RequireAccount>

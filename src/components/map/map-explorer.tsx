@@ -73,7 +73,7 @@ export function MapExplorer({
               No pins here. Zoom out or drag the map to see more.
             </p>
           ) : (
-            <ul className="-mx-5 mt-2 flex gap-5 overflow-x-auto px-5 pb-6 pt-4">
+            <ul className="-mx-4 mt-2 flex gap-4 overflow-x-auto px-4 pb-6 pt-4 sm:-mx-5 sm:gap-5 sm:px-5">
               {inView.map((memory) => (
                 <li key={memory.id} className="w-36 shrink-0">
                   <button

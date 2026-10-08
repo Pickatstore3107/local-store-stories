@@ -159,7 +159,7 @@ export function MemoryMap({
   onReady,
   fitKey,
   label,
-  className = "h-[min(68vh,640px)] min-h-[420px]",
+  className = "h-below-menu max-h-[640px] min-h-[340px]",
 }: {
   memories: PinnedMemory[];
   selectedId: string | null;

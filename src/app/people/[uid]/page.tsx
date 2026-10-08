@@ -33,7 +33,7 @@ export async function generateMetadata({ params }: PageProps<"/people/[uid]">): 
 
 export default function PersonPage({ params }: PageProps<"/people/[uid]">) {
   return (
-    <main className="mx-auto w-full max-w-3xl flex-1 px-5 py-10">
+    <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-6 sm:px-5 sm:py-10">
       <Suspense fallback={<ProfileSkeleton />}>
         {params.then(({ uid }) => (
           <Profile uid={uid} />

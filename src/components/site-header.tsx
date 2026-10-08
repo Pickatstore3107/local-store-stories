@@ -9,7 +9,7 @@ import { Avatar } from "./avatar";
 import { BellLink } from "./bell";
 
 const navLink =
-  "rounded-full px-3 py-2 text-sm font-bold text-brand-red transition hover:bg-brand-red/5";
+  "rounded-full px-2.5 py-2 text-sm font-bold text-brand-red transition hover:bg-brand-red/5 sm:px-3";
 
 function PersonIcon() {
   return (
@@ -35,7 +35,7 @@ export function SiteHeader() {
   const me = user && consent && profile ? { uid: user.uid, name: profile.displayName } : null;
 
   return (
-    <header className="flex items-center justify-between gap-3 px-5 pt-6 sm:px-8">
+    <header className="flex items-center justify-between gap-2 px-4 pt-3 sm:gap-3 sm:px-8 sm:pt-6">
       <Link href="/" aria-label="Local Stores & Their Stories home">
         <Image
           src="/brand/pas-logo-horizontal.webp"
@@ -43,7 +43,7 @@ export function SiteHeader() {
           width={900}
           height={419}
           priority
-          className="h-10 w-auto sm:h-12"
+          className="h-9 w-auto sm:h-12"
         />
       </Link>
       <nav aria-label="Main" className="flex items-center gap-1 sm:gap-3">

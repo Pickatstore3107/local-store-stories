@@ -7,7 +7,7 @@ export const metadata: Metadata = {
 
 export default function PrivacyPage() {
   return (
-    <main className="mx-auto w-full max-w-2xl flex-1 px-5 py-12 text-ink">
+    <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-6 sm:px-5 sm:py-12 text-ink">
       <h1 className="text-3xl font-extrabold text-brand-red">Privacy notice</h1>
       <p className="mt-2 text-sm text-ink-soft">
         Draft for the pilot. Last updated 8 October 2026.
@@ -70,6 +70,17 @@ export default function PrivacyPage() {
             OpenStreetMap, through a free service called OpenFreeMap. When a map opens, your
             phone or computer asks OpenFreeMap for the streets to draw, so it sees your
             internet address, as any website would. It never sees who you are or your memories.
+          </p>
+        </section>
+
+        <section>
+          <h2 className="text-lg font-bold">Instagram posts on Home</h2>
+          <p className="mt-2">
+            At the bottom of Home we show some public Instagram posts about local stores,
+            chosen by our team, through a service called Curator. They load only when you
+            scroll down to them. Your phone or computer then gets them from Curator and
+            Instagram, which see your internet address, as any website would, and may use
+            their own cookies. They never see who you are on this site or your memories.
           </p>
         </section>
 
