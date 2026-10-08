@@ -53,7 +53,7 @@ export function ActivityList() {
 
   return (
     <section className={card}>
-      <h1 className="text-2xl font-extrabold text-brand-red">Activity</h1>
+      <h1 className="text-xl font-extrabold text-brand-red sm:text-2xl">Activity</h1>
       <p className="mt-2 text-sm text-ink-soft">
         When someone follows you, or a friend joins through one of your invite links, it shows
         here. Only you can see this page.

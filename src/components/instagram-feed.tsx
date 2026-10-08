@@ -59,8 +59,8 @@ export function InstagramFeed() {
   }, [near]);
 
   return (
-    <section aria-labelledby="instagram-heading" className="mt-12 sm:mt-16">
-      <h2 id="instagram-heading" className="text-xl font-extrabold text-ink">
+    <section aria-labelledby="instagram-heading" className="mt-10 sm:mt-16">
+      <h2 id="instagram-heading" className="text-lg font-extrabold text-ink sm:text-xl">
         From Instagram
       </h2>
       <p className="mt-1 text-sm text-ink-soft">

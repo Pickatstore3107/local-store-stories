@@ -28,17 +28,52 @@ body {
   color: var(--ink);
 }
 
-/* Text and spacing grow with the screen: 14px on a small phone, 16px from a
-   large phone up. Everything sized in rem follows. */
+/* Text and spacing grow with the screen: 13px on a small phone, 15px on a
+   large one, 16px on a computer. Everything sized in rem follows. */
 html {
-  font-size: clamp(14px, 3.75vw, 16px);
+  font-size: clamp(13px, 3.5vw, 15px);
+}
+@media (min-width: 640px) {
+  html {
+    font-size: 16px;
+  }
 }
 
-/* As tall as the screen below the menu, on any phone. Phones whose browser
-   bar comes and goes use the space that's actually showing. */
+/* The menu at the top, and on a phone the bar of buttons at the bottom,
+   which stays clear of the phone's home bar. */
+:root {
+  --header-h: 3.25rem;
+  --bar-h: calc(3.75rem + env(safe-area-inset-bottom));
+}
+@media (min-width: 640px) {
+  :root {
+    --header-h: 4.5rem;
+    --bar-h: 0px;
+  }
+}
+
+/* The whole screen between the menu and the bottom bar, for the map page.
+   Phones whose browser bar comes and goes use the space that's showing. */
+@utility h-screen-app {
+  height: calc(100vh - var(--header-h) - var(--bar-h));
+  height: calc(100dvh - var(--header-h) - var(--bar-h));
+}
+
+/* A map inside a page: as tall as the screen allows, with a little room. */
 @utility h-below-menu {
-  height: calc(100vh - 7rem);
-  height: calc(100dvh - 7rem);
+  height: calc(100vh - var(--header-h) - var(--bar-h) - 3rem);
+  height: calc(100dvh - var(--header-h) - var(--bar-h) - 3rem);
+}
+
+/* On the full-screen map on a phone, fingers zoom, so the + and − buttons
+   go, and the map's credits sit just above the list. */
+@media (max-width: 639px) {
+  .lss-full-map .maplibregl-ctrl-top-right {
+    display: none;
+  }
+  .lss-full-map .maplibregl-ctrl-bottom-right {
+    bottom: var(--sheet-px, 0px);
+  }
 }
 
 /* Phones zoom in on a box whose text is under 16px when it's tapped, so

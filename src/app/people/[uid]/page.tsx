@@ -62,7 +62,7 @@ async function Profile({ uid }: { uid: string }) {
       <header className="flex flex-col items-center gap-5 text-center sm:flex-row sm:items-start sm:gap-8 sm:text-left">
         <Avatar name={person.name} size="lg" />
         <div className="min-w-0 flex-1">
-          <h1 lang={textLang(person.name)} className="break-words text-3xl font-extrabold text-ink">
+          <h1 lang={textLang(person.name)} className="break-words text-2xl font-extrabold text-ink sm:text-3xl">
             {person.name}
           </h1>
           {person.city && <p className="mt-1 text-ink-soft">{person.city}</p>}

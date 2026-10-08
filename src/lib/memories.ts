@@ -65,6 +65,22 @@ export function textLang(text: string) {
   return hindi > latin ? "hi" : undefined;
 }
 
+/** Lowercase, without accents, so "cafe" finds "Café". For searching. */
+export function fold(text: string) {
+  return text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase();
+}
+
+/** The words someone typed into a search box, ready to look for. */
+export function searchWords(query: string) {
+  return fold(query).split(/\s+/).filter(Boolean);
+}
+
+/** Whether a memory's store, area or city has every word. */
+export function memoryMatches(memory: Pick<WallMemory, "storeName" | "neighbourhood" | "city">, words: string[]) {
+  const place = fold([memory.storeName, memory.neighbourhood, memory.city].join(" "));
+  return words.every((word) => place.includes(word));
+}
+
 /** A small, steady tilt for each photo, like prints pinned to a wall. */
 export function tilt(id: string) {
   let hash = 0;

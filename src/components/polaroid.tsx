@@ -76,7 +76,7 @@ const sizes = {
     text: "px-0.5 pt-2 sm:px-1 sm:pt-3",
     name: "text-base sm:text-xl",
     small: "text-xs sm:text-sm",
-    caption: "mt-1 line-clamp-3 text-sm sm:mt-2 sm:line-clamp-4 sm:text-base",
+    caption: "mt-1 line-clamp-2 text-sm sm:mt-2 sm:line-clamp-4 sm:text-base",
   },
 };
 

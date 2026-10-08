@@ -7,24 +7,14 @@ import { PolaroidCard } from "./polaroid";
 import { setReturnPath } from "./require-account";
 import { input, primaryButton, secondaryButton } from "./ui";
 import { useMyFollows } from "./use-my-follows";
-import type { Wall, WallMemory } from "@/lib/memories";
+import { memoryMatches, searchWords, type Wall } from "@/lib/memories";
 import { CATEGORIES, type Category } from "@/lib/stories";
 import { setWallFilters, useWallFilters } from "./use-wall-filters";
 
-// Lowercase, without accents, so "cafe" finds "Café".
-function fold(text: string) {
-  return text.normalize("NFD").replace(/[̀-ͯ]/g, "").toLocaleLowerCase();
-}
-
-function matches(memory: WallMemory, words: string[]) {
-  const place = fold([memory.storeName, memory.neighbourhood, memory.city].join(" "));
-  return words.every((word) => place.includes(word));
-}
-
-const chip = "shrink-0 rounded-full px-4 py-2 text-sm font-bold transition";
+const chip = "shrink-0 rounded-full px-3.5 py-1.5 text-sm font-bold transition sm:px-4 sm:py-2";
 const chipOff = "bg-white text-brand-red ring-1 ring-brand-red/25 hover:bg-brand-red/5";
 const chipOn = "bg-brand-red text-white ring-1 ring-brand-red";
-const tab = "-mb-px border-b-2 px-1 pb-2 text-base font-extrabold transition";
+const tab = "-mb-px border-b-2 px-1 pb-2 text-[0.95rem] font-extrabold transition sm:text-base";
 
 /**
  * Everyone's memories or only those of people you follow, then search,
@@ -38,7 +28,7 @@ export function WallBrowser({ wall }: { wall: Wall }) {
   const myFollows = useMyFollows();
   const member = !!user && !!consent;
 
-  const words = useMemo(() => fold(query).split(/\s+/).filter(Boolean), [query]);
+  const words = useMemo(() => searchWords(query), [query]);
   const filtering = words.length > 0 || category !== null || following;
   const shown = useMemo(
     () =>
@@ -46,7 +36,7 @@ export function WallBrowser({ wall }: { wall: Wall }) {
         (m) =>
           (!following || myFollows.following.has(m.authorId)) &&
           (!category || m.category === category) &&
-          (!words.length || matches(m, words)),
+          (!words.length || memoryMatches(m, words)),
       ),
     [wall.memories, following, myFollows.following, category, words],
   );
@@ -145,8 +135,8 @@ export function WallBrowser({ wall }: { wall: Wall }) {
       </p>
 
       {featured.length > 0 && (
-        <section aria-labelledby="featured-heading" className="mt-10">
-          <h2 id="featured-heading" className="text-xl font-extrabold text-ink">
+        <section aria-labelledby="featured-heading" className="mt-6 sm:mt-10">
+          <h2 id="featured-heading" className="text-lg font-extrabold text-ink sm:text-xl">
             Featured
           </h2>
           <p className="mt-1 text-sm text-ink-soft">Picked by the campaign team.</p>
@@ -188,10 +178,10 @@ export function WallBrowser({ wall }: { wall: Wall }) {
         </div>
       ) : (
         rest.length > 0 && (
-          <section aria-labelledby="memories-heading" className="mt-10">
+          <section aria-labelledby="memories-heading" className="mt-6 sm:mt-10">
             <h2
               id="memories-heading"
-              className={featured.length ? "text-xl font-extrabold text-ink" : "sr-only"}
+              className={featured.length ? "text-lg font-extrabold text-ink sm:text-xl" : "sr-only"}
             >
               {filtering ? "Memories found" : featured.length ? "More memories" : "All memories"}
             </h2>

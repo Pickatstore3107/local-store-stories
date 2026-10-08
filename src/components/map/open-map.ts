@@ -11,6 +11,9 @@ const STYLE = "https://tiles.openfreemap.org/styles/liberty";
 const RED = "#a3171b";
 const RED_DEEP = "#7d1114";
 const YELLOW = "#ffc000";
+const INK = "#2b1d1a";
+// "You are here" is blue on every map, so it reads at a glance.
+const BLUE = "#1a73e8";
 
 /**
  * Opens a map of Hyderabad in the element. It can't be moved far beyond the
@@ -20,6 +23,7 @@ export async function openMap(
   container: HTMLElement,
   signal: AbortSignal,
   view: { center?: LatLng; zoom?: number } = {},
+  { interactive = true } = {},
 ) {
   const { default: maplibregl } = await import("maplibre-gl");
   if (signal.aborted) return null;
@@ -36,14 +40,18 @@ export async function openMap(
       [west, south],
       [east, north],
     ],
-    attributionControl: { compact: true },
+    interactive,
+    // A map that's only a picture credits OpenStreetMap in its own words.
+    attributionControl: interactive ? { compact: true } : false,
     dragRotate: false,
     pitchWithRotate: false,
     touchPitch: false,
   });
-  map.touchZoomRotate.disableRotation();
-  map.keyboard.disableRotation();
-  map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
+  if (interactive) {
+    map.touchZoomRotate.disableRotation();
+    map.keyboard.disableRotation();
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
+  }
   map.on("load", () => addPinImages(map));
   // Numbered circles are drawn as they're needed: "lss-cluster-12".
   map.on("styleimagemissing", ({ id }) => {
@@ -111,18 +119,27 @@ function addPinImages(map: MapLibreMap) {
   if (!map.hasImage("lss-pin-selected")) {
     map.addImage("lss-pin-selected", pinImage(YELLOW, RED_DEEP, RED), { pixelRatio: SCALE });
   }
+  // A shop or place someone tapped or searched for, not a memory.
+  if (!map.hasImage("lss-pin-place")) {
+    map.addImage("lss-pin-place", pinImage(INK, "#ffffff", "#ffffff"), { pixelRatio: SCALE });
+  }
 }
 
-/** The area a pin stands for, as a circle, for the dashed ring around it. */
-export function pinArea({ lat, lng }: LatLng): GeoJSON.Feature<GeoJSON.Polygon> {
-  const dLat = PIN_RADIUS_METRES / 111_320;
-  const dLng = PIN_RADIUS_METRES / (111_320 * Math.cos((lat * Math.PI) / 180));
+/** A circle on the map, as a shape, `metres` across from its middle. */
+function circle({ lat, lng }: LatLng, metres: number): GeoJSON.Feature<GeoJSON.Polygon> {
+  const dLat = metres / 111_320;
+  const dLng = metres / (111_320 * Math.cos((lat * Math.PI) / 180));
   const ring: [number, number][] = [];
   for (let i = 0; i <= 48; i++) {
     const a = (i / 48) * Math.PI * 2;
     ring.push([lng + Math.cos(a) * dLng, lat + Math.sin(a) * dLat]);
   }
   return { type: "Feature", properties: {}, geometry: { type: "Polygon", coordinates: [ring] } };
+}
+
+/** The area a pin stands for, as a circle, for the dashed ring around it. */
+export function pinArea(spot: LatLng) {
+  return circle(spot, PIN_RADIUS_METRES);
 }
 
 export const point = ({ lat, lng }: LatLng, properties: Record<string, unknown> = {}) =>
@@ -184,6 +201,63 @@ export function showSelected(map: MapLibreMap, spot: LatLng | null, area: LatLng
   (map.getSource("lss-area") as GeoJSONSource | undefined)?.setData(
     collection(area ? [pinArea(area)] : []),
   );
+}
+
+/** The blue dot for where you are, under the pins, with a ring as wide as the phone is unsure. */
+export function addMeLayers(map: MapLibreMap) {
+  map.addSource("lss-me", { type: "geojson", data: collection([]) });
+  map.addSource("lss-me-area", { type: "geojson", data: collection([]) });
+  map.addLayer({
+    id: "lss-me-area",
+    type: "fill",
+    source: "lss-me-area",
+    paint: { "fill-color": BLUE, "fill-opacity": 0.12 },
+  });
+  map.addLayer({
+    id: "lss-me-halo",
+    type: "circle",
+    source: "lss-me",
+    paint: { "circle-radius": 16, "circle-color": BLUE, "circle-opacity": 0.18, "circle-blur": 0.4 },
+  });
+  map.addLayer({
+    id: "lss-me",
+    type: "circle",
+    source: "lss-me",
+    paint: {
+      "circle-radius": 7,
+      "circle-color": BLUE,
+      "circle-stroke-width": 2.5,
+      "circle-stroke-color": "#ffffff",
+    },
+  });
+}
+
+export function showMe(map: MapLibreMap, me: { spot: LatLng; accuracy: number } | null) {
+  (map.getSource("lss-me") as GeoJSONSource | undefined)?.setData(collection(me ? [point(me.spot)] : []));
+  (map.getSource("lss-me-area") as GeoJSONSource | undefined)?.setData(
+    collection(me ? [circle(me.spot, Math.min(me.accuracy, 1500))] : []),
+  );
+}
+
+/** A dark pin for the shop or place being looked at. */
+export function addPlaceLayer(map: MapLibreMap) {
+  map.addSource("lss-place", { type: "geojson", data: collection([]) });
+  map.addLayer({
+    id: "lss-place",
+    type: "symbol",
+    source: "lss-place",
+    layout: {
+      "icon-image": "lss-pin-place",
+      "icon-anchor": "bottom",
+      "icon-size": 1.1,
+      "icon-allow-overlap": true,
+      "icon-ignore-placement": true,
+    },
+  });
+}
+
+export function showPlace(map: MapLibreMap, spot: LatLng | null) {
+  (map.getSource("lss-place") as GeoJSONSource | undefined)?.setData(collection(spot ? [point(spot)] : []));
 }
 
 export const COLORS = { RED, YELLOW };

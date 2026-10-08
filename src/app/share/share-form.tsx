@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useLayoutEffect, useRef, useState, type FormEvent } from "react";
 import { useAuth } from "@/components/auth-provider";
 import { PinPicker } from "@/components/map/pin-picker";
@@ -8,7 +9,7 @@ import { PassTheMemory } from "@/components/pass-the-memory";
 import { card, input, primaryButton } from "@/components/ui";
 import { friendlyError } from "@/lib/auth-errors";
 import { personPath } from "@/lib/people";
-import type { Pin } from "@/lib/pins";
+import { pinAt, type Pin } from "@/lib/pins";
 import {
   CAPTION_MAX,
   CAPTION_MIN,
@@ -31,10 +32,29 @@ type Photo = { jpeg: Blob; preview: string };
 const label = "mt-5 block text-sm font-bold text-ink";
 const hint = "font-normal text-ink-soft";
 
+type Prefill = { storeName: string; category: Category | ""; pin: Pin | null };
+
+/** A store picked on the map ("Share a memory of it") arrives in the address. */
+function readPrefill(params: URLSearchParams): Prefill | null {
+  const storeName = params.get("store")?.trim().slice(0, STORE_NAME_MAX);
+  if (!storeName) return null;
+  const lat = Number(params.get("lat"));
+  const lng = Number(params.get("lng"));
+  const category = params.get("category");
+  return {
+    storeName,
+    category: (CATEGORIES as readonly string[]).includes(category ?? "") ? (category as Category) : "",
+    pin: params.has("lat") && params.has("lng") && Number.isFinite(lat) && Number.isFinite(lng) ? pinAt({ lat, lng }) : null,
+  };
+}
+
 export function ShareForm() {
-  // A new key gives a fresh, empty form.
+  // A new key gives a fresh, empty form, and a store picked on the map gives
+  // a fresh form filled in with it.
   const [round, setRound] = useState(0);
   const shared = useRef(false);
+  const params = useSearchParams();
+  const prefill = readPrefill(params);
 
   // Next.js keeps this page alive (hidden) after you navigate away, which
   // keeps an unfinished draft. Once a story is shared, start fresh instead.
@@ -50,7 +70,8 @@ export function ShareForm() {
 
   return (
     <StoryForm
-      key={round}
+      key={`${round}:${prefill ? params.toString() : ""}`}
+      prefill={prefill}
       onShared={() => (shared.current = true)}
       onShareAnother={() => {
         shared.current = false;
@@ -61,21 +82,23 @@ export function ShareForm() {
 }
 
 function StoryForm({
+  prefill,
   onShared,
   onShareAnother,
 }: {
+  prefill: Prefill | null;
   onShared: () => void;
   onShareAnother: () => void;
 }) {
   const { user, profile } = useAuth();
   const [photo, setPhoto] = useState<Photo | null>(null);
   const [preparing, setPreparing] = useState(false);
-  const [storeName, setStoreName] = useState("");
-  const [category, setCategory] = useState<Category | "">("");
-  const [city, setCity] = useState(profile?.city ?? "");
+  const [storeName, setStoreName] = useState(prefill?.storeName ?? "");
+  const [category, setCategory] = useState<Category | "">(prefill?.category ?? "");
+  const [city, setCity] = useState(prefill?.pin ? "Hyderabad" : (profile?.city ?? ""));
   const [neighbourhood, setNeighbourhood] = useState("");
-  const [mapOpen, setMapOpen] = useState(false);
-  const [pin, setPin] = useState<Pin | null>(null);
+  const [mapOpen, setMapOpen] = useState(!!prefill?.pin);
+  const [pin, setPin] = useState<Pin | null>(prefill?.pin ?? null);
   const [caption, setCaption] = useState("");
   const [year, setYear] = useState("");
   const [ordered, setOrdered] = useState("");
@@ -149,7 +172,7 @@ function StoryForm({
   if (shared) {
     return (
       <div className={card}>
-        <h1 className="text-2xl font-extrabold text-brand-red">Thank you for sharing</h1>
+        <h1 className="text-xl font-extrabold text-brand-red sm:text-2xl">Thank you for sharing</h1>
         <p className="mt-3 text-ink">
           Your memory of <strong>{storeName.trim()}</strong> is saved and waiting for review.
           Nobody else can see it until a moderator approves it.
@@ -181,7 +204,7 @@ function StoryForm({
 
   return (
     <form onSubmit={submit} noValidate className={card}>
-      <h1 className="text-2xl font-extrabold text-brand-red">Share a memory</h1>
+      <h1 className="text-xl font-extrabold text-brand-red sm:text-2xl">Share a memory</h1>
       <p className="mt-2 text-ink-soft">
         The store you never forgot, in a photo and a few lines.
       </p>

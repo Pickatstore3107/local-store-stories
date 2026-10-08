@@ -1,7 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { Kalam, Nunito } from "next/font/google";
-import Link from "next/link";
 import { AuthProvider } from "@/components/auth-provider";
+import { BottomBar } from "@/components/bottom-bar";
+import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import "./globals.css";
 
@@ -26,20 +27,19 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: "#a3171b",
+  // Lets the bottom bar sit clear of the iPhone's home bar.
+  viewportFit: "cover",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className={`${nunito.variable} ${kalam.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col font-sans">
+      <body className="flex min-h-full flex-col pb-(--bar-h) font-sans">
         <AuthProvider>
           <SiteHeader />
           {children}
-          <footer className="px-6 py-8 text-center text-sm text-ink-soft">
-            <Link href="/privacy" className="underline underline-offset-4">
-              Privacy
-            </Link>
-          </footer>
+          <SiteFooter />
+          <BottomBar />
         </AuthProvider>
       </body>
     </html>

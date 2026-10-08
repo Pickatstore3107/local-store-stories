@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 export default function PrivacyPage() {
   return (
     <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-6 sm:px-5 sm:py-12 text-ink">
-      <h1 className="text-3xl font-extrabold text-brand-red">Privacy notice</h1>
+      <h1 className="text-2xl font-extrabold text-brand-red sm:text-3xl">Privacy notice</h1>
       <p className="mt-2 text-sm text-ink-soft">
         Draft for the pilot. Last updated 8 October 2026.
       </p>
@@ -64,12 +64,26 @@ export default function PrivacyPage() {
             Putting a memory on the map is optional. When you tap where the store was, we keep
             only which 500-metre square of the city you tapped, and the map shows the pin in the
             middle of that square, so it&apos;s within about 500 metres of the store and never
-            marks a door or a home. We never use the location from your phone or your photo.
-            Only approved memories shared with everyone appear on the map. You can move the pin
-            or take it off from your profile at any time. The map itself comes from
-            OpenStreetMap, through a free service called OpenFreeMap. When a map opens, your
-            phone or computer asks OpenFreeMap for the streets to draw, so it sees your
-            internet address, as any website would. It never sees who you are or your memories.
+            marks a door or a home. Pins never come from your phone&apos;s location or your
+            photo. Only approved memories shared with everyone appear on the map. You can move
+            the pin or take it off from your profile at any time. The map itself comes from
+            OpenStreetMap, through a free service called OpenFreeMap. When a map opens,
+            including the one at the top of Home, your phone or computer asks OpenFreeMap for
+            the streets to draw, so it sees your internet address, as any website would. It
+            never sees who you are or your memories.
+          </p>
+          <p className="mt-2">
+            The map can show where you are as a blue dot, with the memories and shops near you,
+            but only after you tap the locate button and allow it when your phone asks. Your
+            location stays in the page: we never save it, never send it to us, and never use it
+            for a pin. You can turn it off in your browser&apos;s site settings at any time.
+          </p>
+          <p className="mt-2">
+            When you search the map, the words you type go to Photon, a free search of
+            OpenStreetMap run by Komoot, to find places in Hyderabad. Photon sees what you typed
+            and your internet address, as any website would, but never who you are or where
+            you are. Shop names on the map also come from OpenStreetMap. Directions opens Google
+            Maps, and only if you tap it.
           </p>
         </section>
 
