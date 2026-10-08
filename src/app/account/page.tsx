@@ -3,7 +3,7 @@ import { RequireAccount } from "@/components/require-account";
 import { AccountPanel } from "./account-panel";
 
 export const metadata: Metadata = {
-  title: "My account · Local Stores & Their Stories",
+  title: "Profile and settings · Local Stores & Their Stories",
 };
 
 export default function AccountPage() {

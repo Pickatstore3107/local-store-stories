@@ -5,6 +5,7 @@ import { useState, type FormEvent, type ReactNode } from "react";
 import { input, primaryButton, secondaryButton } from "@/components/ui";
 import { friendlyError } from "@/lib/auth-errors";
 import { memoryPath } from "@/lib/memories";
+import { isPin, pinCenter } from "@/lib/pins";
 import {
   featureStory,
   NOTE_SUGGESTIONS,
@@ -24,8 +25,16 @@ export const actionLabels: Record<ReviewAction, string> = {
 };
 
 /** The memory as its author shared it, with what only moderators see. */
+/** Where the pin is on OpenStreetMap, to check it matches the place they named. */
+function pinLink(pin: unknown) {
+  if (!isPin(pin)) return null;
+  const { lat, lng } = pinCenter(pin);
+  return `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}#map=16/${lat}/${lng}`;
+}
+
 export function StoryDetails({ story, children }: { story: ReviewStory; children?: ReactNode }) {
   const place = [story.neighbourhood, story.city].filter(Boolean).join(", ");
+  const onMap = pinLink(story.pin);
 
   return (
     <article className="w-full overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-ink/5">
@@ -64,7 +73,22 @@ export function StoryDetails({ story, children }: { story: ReviewStory; children
           )}
           <dt className="text-ink-soft">Who can see it</dt>
           <dd className="text-ink">
-            {story.visibility === "public" ? "Everyone, on the Wall and Map" : "Only people with the link"}
+            {story.visibility === "public" ? "Everyone, on Home and their profile" : "Only people with the link"}
+          </dd>
+          <dt className="text-ink-soft">On the map</dt>
+          <dd className="text-ink">
+            {onMap ? (
+              <a
+                href={onMap}
+                target="_blank"
+                rel="noreferrer"
+                className="font-bold text-brand-red underline underline-offset-4"
+              >
+                See where the pin is
+              </a>
+            ) : (
+              "No pin"
+            )}
           </dd>
           <dt className="text-ink-soft">Shared by</dt>
           <dd className="text-ink">
@@ -185,7 +209,7 @@ export function ReviewCard({
   const [featured, setFeatured] = useState(!!story.featuredAt);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const onTheWall = story.status === "approved" && story.visibility === "public";
+  const onHome = story.status === "approved" && story.visibility === "public";
 
   async function decide(action: ReviewAction, note = "") {
     setError(null);
@@ -222,7 +246,7 @@ export function ReviewCard({
             rel="noopener"
             className="font-bold text-brand-red underline underline-offset-4"
           >
-            {onTheWall ? "Open on the Wall" : "Open its page"}
+            Open its page
           </a>
           {featured && (
             <span className="rounded-full bg-brand-yellow/25 px-2 py-0.5 font-bold text-ink">
@@ -271,14 +295,14 @@ export function ReviewCard({
               </button>
             ),
           )}
-          {(onTheWall || featured) && (
+          {(onHome || featured) && (
             <button
               type="button"
               disabled={busy}
               onClick={toggleFeatured}
               className={secondaryButton}
             >
-              {featured ? "Remove from Featured" : "Feature on the Wall"}
+              {featured ? "Remove from Featured" : "Feature on Home"}
             </button>
           )}
         </div>

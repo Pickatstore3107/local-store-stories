@@ -21,7 +21,7 @@ export type Profile = {
   city: string;
   createdAt: Timestamp;
   updatedAt: Timestamp;
-  /** Set once, when someone joins through a friend's invite: the Memory Chain's link. */
+  /** Set once, when someone joins through a friend's invite: who invited them. */
   invitedBy?: string;
   /** The memory the invite was made for, if it's shared with everyone. */
   invitedVia?: string;

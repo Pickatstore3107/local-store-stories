@@ -216,7 +216,7 @@ export async function featureStory(user: User, storyId: string, featured: boolea
     if (code === "not-found") throw new FriendlyError("Its author has deleted this memory.");
     if (code === "permission-denied") {
       throw new FriendlyError(
-        "Only approved memories on the Wall can be featured. Please refresh and try again.",
+        "Only approved memories on Home can be featured. Please refresh and try again.",
       );
     }
     throw error;

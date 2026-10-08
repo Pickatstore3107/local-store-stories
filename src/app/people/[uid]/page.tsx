@@ -3,10 +3,13 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { Avatar } from "@/components/avatar";
+import type { PinnedMemory } from "@/components/map/memory-map";
 import { memoryPath, textLang } from "@/lib/memories";
 import { followListPath, type PublicPerson } from "@/lib/people";
 import { loadPerson } from "@/lib/server/people";
+import { OwnerSection } from "./owner-section";
 import { ProfileActions } from "./profile-actions";
+import { ProfileTabs } from "./profile-tabs";
 
 const SITE = "Local Stores & Their Stories";
 
@@ -85,6 +88,7 @@ async function Profile({ uid }: { uid: string }) {
       </header>
 
       <MemoryGrid person={person} />
+      <OwnerSection uid={uid} />
     </article>
   );
 }
@@ -99,16 +103,17 @@ function Stat({ count, one, many }: { count: number; one: string; many: string }
   );
 }
 
-/** Their memories on the Wall as square photos, newest first, like Instagram. */
+/**
+ * Their memories shared with everyone, as square photos, newest first, like
+ * Instagram; and on the map, when some have pins.
+ */
 function MemoryGrid({ person }: { person: PublicPerson }) {
-  return (
-    <section aria-labelledby="memories-heading" className="mt-10 border-t border-ink/10 pt-6">
-      <h2 id="memories-heading" className="text-sm font-bold uppercase tracking-wider text-ink-soft">
-        Memories on the Wall
-      </h2>
+  const pinned = person.memories.filter((m): m is PinnedMemory => m.pin !== null);
+  const grid = (
+    <>
       {person.memories.length === 0 ? (
         <p className="py-12 text-center font-hand text-xl text-ink-soft">
-          No memories on the Wall yet.
+          No memories shared with everyone yet.
         </p>
       ) : (
         <ul className="mt-4 grid grid-cols-3 gap-1 sm:gap-3">
@@ -146,6 +151,20 @@ function MemoryGrid({ person }: { person: PublicPerson }) {
             </li>
           ))}
         </ul>
+      )}
+    </>
+  );
+  return (
+    <section aria-labelledby="memories-heading" className="mt-10 border-t border-ink/10 pt-6">
+      {pinned.length > 0 ? (
+        <ProfileTabs name={person.name} pinned={pinned} grid={grid} />
+      ) : (
+        <>
+          <h2 id="memories-heading" className="text-sm font-bold uppercase tracking-wider text-ink-soft">
+            Memories
+          </h2>
+          {grid}
+        </>
       )}
     </section>
   );

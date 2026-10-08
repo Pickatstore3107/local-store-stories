@@ -1,11 +1,13 @@
 import {
   collection,
   deleteDoc,
+  deleteField,
   doc,
   getDocs,
   query,
   serverTimestamp,
   setDoc,
+  updateDoc,
   where,
   type Timestamp,
 } from "firebase/firestore";
@@ -13,6 +15,7 @@ import type { User } from "firebase/auth";
 import { FriendlyError } from "./auth-errors";
 import { getFirebase } from "./firebase";
 import { deleteStoryInvites } from "./invites";
+import type { Pin } from "./pins";
 
 // Must match the list in firestore.rules.
 export const CATEGORIES = [
@@ -57,6 +60,8 @@ export type Story = {
   status: StoryStatus;
   /** The photo's private ID at Cloudinary, our image host. */
   photoId: string;
+  /** Where the store was, for the map; see src/lib/pins.ts. */
+  pin?: Pin;
   createdAt: Timestamp;
   updatedAt: Timestamp;
   /** Set by a moderator; see src/lib/moderation.ts. */
@@ -79,6 +84,7 @@ export type StoryInput = {
   year: number | null;
   ordered: string;
   visibility: Visibility;
+  pin: Pin | null;
 };
 
 export type MyStory = Story & { id: string; thumbUrl: string | null };
@@ -166,6 +172,7 @@ function cleanInput(input: StoryInput) {
     ...(optional.neighbourhood && { neighbourhood: optional.neighbourhood }),
     ...(optional.ordered && { ordered: optional.ordered }),
     ...(input.year !== null && { year: input.year }),
+    ...(input.pin && { pin: input.pin }),
   };
 }
 
@@ -229,6 +236,19 @@ function deletePhoto(user: User, storyId: string) {
   return callApi(user, `/api/photos?storyId=${encodeURIComponent(storyId)}`, {
     method: "DELETE",
   });
+}
+
+/** Puts the author's memory on the map, moves its pin, or takes it off (null). */
+export async function setStoryPin(
+  user: User,
+  story: { id: string; status: StoryStatus },
+  pin: Pin | null,
+) {
+  await updateDoc(doc(getFirebase().db, "stories", story.id), {
+    pin: pin ?? deleteField(),
+    updatedAt: serverTimestamp(),
+  });
+  if (story.status === "approved") await refreshWall(user, [story.id]);
 }
 
 /** Deletes a story's photo first, then the story itself, then its invite links. */

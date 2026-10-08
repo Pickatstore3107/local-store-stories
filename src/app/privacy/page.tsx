@@ -10,7 +10,7 @@ export default function PrivacyPage() {
     <main className="mx-auto w-full max-w-2xl flex-1 px-5 py-12 text-ink">
       <h1 className="text-3xl font-extrabold text-brand-red">Privacy notice</h1>
       <p className="mt-2 text-sm text-ink-soft">
-        Draft for the pilot. Last updated 7 October 2026.
+        Draft for the pilot. Last updated 8 October 2026.
       </p>
 
       <div className="mt-8 space-y-6 leading-relaxed">
@@ -29,6 +29,7 @@ export default function PrivacyPage() {
             <li>The name and city you choose. Shown publicly with your stories.</li>
             <li>Stories, photos and videos you choose to share, once they are approved.</li>
             <li>Photos are resized on your phone and the location hidden inside them is removed before upload. They are stored privately with our image provider, Cloudinary, until they are approved.</li>
+            <li>If you put a memory on the Hyderabad map, the 500-metre square of the city you tapped, never the exact spot.</li>
             <li>Which memories you love. Only you can see this; the person who shared a memory sees only how many people loved it.</li>
             <li>Reports you send about a memory. Only moderators can read them.</li>
             <li>The invite links you make, and who joined through them. If you joined through a friend&apos;s invite link, who invited you and through which link.</li>
@@ -46,7 +47,7 @@ export default function PrivacyPage() {
             before anyone else can see it. Moderators never see your email address. Once
             approved, a story is shown to everyone, or only to people you share its link with
             if you chose that. If a moderator doesn&apos;t approve a story or hides it later,
-            you&apos;ll see why on <strong>My account</strong>. We keep a short record of each
+            you&apos;ll see why on your profile. We keep a short record of each
             decision (the store&apos;s name, what was decided and why, but not your name) so we
             can answer questions about it later.
           </p>
@@ -58,20 +59,30 @@ export default function PrivacyPage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-bold">Invites and the Memory Chain</h2>
+          <h2 className="text-lg font-bold">The Hyderabad map</h2>
+          <p className="mt-2">
+            Putting a memory on the map is optional. When you tap where the store was, we keep
+            only which 500-metre square of the city you tapped, and the map shows the pin in the
+            middle of that square, so it&apos;s within about 500 metres of the store and never
+            marks a door or a home. We never use the location from your phone or your photo.
+            Only approved memories shared with everyone appear on the map. You can move the pin
+            or take it off from your profile at any time. The map itself comes from
+            OpenStreetMap, through a free service called OpenFreeMap. When a map opens, your
+            phone or computer asks OpenFreeMap for the streets to draw, so it sees your
+            internet address, as any website would. It never sees who you are or your memories.
+          </p>
+        </section>
+
+        <section>
+          <h2 className="text-lg font-bold">Invite links</h2>
           <p className="mt-2">
             Each memory comes with an invite link for you to send to friends, and they can pass
             it on. Anyone with the link can join through it and, once the memory is approved,
             see it, even if you shared it only by link. When friends join through yours, you see
-            their names under that memory, and the Memory Chain shows that you passed the memory
-            on to them. Which link someone joined through is visible only to them and to the
-            friend who sent it.
-          </p>
-          <p className="mt-2">
-            The Memory Chain is public. It names people only through memories they chose to
-            show on the Wall; anyone without one appears as &ldquo;a friend&rdquo;. A memory
-            you shared only by link never appears on it. If you delete your account, you leave
-            the chain and your invite links stop working.
+            their names under that memory and on your activity page. Which link someone joined
+            through is visible only to them and to the friend who sent it. Your public profile
+            record also notes who invited you, if anyone did. If you delete your account, your
+            invite links stop working.
           </p>
         </section>
 
@@ -79,7 +90,7 @@ export default function PrivacyPage() {
           <h2 className="text-lg font-bold">Profiles and following</h2>
           <p className="mt-2">
             Everyone who joins has a profile page with the name and city they chose, the
-            memories they shared on the Wall, and how many people they follow and are followed
+            memories they shared with everyone, and how many people they follow and are followed
             by. Anyone, even without an account, can open a profile and see who that person
             follows and who follows them. A memory you shared only by link never appears on
             your profile. We ask search engines not to list profiles.
@@ -120,7 +131,7 @@ export default function PrivacyPage() {
             You can see and edit your public details, and delete your account and everything
             linked to it (your memories and photos, your invite links, who you follow and who
             follows you, the people you blocked, the list of memories you loved and the reports
-            you sent), from <strong>My account</strong> at any time. You can also write to us to
+            you sent), from <strong>Profile and settings</strong> on your profile at any time. You can also write to us to
             access, correct or erase your data.
           </p>
         </section>

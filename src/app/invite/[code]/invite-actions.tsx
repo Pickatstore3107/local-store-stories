@@ -9,6 +9,7 @@ import { FollowButton } from "@/components/follow-button";
 import { setReturnPath } from "@/components/require-account";
 import { primaryButton } from "@/components/ui";
 import { friendlyError } from "@/lib/auth-errors";
+import { personPath } from "@/lib/people";
 import { getFirebase } from "@/lib/firebase";
 import { checkInvite, pendingInvite, setPendingInvite, type InviteCheck } from "@/lib/invites";
 
@@ -115,7 +116,7 @@ export function InviteActions({ code, inviterName }: { code: string; inviterName
     return (
       <div className={note}>
         <p>This is your own invite link. Send it to friends who haven&apos;t joined yet.</p>
-        <Link href="/account#memories" className={`${primaryButton} mt-4`}>
+        <Link href={`${personPath(user.uid)}#memories`} className={`${primaryButton} mt-4`}>
           See my invite links
         </Link>
       </div>
@@ -128,7 +129,7 @@ export function InviteActions({ code, inviterName }: { code: string; inviterName
       <div className={note}>
         <p>
           You&apos;ve already joined, so you can follow {from} instead. Their memories will
-          show in the Following tab on the Memory Wall.
+          show in the Following tab on Home.
         </p>
         <div className="mt-4 flex flex-wrap items-start gap-3">
           <FollowButton uid={check.invite.from} name={from} />

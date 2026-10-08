@@ -7,6 +7,7 @@ import {
 import {
   collection,
   deleteDoc,
+  deleteField,
   doc,
   getDoc,
   getDocs,
@@ -144,6 +145,26 @@ describe("sharing a story", () => {
     const db = env.authenticatedContext("asha").firestore();
     await assertFails(share(db, "asha", "s1", { createdAt: new Date(2020, 0, 1) }));
   });
+
+  it("accepts a pin on the map: a square of the grid in Hyderabad", async () => {
+    const db = env.authenticatedContext("asha").firestore();
+    await assertSucceeds(share(db, "asha", "s1", { pin: { row: 3875, col: 16691 } }));
+    await assertSucceeds(share(db, "asha", "s2", { pin: { row: 3822, col: 16638 } }));
+    await assertSucceeds(share(db, "asha", "s3", { pin: { row: 3922, col: 16755 } }));
+  });
+
+  it("refuses exact spots, places outside Hyderabad and anything else in a pin", async () => {
+    const db = env.authenticatedContext("asha").firestore();
+    await assertFails(share(db, "asha", "s1", { pin: { row: 3875.5, col: 16691 } }));
+    await assertFails(share(db, "asha", "s1", { pin: { lat: 17.4375, lng: 78.4482 } }));
+    await assertFails(share(db, "asha", "s1", { pin: { row: 3875, col: 16691, lat: 17.4375 } }));
+    await assertFails(share(db, "asha", "s1", { pin: { row: 3875 } }));
+    await assertFails(share(db, "asha", "s1", { pin: { row: 3821, col: 16691 } }));
+    await assertFails(share(db, "asha", "s1", { pin: { row: 3923, col: 16691 } }));
+    await assertFails(share(db, "asha", "s1", { pin: { row: 3875, col: 16637 } }));
+    await assertFails(share(db, "asha", "s1", { pin: { row: 3875, col: 16756 } }));
+    await assertFails(share(db, "asha", "s1", { pin: "Ameerpet" }));
+  });
 });
 
 describe("reading stories before review", () => {
@@ -173,6 +194,41 @@ describe("changing and deleting stories", () => {
     const db = asDb(env.authenticatedContext("asha").firestore());
     await assertFails(updateDoc(doc(db, "stories/s1"), { status: "approved" }));
     await assertFails(updateDoc(doc(db, "stories/s1"), { caption: "A different memory now." }));
+  });
+
+  it("lets the author put it on the map, move its pin and take it off", async () => {
+    const db = asDb(env.authenticatedContext("asha").firestore());
+    const pinned = (pin: unknown) =>
+      updateDoc(doc(db, "stories/s1"), { pin, updatedAt: serverTimestamp() });
+    await assertSucceeds(pinned({ row: 3875, col: 16691 }));
+    await assertSucceeds(pinned({ row: 3876, col: 16690 }));
+    await assertSucceeds(
+      updateDoc(doc(db, "stories/s1"), { pin: deleteField(), updatedAt: serverTimestamp() }),
+    );
+  });
+
+  it("refuses a bad pin, a pin from anyone else, or other changes with it", async () => {
+    const db = asDb(env.authenticatedContext("asha").firestore());
+    await assertFails(
+      updateDoc(doc(db, "stories/s1"), { pin: { row: 1, col: 1 }, updatedAt: serverTimestamp() }),
+    );
+    await assertFails(
+      updateDoc(doc(db, "stories/s1"), {
+        pin: { row: 3875, col: 16691 },
+        caption: "A different memory now.",
+        updatedAt: serverTimestamp(),
+      }),
+    );
+    await assertFails(
+      updateDoc(doc(db, "stories/s1"), {
+        pin: { row: 3875, col: 16691 },
+        updatedAt: new Date(2020, 0, 1),
+      }),
+    );
+    const other = asDb(env.authenticatedContext("mallory").firestore());
+    await assertFails(
+      updateDoc(doc(other, "stories/s1"), { pin: { row: 3875, col: 16691 }, updatedAt: serverTimestamp() }),
+    );
   });
 
   it("lets only the author delete it", async () => {

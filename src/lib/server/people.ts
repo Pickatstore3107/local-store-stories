@@ -7,8 +7,7 @@ import {
   type PersonResult,
 } from "@/lib/people";
 import { countPublic, getPublicDocument, getPublicDocuments, hasDatabase, queryPublic } from "./firestore";
-import { cardPhotoUrl } from "./photos";
-import { RETRY_LIFE, WALL_LIFE, WALL_TAG, loadPublicMemories, readPerson, safely, text } from "./wall";
+import { RETRY_LIFE, WALL_LIFE, WALL_TAG, loadPublicMemories, readPerson, text, wallMemory } from "./wall";
 
 // Profiles and who follows whom are read as an anonymous visitor sees them,
 // like the Wall, and cached. Following someone, or changing your name,
@@ -45,11 +44,7 @@ export async function loadPerson(uid: string): Promise<PersonResult> {
     const memories = (wall?.stories ?? [])
       .filter((story) => story.authorId === uid)
       .sort((a, b) => b.approvedAt - a.approvedAt)
-      .map((story) => ({
-        id: story.id,
-        storeName: story.storeName,
-        photoUrl: safely(() => cardPhotoUrl(story.photoId)),
-      }));
+      .map((story) => wallMemory(story, name));
     // Without the Wall, the memories are missing: try again soon.
     cacheLife(wall ? WALL_LIFE : RETRY_LIFE);
     return { status: "found", person: { uid, name, city, followers, following, memories } };

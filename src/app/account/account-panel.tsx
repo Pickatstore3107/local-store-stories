@@ -19,8 +19,6 @@ import { getFirebase } from "@/lib/firebase";
 import { refreshPeople } from "@/lib/follows";
 import { personPath } from "@/lib/people";
 import { BlockedPeople } from "./blocked-people";
-import { ModeratorCard } from "./moderator-card";
-import { MyStories } from "./my-stories";
 
 // Set before asking someone to sign in again, so the delete step reopens after.
 const PENDING_DELETE = "lss:pending-delete";
@@ -109,8 +107,14 @@ export function AccountPanel() {
 
   return (
     <div className="flex flex-col gap-6">
+      <Link
+        href={personPath(user.uid)}
+        className="text-sm font-bold text-brand-red underline-offset-4 hover:underline"
+      >
+        ← My profile
+      </Link>
       <section className={card}>
-        <h1 className="text-2xl font-extrabold text-brand-red">My account</h1>
+        <h1 className="text-2xl font-extrabold text-brand-red">Profile and settings</h1>
 
         <h2 className="mt-6 text-sm font-bold uppercase tracking-wider text-ink-soft">
           Shown publicly
@@ -171,14 +175,6 @@ export function AccountPanel() {
             </button>
           </div>
         )}
-        {!editing && (
-          <Link
-            href={personPath(user.uid)}
-            className="mt-3 inline-block text-sm font-bold text-brand-red underline underline-offset-4"
-          >
-            See my profile
-          </Link>
-        )}
 
         <h2 className="mt-6 text-sm font-bold uppercase tracking-wider text-ink-soft">
           Private, only you can see this
@@ -190,10 +186,6 @@ export function AccountPanel() {
         </button>
       </section>
 
-      <ModeratorCard user={user} />
-
-      <MyStories user={user} />
-
       <BlockedPeople />
 
       <section className={card}>
@@ -201,8 +193,8 @@ export function AccountPanel() {
         <p className="mt-2 text-sm text-ink-soft">
           This permanently removes your profile, your memories and photos, your invite links,
           who you follow and who follows you, the people you blocked, the list of memories you
-          loved, the reports you sent, your consent record and your sign-in. You also leave the
-          Memory Chain. It cannot be undone.
+          loved, the reports you sent, your consent record and your sign-in. It cannot be
+          undone.
         </p>
         {!confirmingDelete ? (
           <button

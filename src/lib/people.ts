@@ -1,8 +1,7 @@
 // What visitors see of people's profiles and who follows whom, shared by the
 // server pages and the browser. Plain data and helpers only: no Firebase here.
+import type { WallMemory } from "./memories";
 
-/** A memory in a profile's grid of photos. */
-export type ProfileMemory = { id: string; storeName: string; photoUrl: string | null };
 
 /** Someone's public profile page. */
 export type PublicPerson = {
@@ -11,8 +10,8 @@ export type PublicPerson = {
   city: string | null;
   followers: number;
   following: number;
-  /** Their approved memories on the Wall, newest first. */
-  memories: ProfileMemory[];
+  /** Their approved memories shared with everyone, newest first. */
+  memories: WallMemory[];
 };
 
 export type PersonResult =

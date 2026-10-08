@@ -107,7 +107,7 @@ export function ReportCard({
             rel="noopener"
             className="font-bold text-brand-red underline underline-offset-4"
           >
-            {story.visibility === "public" ? "Open on the Wall" : "Open its page"}
+            Open its page
           </a>
         </p>
       )}

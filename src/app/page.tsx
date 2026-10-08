@@ -1,75 +1,44 @@
 import Link from "next/link";
-import { PolaroidCard } from "@/components/polaroid";
-import { primaryButton, secondaryButton } from "@/components/ui";
-import type { WallMemory } from "@/lib/memories";
+import { primaryButton } from "@/components/ui";
+import { WallBrowser } from "@/components/wall-browser";
 import { loadWall } from "@/lib/server/wall";
 
-const PREVIEW_SIZE = 3;
-
+/** Home: every approved memory shared with everyone, like a wall of polaroids. */
 export default async function Home() {
   const wall = await loadWall();
-  // Featured memories first, then the newest.
-  const preview: WallMemory[] = wall
-    ? [...new Map([...wall.featured, ...wall.memories].map((m) => [m.id, m])).values()].slice(
-        0,
-        PREVIEW_SIZE,
-      )
-    : [];
 
   return (
-    <main className="flex flex-1 flex-col items-center px-6 py-16 text-center">
-      <p className="text-sm font-bold uppercase tracking-[0.2em] text-ink-soft">
-        Pick at Store presents
-      </p>
-      <h1 className="mt-4 max-w-2xl text-4xl font-extrabold leading-tight text-brand-red sm:text-6xl">
-        Local Stores &amp; Their Stories
-      </h1>
-      <p className="mt-6 max-w-xl text-xl font-semibold text-ink sm:text-2xl">
-        Some places never leave us.
-      </p>
-      <div
-        className="mt-10 h-1.5 w-24 rounded-full bg-brand-yellow"
-        aria-hidden="true"
-      />
-      <p className="mt-10 max-w-md text-base leading-relaxed text-ink-soft">
-        The chai stall outside school, the bakery that smelled of Sunday, the
-        kirana that kept your family&apos;s tab. Share yours in a photo and a
-        few lines, and help us write down neighbourhood India.
-      </p>
-      <div className="mt-12 flex flex-wrap justify-center gap-3">
+    <main className="mx-auto w-full max-w-6xl flex-1 px-5 py-10 sm:py-12">
+      <div className="flex flex-wrap items-end justify-between gap-6">
+        <div className="max-w-2xl">
+          <p className="text-sm font-bold uppercase tracking-[0.2em] text-ink-soft">
+            Pick at Store presents
+          </p>
+          <h1 className="mt-3 text-4xl font-extrabold leading-tight text-brand-red sm:text-5xl">
+            Local Stores &amp; Their Stories
+          </h1>
+          <p className="mt-3 text-lg leading-relaxed text-ink-soft">
+            The chai stall outside school, the bakery that smelled of Sunday, the kirana that
+            kept your family&apos;s tab. Every memory here was read by a person before it was
+            pinned up.
+          </p>
+        </div>
         <Link href="/share" className={primaryButton}>
           Share your memory
         </Link>
-        <Link href="/wall" className={secondaryButton}>
-          See the Memory Wall
-        </Link>
       </div>
-      <p className="mt-4 text-sm text-ink-soft">
-        Every story is read by a person before it appears.
-      </p>
 
-      {preview.length > 0 && (
-        <section aria-labelledby="preview-heading" className="mt-20 w-full max-w-4xl">
-          <h2
-            id="preview-heading"
-            className="text-sm font-bold uppercase tracking-[0.2em] text-ink-soft"
-          >
-            From the Memory Wall
-          </h2>
-          <ul className="mx-auto mt-10 grid max-w-sm grid-cols-1 gap-12 text-left sm:max-w-none sm:grid-cols-3 sm:gap-8">
-            {preview.map((memory) => (
-              <li key={memory.id}>
-                <PolaroidCard memory={memory} featured={!!memory.featuredAt} />
-              </li>
-            ))}
-          </ul>
-          <Link
-            href="/wall"
-            className="mt-10 inline-block font-bold text-brand-red underline underline-offset-4"
-          >
-            See every memory
-          </Link>
-        </section>
+      {wall === null ? (
+        <p role="alert" className="mt-16 text-center text-ink-soft">
+          The memories couldn&apos;t be loaded just now. Please try again in a minute.
+        </p>
+      ) : wall.memories.length === 0 ? (
+        <div className="mt-16 text-center">
+          <p className="font-hand text-2xl text-ink">The first memories are on their way.</p>
+          <p className="mt-2 text-ink-soft">Which store do you still think about?</p>
+        </div>
+      ) : (
+        <WallBrowser wall={wall} />
       )}
     </main>
   );

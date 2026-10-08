@@ -1,6 +1,7 @@
 import { initial } from "@/lib/people";
 
 const sizes = {
+  xs: "h-9 w-9 text-base",
   sm: "h-11 w-11 text-lg",
   lg: "h-24 w-24 text-4xl ring-4 ring-brand-yellow/70 sm:h-28 sm:w-28 sm:text-5xl",
 };
