@@ -38,7 +38,7 @@ export async function generateMetadata({ params }: PageProps<"/invite/[code]">):
 
 export default function InvitePage({ params }: PageProps<"/invite/[code]">) {
   return (
-    <main className="mx-auto w-full max-w-xl flex-1 px-5 py-10">
+    <main className="mx-auto w-full max-w-xl flex-1 px-4 py-6 sm:px-5 sm:py-10">
       <Suspense fallback={<p className="py-24 text-center text-ink-soft">Loading…</p>}>
         {params.then(({ code }) => (
           <InviteContent code={code} />
@@ -56,7 +56,7 @@ async function InviteContent({ code }: { code: string }) {
   return (
     <article>
       <p className="text-sm font-bold uppercase tracking-[0.2em] text-ink-soft">Pass the memory</p>
-      <h1 className="mt-3 font-hand text-4xl font-bold leading-tight text-brand-red">
+      <h1 className="mt-3 font-hand text-3xl font-bold leading-tight text-brand-red sm:text-4xl">
         {open ? `${name ?? "A friend"} passed you a memory` : "Some places never leave us"}
       </h1>
       {open && (

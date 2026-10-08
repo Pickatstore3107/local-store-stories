@@ -26,7 +26,7 @@ export async function followListMetadata(uid: string, kind: FollowKind): Promise
 /** Someone's followers, or the people they follow, with a Follow button for each. */
 export function FollowListPage({ params, kind }: { params: Promise<{ uid: string }>; kind: FollowKind }) {
   return (
-    <main className="mx-auto w-full max-w-xl flex-1 px-5 py-10">
+    <main className="mx-auto w-full max-w-xl flex-1 px-4 py-6 sm:px-5 sm:py-10">
       <Suspense fallback={<ListSkeleton />}>
         {params.then(({ uid }) => (
           <FollowList uid={uid} kind={kind} />

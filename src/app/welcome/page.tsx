@@ -7,7 +7,7 @@ export const metadata: Metadata = {
 
 export default function WelcomePage() {
   return (
-    <main className="mx-auto flex w-full max-w-lg flex-1 flex-col justify-center px-5 py-12">
+    <main className="mx-auto flex w-full max-w-lg flex-1 flex-col justify-center px-4 py-6 sm:px-5 sm:py-12">
       <WelcomeForm />
     </main>
   );

@@ -46,7 +46,7 @@ export function MapBrowser({ memories }: { memories: PinnedMemory[] }) {
 
   return (
     <>
-      <div role="group" aria-label="Whose memories" className="mt-8 flex gap-6 border-b border-ink/10">
+      <div role="group" aria-label="Whose memories" className="mt-5 flex gap-6 border-b border-ink/10 sm:mt-8">
         {([false, true] as const).map((each) => (
           <button
             key={String(each)}
@@ -64,7 +64,7 @@ export function MapBrowser({ memories }: { memories: PinnedMemory[] }) {
         <div
           role="group"
           aria-label="Categories"
-          className="-mx-5 mt-4 flex gap-2 overflow-x-auto px-5 pb-2 pt-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0"
+          className="-mx-4 mt-4 flex gap-2 overflow-x-auto px-4 pb-2 pt-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0"
         >
           <button
             type="button"

@@ -15,12 +15,14 @@ export default async function MapPage() {
   const pinned = (wall?.memories ?? []).filter((m): m is PinnedMemory => m.pin !== null);
 
   return (
-    <main className="mx-auto w-full max-w-6xl flex-1 px-5 py-10 sm:py-12">
-      <p className="text-sm font-bold uppercase tracking-[0.2em] text-ink-soft">Pick at Store presents</p>
-      <h1 className="mt-3 text-4xl font-extrabold leading-tight text-brand-red sm:text-5xl">
+    <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-5 sm:py-12">
+      <p className="text-xs font-bold uppercase tracking-[0.2em] text-ink-soft sm:text-sm">
+        Pick at Store presents
+      </p>
+      <h1 className="mt-2 text-3xl font-extrabold leading-tight text-brand-red sm:text-5xl">
         Hyderabad Memory Map
       </h1>
-      <p className="mt-3 max-w-2xl text-lg leading-relaxed text-ink-soft">
+      <p className="mt-2 max-w-2xl leading-relaxed text-ink-soft sm:mt-3 sm:text-lg">
         Every pin is a store someone still remembers. Tap one to read its memory.
       </p>
       {wall === null ? (

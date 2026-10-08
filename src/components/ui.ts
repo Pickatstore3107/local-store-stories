@@ -7,4 +7,4 @@ export const secondaryButton =
 export const input =
   "w-full rounded-xl border border-ink/20 bg-white px-4 py-3 text-base text-ink outline-none focus:border-brand-red focus:ring-2 focus:ring-brand-red/20";
 
-export const card = "w-full rounded-3xl bg-white p-6 shadow-sm ring-1 ring-ink/5 sm:p-8";
+export const card = "w-full rounded-2xl bg-white p-5 shadow-sm ring-1 ring-ink/5 sm:rounded-3xl sm:p-8";

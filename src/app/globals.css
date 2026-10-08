@@ -27,3 +27,26 @@ body {
   background: var(--paper);
   color: var(--ink);
 }
+
+/* Text and spacing grow with the screen: 14px on a small phone, 16px from a
+   large phone up. Everything sized in rem follows. */
+html {
+  font-size: clamp(14px, 3.75vw, 16px);
+}
+
+/* As tall as the screen below the menu, on any phone. Phones whose browser
+   bar comes and goes use the space that's actually showing. */
+@utility h-below-menu {
+  height: calc(100vh - 7rem);
+  height: calc(100dvh - 7rem);
+}
+
+/* Phones zoom in on a box whose text is under 16px when it's tapped, so
+   boxes stay at 16px. Outside a layer, this wins over the utility classes. */
+@media (max-width: 639px) {
+  input:not([type="checkbox"], [type="radio"]),
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}

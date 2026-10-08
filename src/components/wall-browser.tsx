@@ -75,7 +75,7 @@ export function WallBrowser({ wall }: { wall: Wall }) {
 
   return (
     <>
-      <div role="group" aria-label="Whose memories" className="mt-8 flex gap-6 border-b border-ink/10">
+      <div role="group" aria-label="Whose memories" className="mt-5 flex gap-6 border-b border-ink/10 sm:mt-8">
         {([false, true] as const).map((each) => (
           <button
             key={String(each)}
@@ -95,7 +95,7 @@ export function WallBrowser({ wall }: { wall: Wall }) {
           event.preventDefault();
           (document.activeElement as HTMLElement | null)?.blur(); // closes the phone keyboard
         }}
-        className="mt-6"
+        className="mt-4 sm:mt-6"
       >
         <label htmlFor="wall-search" className="sr-only">
           Search by store, area or city
@@ -115,7 +115,7 @@ export function WallBrowser({ wall }: { wall: Wall }) {
       <div
         role="group"
         aria-label="Categories"
-        className="-mx-5 mt-3 flex gap-2 overflow-x-auto px-5 pb-2 pt-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0"
+        className="-mx-4 mt-3 flex gap-2 overflow-x-auto px-4 pb-2 pt-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0"
       >
         <button
           type="button"
@@ -150,10 +150,10 @@ export function WallBrowser({ wall }: { wall: Wall }) {
             Featured
           </h2>
           <p className="mt-1 text-sm text-ink-soft">Picked by the campaign team.</p>
-          <ul className="-mx-5 mt-2 flex snap-x snap-mandatory gap-8 overflow-x-auto px-5 pb-10 pt-6">
+          <ul className="-mx-4 mt-2 flex snap-x snap-mandatory gap-5 overflow-x-auto px-4 pb-8 pt-5 sm:-mx-5 sm:gap-8 sm:px-5 sm:pb-10 sm:pt-6">
             {featured.map((memory, i) => (
-              <li key={memory.id} className="w-64 shrink-0 snap-center sm:w-72">
-                <PolaroidCard memory={memory} featured eager={i < 2} />
+              <li key={memory.id} className="w-48 shrink-0 snap-center sm:w-72">
+                <PolaroidCard memory={memory} featured eager={i < 2} compact />
               </li>
             ))}
           </ul>
@@ -195,10 +195,10 @@ export function WallBrowser({ wall }: { wall: Wall }) {
             >
               {filtering ? "Memories found" : featured.length ? "More memories" : "All memories"}
             </h2>
-            <ul className="mx-auto mt-6 grid max-w-sm grid-cols-1 gap-x-8 gap-y-12 sm:max-w-none sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <ul className="mt-5 grid grid-cols-2 gap-x-4 gap-y-8 sm:mt-6 sm:gap-x-8 sm:gap-y-12 lg:grid-cols-3 xl:grid-cols-4">
               {rest.map((memory, i) => (
                 <li key={memory.id}>
-                  <PolaroidCard memory={memory} featured={!!memory.featuredAt} eager={i < 4} />
+                  <PolaroidCard memory={memory} featured={!!memory.featuredAt} eager={i < 4} compact />
                 </li>
               ))}
             </ul>
