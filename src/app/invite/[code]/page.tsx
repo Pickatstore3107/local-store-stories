@@ -56,7 +56,7 @@ async function InviteContent({ code }: { code: string }) {
   return (
     <article>
       <p className="text-sm font-bold uppercase tracking-[0.2em] text-ink-soft">Pass the memory</p>
-      <h1 className="mt-3 font-hand text-3xl font-bold leading-tight text-brand-red sm:text-4xl">
+      <h1 className="mt-3 font-hand text-2xl font-bold leading-tight text-brand-red sm:text-4xl">
         {open ? `${name ?? "A friend"} passed you a memory` : "Some places never leave us"}
       </h1>
       {open && (

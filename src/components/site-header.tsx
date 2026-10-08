@@ -7,27 +7,15 @@ import { personPath } from "@/lib/people";
 import { useAuth } from "./auth-provider";
 import { Avatar } from "./avatar";
 import { BellLink } from "./bell";
+import { PersonIcon } from "./icons";
 
-const navLink =
-  "rounded-full px-2.5 py-2 text-sm font-bold text-brand-red transition hover:bg-brand-red/5 sm:px-3";
-
-function PersonIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className="h-6 w-6">
-      <circle cx="12" cy="8.5" r="3.5" stroke="currentColor" strokeWidth="1.8" />
-      <path
-        d="M5 19.5c1.2-3.3 3.9-5 7-5s5.8 1.7 7 5"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
+const navLink = "rounded-full px-3 py-2 text-sm font-bold text-brand-red transition hover:bg-brand-red/5";
 
 /**
- * Home, the map, the bell and your profile, like Instagram. Visitors get Sign in, and
- * people who signed in but haven't finished joining are sent to finish.
+ * The logo, and on a computer Home, the map, Share, the bell and your
+ * profile. Phones get those in the bar at the bottom instead. Visitors get
+ * Sign in, and people who signed in but haven't finished joining are sent
+ * to finish.
  */
 export function SiteHeader() {
   const { loading, user, profile, consent } = useAuth();
@@ -35,7 +23,7 @@ export function SiteHeader() {
   const me = user && consent && profile ? { uid: user.uid, name: profile.displayName } : null;
 
   return (
-    <header className="flex items-center justify-between gap-2 px-4 pt-3 sm:gap-3 sm:px-8 sm:pt-6">
+    <header className="flex h-(--header-h) shrink-0 items-center justify-between gap-3 px-4 sm:px-8">
       <Link href="/" aria-label="Local Stores & Their Stories home">
         <Image
           src="/brand/pas-logo-horizontal.webp"
@@ -43,15 +31,22 @@ export function SiteHeader() {
           width={900}
           height={419}
           priority
-          className="h-9 w-auto sm:h-12"
+          className="h-8 w-auto sm:h-12"
         />
       </Link>
-      <nav aria-label="Main" className="flex items-center gap-1 sm:gap-3">
+      <nav aria-label="Main" className="hidden items-center gap-2 sm:flex">
         <Link href="/" aria-current={pathname === "/" ? "page" : undefined} className={navLink}>
           Home
         </Link>
         <Link href="/map" aria-current={pathname === "/map" ? "page" : undefined} className={navLink}>
           Map
+        </Link>
+        <Link
+          href="/share"
+          aria-current={pathname === "/share" ? "page" : undefined}
+          className="rounded-full bg-brand-red px-4 py-2 text-sm font-bold text-white transition hover:bg-brand-red-deep"
+        >
+          Share a memory
         </Link>
         {!loading && me && <BellLink />}
         {!loading && me && (

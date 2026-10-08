@@ -35,7 +35,7 @@ export function SignInForm() {
 
   return (
     <div className={card}>
-      <h1 className="text-2xl font-extrabold text-brand-red">Join the campaign</h1>
+      <h1 className="text-xl font-extrabold text-brand-red sm:text-2xl">Join the campaign</h1>
       <p className="mt-2 text-ink-soft">
         Sign in with your Google account to share the store you never forgot. No new
         password needed.

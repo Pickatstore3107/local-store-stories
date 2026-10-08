@@ -1,11 +1,19 @@
 "use client";
 
-import type { GeoJSONSource, MapGeoJSONFeature, Map as MapLibreMap } from "maplibre-gl";
+import type {
+  GeoJSONSource,
+  MapGeoJSONFeature,
+  MapMouseEvent,
+  Map as MapLibreMap,
+  PaddingOptions,
+} from "maplibre-gl";
 import { useEffect, useRef, useState, type RefObject } from "react";
 import type { WallMemory } from "@/lib/memories";
 import type { LatLng } from "@/lib/pins";
 import {
   COLORS,
+  addMeLayers,
+  addPlaceLayer,
   addSelectedPinLayer,
   addSelectionLayers,
   collection,
@@ -37,7 +45,12 @@ function spread(memories: PinnedMemory[]) {
   return spots;
 }
 
-function fitTo(map: MapLibreMap, spots: LatLng[], animate: boolean) {
+export function fitTo(
+  map: MapLibreMap,
+  spots: LatLng[],
+  animate: boolean,
+  padding: number | PaddingOptions = 56,
+) {
   if (!spots.length) return;
   const lats = spots.map((s) => s.lat);
   const lngs = spots.map((s) => s.lng);
@@ -46,14 +59,26 @@ function fitTo(map: MapLibreMap, spots: LatLng[], animate: boolean) {
       [Math.min(...lngs), Math.min(...lats)],
       [Math.max(...lngs), Math.max(...lats)],
     ],
-    { padding: 56, maxZoom: 14, animate },
+    { padding, maxZoom: 14, animate },
   );
+}
+
+/** Puts memories on a map that has the memory layers, and returns where each one sits. */
+export function setMemories(map: MapLibreMap, memories: PinnedMemory[]) {
+  const spots = spread(memories);
+  (map.getSource("lss-memories") as GeoJSONSource).setData(
+    collection(memories.map((m) => point(spots.get(m.id)!, { id: m.id }))),
+  );
+  return spots;
 }
 
 type Latest = RefObject<{
   onSelect: (id: string | null) => void;
   onVisible?: (ids: Set<string>) => void;
   onReady?: () => void;
+  onMap?: (map: MapLibreMap) => void;
+  onEmptyClick?: (event: MapMouseEvent) => void;
+  focusPadding?: PaddingOptions;
   memories: PinnedMemory[];
   spots: Map<string, LatLng>;
 }>;
@@ -67,6 +92,16 @@ function reportVisible(m: MapLibreMap, latest: Latest) {
   latest.current.onVisible?.(ids);
 }
 
+/** Padding with a little extra all round, so pins aren't fitted right to an edge. */
+export function withMargin(padding: PaddingOptions, extra = 40): PaddingOptions {
+  return {
+    top: (padding.top ?? 0) + extra,
+    bottom: (padding.bottom ?? 0) + extra,
+    left: (padding.left ?? 0) + extra,
+    right: (padding.right ?? 0) + extra,
+  };
+}
+
 /** Zooms in until a numbered circle splits into its pins. */
 async function zoomInto(m: MapLibreMap, cluster: MapGeoJSONFeature) {
   if (cluster.geometry.type !== "Point") return;
@@ -75,7 +110,9 @@ async function zoomInto(m: MapLibreMap, cluster: MapGeoJSONFeature) {
   m.easeTo({ center: cluster.geometry.coordinates as [number, number], zoom: zoom + 0.5 });
 }
 
-function addLayers(m: MapLibreMap, latest: Latest) {
+/** The pins, numbered circles, blue dot and the rest, drawn on top of the streets. */
+export function addMemoryLayers(m: MapLibreMap) {
+  addMeLayers(m);
   m.addSource("lss-memories", {
     type: "geojson",
     data: collection([]),
@@ -121,8 +158,11 @@ function addLayers(m: MapLibreMap, latest: Latest) {
       "icon-ignore-placement": true,
     },
   });
+  addPlaceLayer(m);
   addSelectedPinLayer(m);
+}
 
+function addHandlers(m: MapLibreMap, latest: Latest) {
   m.on("click", (event) => {
     // A finger is bigger than a pin, so anything close counts.
     const { x, y } = event.point;
@@ -137,7 +177,9 @@ function addLayers(m: MapLibreMap, latest: Latest) {
     const cluster = hit.find((f) => f.layer.id === "lss-clusters");
     if (pin) latest.current.onSelect(pin.properties.id as string);
     else if (cluster) zoomInto(m, cluster);
-    else if (!hit.length) latest.current.onSelect(null);
+    else if (hit.length) return;
+    else if (latest.current.onEmptyClick) latest.current.onEmptyClick(event);
+    else latest.current.onSelect(null);
   });
   for (const layer of ["lss-pins", "lss-clusters", "lss-selected"]) {
     m.on("mouseenter", layer, () => (m.getCanvas().style.cursor = "pointer"));
@@ -157,9 +199,13 @@ export function MemoryMap({
   onSelect,
   onVisible,
   onReady,
+  onMap,
+  onEmptyClick,
+  focusPadding,
   fitKey,
   label,
-  className = "h-below-menu max-h-[640px] min-h-[340px]",
+  framed = true,
+  className = "relative h-below-menu max-h-[640px] min-h-[340px]",
 }: {
   memories: PinnedMemory[];
   selectedId: string | null;
@@ -167,9 +213,18 @@ export function MemoryMap({
   /** The memories whose pins are in view, whenever the map stops moving. */
   onVisible?: (ids: Set<string>) => void;
   onReady?: () => void;
+  /** The map itself, once it has loaded, for moving it from outside. */
+  onMap?: (map: MapLibreMap) => void;
+  /** A tap away from any pin. Without it, such a tap closes the memory. */
+  onEmptyClick?: (event: MapMouseEvent) => void;
+  /** Room to leave around a memory brought into view, for anything covering the map. */
+  focusPadding?: PaddingOptions;
   /** Change it to fit the map to the memories again. */
   fitKey?: string;
   label: string;
+  /** A rounded frame, for a map inside a page rather than filling it. */
+  framed?: boolean;
+  /** Size and position; relative unless the map covers its parent. */
   className?: string;
 }) {
   const box = useRef<HTMLDivElement>(null);
@@ -177,7 +232,7 @@ export function MemoryMap({
   const [failed, setFailed] = useState(false);
   const latest: Latest = useRef({ onSelect, onVisible, onReady, memories, spots: new Map<string, LatLng>() });
   useEffect(() => {
-    latest.current = { ...latest.current, onSelect, onVisible, onReady, memories };
+    latest.current = { ...latest.current, onSelect, onVisible, onReady, onMap, onEmptyClick, focusPadding, memories };
   });
 
   // Opens the map once.
@@ -195,8 +250,10 @@ export function MemoryMap({
           console.error("Map error", event.error);
         });
         m.on("load", () => {
-          addLayers(m, latest);
+          addMemoryLayers(m);
+          addHandlers(m, latest);
           setMap(m);
+          latest.current.onMap?.(m);
           latest.current.onReady?.();
         });
       })
@@ -213,18 +270,15 @@ export function MemoryMap({
   // Puts the memories on it.
   useEffect(() => {
     if (!map) return;
-    const spots = spread(memories);
-    latest.current.spots = spots;
-    (map.getSource("lss-memories") as GeoJSONSource).setData(
-      collection(memories.map((m) => point(spots.get(m.id)!, { id: m.id }))),
-    );
+    latest.current.spots = setMemories(map, memories);
     reportVisible(map, latest);
   }, [map, memories]);
 
   // Fits them all in view, at first and whenever asked.
   useEffect(() => {
     if (!map) return;
-    fitTo(map, [...latest.current.spots.values()], fitKey !== undefined);
+    const padding = latest.current.focusPadding;
+    fitTo(map, [...latest.current.spots.values()], fitKey !== undefined, padding ? withMargin(padding) : 56);
   }, [map, fitKey]);
 
   // Shows the selected memory, and brings it into view.
@@ -235,17 +289,21 @@ export function MemoryMap({
     showSelected(map, spot, memory?.pin ?? null);
     map.setFilter("lss-pins", ["all", ["!", ["has", "point_count"]], ["!=", ["get", "id"], selectedId ?? ""]]);
     if (!spot) return;
+    const zoom = map.getZoom() < 13 ? 15 : map.getZoom();
+    const padding = latest.current.focusPadding;
+    if (padding) {
+      map.easeTo({ center: [spot.lng, spot.lat], zoom, padding });
+      return;
+    }
     // Centres it, above the memory that opens over the bottom of the map on a phone.
     const narrow = map.getContainer().clientWidth < 640;
-    map.easeTo({
-      center: [spot.lng, spot.lat],
-      zoom: map.getZoom() < 13 ? 15 : map.getZoom(),
-      offset: narrow ? [0, -90] : [0, 0],
-    });
+    map.easeTo({ center: [spot.lng, spot.lat], zoom, offset: narrow ? [0, -90] : [0, 0] });
   }, [map, selectedId]);
 
   return (
-    <div className={`relative overflow-hidden rounded-3xl bg-[#f3ead8] ring-1 ring-ink/10 ${className}`}>
+    <div
+      className={`overflow-clip bg-[#f3ead8] ${framed ? "rounded-3xl ring-1 ring-ink/10" : ""} ${className}`}
+    >
       <div ref={box} role="region" aria-label={label} className="h-full w-full" />
       {!map && !failed && (
         <p role="status" className="absolute inset-0 flex items-center justify-center text-ink-soft">

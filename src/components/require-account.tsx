@@ -45,7 +45,7 @@ export function RequireAccount({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (loading) return;
     if (!user) {
-      if (!exitPath) setReturnPath(window.location.pathname);
+      if (!exitPath) setReturnPath(window.location.pathname + window.location.search);
       router.replace(exitPath ?? "/signin");
       exitPath = null;
     } else if (!consent) {

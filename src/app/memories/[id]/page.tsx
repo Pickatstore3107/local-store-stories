@@ -85,7 +85,7 @@ async function MemoryContent({ id }: { id: string }) {
         />
         <PolaroidPhoto url={memory.photoUrl} storeName={memory.storeName} whole eager />
         <figcaption className="px-1 pt-4 font-hand text-ink">
-          <h1 lang={textLang(memory.storeName)} className="text-3xl font-bold leading-tight">
+          <h1 lang={textLang(memory.storeName)} className="text-2xl font-bold leading-tight sm:text-3xl">
             {memory.storeName}
           </h1>
           <p className="mt-1 text-ink-soft">{placeLine(memory)}</p>

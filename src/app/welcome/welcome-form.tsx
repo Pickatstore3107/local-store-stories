@@ -98,7 +98,7 @@ function ConsentForm({ user, refresh }: { user: User; refresh: () => Promise<voi
 
   return (
     <form onSubmit={submit} className={card} noValidate>
-      <h1 className="text-2xl font-extrabold text-brand-red">Welcome! Before you begin</h1>
+      <h1 className="text-xl font-extrabold text-brand-red sm:text-2xl">Welcome! Before you begin</h1>
       {invite && (
         <p className="mt-4 rounded-2xl bg-brand-yellow/20 px-4 py-3 text-sm leading-relaxed text-ink">
           You&apos;re joining through {invite.name ? <strong>{invite.name}</strong> : "a friend"}

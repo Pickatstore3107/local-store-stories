@@ -114,7 +114,7 @@ export function AccountPanel() {
         ← My profile
       </Link>
       <section className={card}>
-        <h1 className="text-2xl font-extrabold text-brand-red">Profile and settings</h1>
+        <h1 className="text-xl font-extrabold text-brand-red sm:text-2xl">Profile and settings</h1>
 
         <h2 className="mt-6 text-sm font-bold uppercase tracking-wider text-ink-soft">
           Shown publicly
