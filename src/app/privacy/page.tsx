@@ -76,8 +76,9 @@ export default function PrivacyPage() {
         <section>
           <h2 className="text-lg font-bold">Instagram posts on Home</h2>
           <p className="mt-2">
-            At the bottom of Home we show some public Instagram posts about local stores,
-            chosen by our team, through a service called Curator. They load only when you
+            At the bottom of Home we show public Instagram posts about local stores, through a
+            service called Curator. New posts appear on their own, without our team checking
+            each one first, and we take down any that don&apos;t belong. They load only when you
             scroll down to them. Your phone or computer then gets them from Curator and
             Instagram, which see your internet address, as any website would, and may use
             their own cookies. They never see who you are on this site or your memories.
