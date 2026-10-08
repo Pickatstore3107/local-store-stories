@@ -3,12 +3,18 @@
 import { useMemo, useSyncExternalStore } from "react";
 import { CATEGORIES, type Category } from "@/lib/stories";
 
-// The Wall's search and category live in its address, /wall?q=…&category=…,
-// so a filtered Wall can be shared and the Back button returns to it.
+// The Wall's search, category and Following tab live in its address,
+// /wall?q=…&category=…&following=1, so a filtered Wall can be shared and the
+// Back button returns to it.
 // Typing changes the page straight away; the address catches up a moment
 // later, because browsers limit how often a page may change it.
 
-export type WallFilters = { query: string; category: Category | null };
+export type WallFilters = {
+  query: string;
+  category: Category | null;
+  /** Only memories by people the signed-in person follows. */
+  following: boolean;
+};
 
 const WALL_PATH = "/wall";
 const ADDRESS_DELAY = 400;
@@ -67,6 +73,7 @@ function parse(search: string): WallFilters {
   return {
     query: params.get("q") ?? "",
     category: CATEGORIES.find((c) => c === category) ?? null,
+    following: params.get("following") === "1",
   };
 }
 
@@ -76,8 +83,9 @@ export function useWallFilters() {
   return useMemo(() => parse(search), [search]);
 }
 
-export function setWallFilters({ query, category }: WallFilters) {
+export function setWallFilters({ query, category, following }: WallFilters) {
   const params = new URLSearchParams();
+  if (following) params.set("following", "1");
   if (query) params.set("q", query);
   if (category) params.set("category", category);
   unsaved = params.toString();

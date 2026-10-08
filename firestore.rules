@@ -19,7 +19,7 @@ service cloud.firestore {
 
     // Must match CONSENT_VERSION in src/lib/consent.ts.
     function currentConsentVersion() {
-      return '2026-10-v2';
+      return '2026-10-v3';
     }
 
     function isModerator() {
@@ -431,6 +431,98 @@ service cloud.firestore {
 
       // Only together with their profile, when they delete their account.
       allow delete: if isOwner(uid) && !existsAfter(profile());
+    }
+
+    // Who follows whom. As on Instagram, anyone can see someone's followers
+    // and who they follow. The ID is the follower's user ID, then the
+    // followed person's, so nobody follows the same person twice.
+    match /follows/{followId} {
+      function profile(uid) {
+        return /databases/$(database)/documents/users/$(uid);
+      }
+
+      function hasBlocked(blocker, blocked) {
+        return exists(/databases/$(database)/documents/blocks/$(blocker + '_' + blocked));
+      }
+
+      allow get, list: if true;
+
+      // Someone with a profile follows someone else with one, unless either
+      // has blocked the other. People joining through an invite link follow
+      // its sender in the same batch that creates their profile.
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(['from', 'to', 'createdAt'])
+        && request.resource.data.keys().hasAll(['from', 'to', 'createdAt'])
+        && request.resource.data.from == request.auth.uid
+        && request.resource.data.to is string
+        && request.resource.data.to != request.auth.uid
+        && followId == request.auth.uid + '_' + request.resource.data.to
+        && request.resource.data.createdAt == request.time
+        && existsAfter(profile(request.auth.uid))
+        && exists(profile(request.resource.data.to))
+        && !hasBlocked(request.resource.data.to, request.auth.uid)
+        && !hasBlocked(request.auth.uid, request.resource.data.to);
+
+      // Unfollowing, or removing a follower. (Deleting a follow that isn't
+      // there changes nothing, so blocking can always clear both ways.)
+      allow delete: if signedIn()
+        && (resource == null || request.auth.uid in [resource.data.from, resource.data.to]);
+    }
+
+    // Whom someone has blocked. Only they can see it. Blocking ends any
+    // follow between the two, in the same batch, and stops new ones.
+    match /blocks/{blockId} {
+      function follow(from, to) {
+        return /databases/$(database)/documents/follows/$(from + '_' + to);
+      }
+
+      allow get: if signedIn() && blockId.split('_')[0] == request.auth.uid;
+      allow list: if signedIn() && resource.data.from == request.auth.uid;
+
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(['from', 'to', 'createdAt'])
+        && request.resource.data.keys().hasAll(['from', 'to', 'createdAt'])
+        && request.resource.data.from == request.auth.uid
+        && request.resource.data.to is string
+        && request.resource.data.to != request.auth.uid
+        && blockId == request.auth.uid + '_' + request.resource.data.to
+        && request.resource.data.createdAt == request.time
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && !existsAfter(follow(request.resource.data.to, request.auth.uid))
+        && !existsAfter(follow(request.auth.uid, request.resource.data.to));
+
+      allow delete: if signedIn() && resource.data.from == request.auth.uid;
+    }
+
+    // The bell at the top of the page: when someone last followed this
+    // person, and when they last looked. Only they can read it.
+    match /bells/{uid} {
+      function followedNow() {
+        let follow = /databases/$(database)/documents/follows/$(request.auth.uid + '_' + uid);
+        return !exists(follow) && existsAfter(follow);
+      }
+
+      allow get: if isOwner(uid);
+
+      // They mark it seen when they open their activity.
+      allow create: if isOwner(uid)
+        && request.resource.data.keys().hasOnly(['seenAt'])
+        && request.resource.data.seenAt == request.time;
+      allow update: if isOwner(uid)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['seenAt'])
+        && request.resource.data.seenAt == request.time;
+
+      // Anyone else rings it only in the same batch as following them.
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(['ringAt'])
+        && request.resource.data.ringAt == request.time
+        && followedNow();
+      allow update: if signedIn()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['ringAt'])
+        && request.resource.data.ringAt == request.time
+        && followedNow();
+
+      allow delete: if isOwner(uid);
     }
   }
 }

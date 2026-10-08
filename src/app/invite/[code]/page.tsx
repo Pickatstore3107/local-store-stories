@@ -74,7 +74,7 @@ async function InviteContent({ code }: { code: string }) {
       )}
 
       <div className="mt-10">
-        <InviteActions code={code} />
+        <InviteActions code={code} inviterName={name} />
       </div>
 
       <section className="mt-12 border-t border-ink/10 pt-8 text-sm leading-relaxed text-ink-soft">

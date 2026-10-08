@@ -74,6 +74,7 @@ function buildChains({ stories, people }: PublicMemories): Chain[] {
       person: {
         key,
         name: own.length ? (person?.name ?? null) : null,
+        uid: own.length && person?.name ? uid : null,
         city: own.length ? (person?.city ?? null) : null,
         memories: own.map((s) => ({ id: s.id, storeName: s.storeName })),
         photoUrl: own.length ? safely(() => smallPhotoUrl(own[0].photoId)) : null,
@@ -193,6 +194,7 @@ export async function loadInvite(code: string): Promise<InviteLanding | null> {
             neighbourhood: story.neighbourhood,
             caption: excerpt(story.caption, CARD_CAPTION_MAX),
             year: story.year,
+            authorId: story.authorId,
             authorName: inviter?.name ?? null,
             photoUrl: safely(() => cardPhotoUrl(story.photoId)),
             approvedAt: story.approvedAt,

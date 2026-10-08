@@ -3,9 +3,10 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useAuth } from "./auth-provider";
+import { BellLink } from "./bell";
 
 export function SiteHeader() {
-  const { loading, user } = useAuth();
+  const { loading, user, consent } = useAuth();
 
   return (
     <header className="flex items-center justify-between gap-3 px-5 pt-6 sm:px-8">
@@ -34,6 +35,7 @@ export function SiteHeader() {
           <span className="sm:hidden">Chain</span>
           <span className="hidden sm:inline">Memory Chain</span>
         </Link>
+        {!loading && user && consent && <BellLink />}
         {!loading && (
           <Link
             href={user ? "/account" : "/signin"}

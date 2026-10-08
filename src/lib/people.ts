@@ -1,0 +1,58 @@
+// What visitors see of people's profiles and who follows whom, shared by the
+// server pages and the browser. Plain data and helpers only: no Firebase here.
+
+/** A memory in a profile's grid of photos. */
+export type ProfileMemory = { id: string; storeName: string; photoUrl: string | null };
+
+/** Someone's public profile page. */
+export type PublicPerson = {
+  uid: string;
+  name: string;
+  city: string | null;
+  followers: number;
+  following: number;
+  /** Their approved memories on the Wall, newest first. */
+  memories: ProfileMemory[];
+};
+
+export type PersonResult =
+  | { status: "found"; person: PublicPerson }
+  | { status: "missing" }
+  | { status: "error" };
+
+/** Someone in a list of followers, or of people followed. */
+export type ListedPerson = { uid: string; name: string; city: string | null };
+
+export type FollowKind = "followers" | "following";
+
+export type FollowListResult =
+  | {
+      status: "found";
+      /** Whose list it is. */
+      owner: ListedPerson;
+      /** The most recent first. */
+      people: ListedPerson[];
+    }
+  | { status: "missing" }
+  | { status: "error" };
+
+// Firebase sign-in IDs are letters and digits.
+const USER_ID = /^[A-Za-z0-9]{1,128}$/;
+
+export function isUserId(uid: string) {
+  return USER_ID.test(uid);
+}
+
+/** The address of someone's profile. */
+export function personPath(uid: string) {
+  return `/people/${uid}`;
+}
+
+export function followListPath(uid: string, kind: FollowKind) {
+  return `${personPath(uid)}/${kind}`;
+}
+
+/** The first letter of a name, for the circle shown instead of a photo. */
+export function initial(name: string) {
+  return (Array.from(name.trim())[0] ?? "?").toLocaleUpperCase();
+}

@@ -51,7 +51,8 @@ export type OpenInvite = { code: string; from: string; storyId: string; visibili
 
 export type InviteCheck =
   | { status: "open"; invite: OpenInvite }
-  | { status: "joinedHere" }
+  /** They joined through it. `from` sent it. */
+  | { status: "joinedHere"; from: string }
   /** The memory it was made for is gone (or, before shared links, someone else used it). */
   | { status: "closed" };
 
@@ -67,7 +68,8 @@ function inviteSet(storyId: string) {
   return doc(getFirebase().db, "inviteSets", storyId);
 }
 
-async function nameOf(uid: string) {
+/** Someone's display name, or null if it can't be read (a deleted account). */
+export async function nameOf(uid: string) {
   try {
     const profile = await getDoc(doc(getFirebase().db, "users", uid));
     const name = profile.get("displayName");
@@ -141,7 +143,7 @@ export async function checkInvite(code: string, user: User | null): Promise<Invi
     if (!snapshot.exists()) return { status: "closed" };
     const invite = snapshot.data() as Invite;
     if (mine?.get("inviteCode") === code || (user && invite.usedBy === user.uid)) {
-      return { status: "joinedHere" };
+      return { status: "joinedHere", from: invite.from };
     }
     // Only its sender can still open a used invite from before shared links.
     if (invite.usedBy) return { status: "closed" };

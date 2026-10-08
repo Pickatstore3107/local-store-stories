@@ -95,21 +95,39 @@ export async function getPublicDocuments(paths: string[]): Promise<Map<string, P
   );
 }
 
+function whereEquals(equals: Record<string, string>) {
+  const filters = Object.entries(equals).map(([fieldPath, value]) => ({
+    fieldFilter: { field: { fieldPath }, op: "EQUAL", value: { stringValue: value } },
+  }));
+  return filters.length === 1 ? filters[0] : { compositeFilter: { op: "AND", filters } };
+}
+
 /** The documents in a collection whose fields equal the given strings. */
 export async function queryPublic(
   collectionId: string,
   equals: Record<string, string>,
   limit: number,
 ): Promise<PublicDocument[]> {
-  const filters = Object.entries(equals).map(([fieldPath, value]) => ({
-    fieldFilter: { field: { fieldPath }, op: "EQUAL", value: { stringValue: value } },
-  }));
   const rows = (await post(":runQuery", {
-    structuredQuery: {
-      from: [{ collectionId }],
-      where: filters.length === 1 ? filters[0] : { compositeFilter: { op: "AND", filters } },
-      limit,
-    },
+    structuredQuery: { from: [{ collectionId }], where: whereEquals(equals), limit },
   })) as { document?: RestDocument }[];
   return rows.flatMap((row) => (row.document ? [fromRest(row.document)] : []));
+}
+
+/**
+ * How many documents in a collection have fields equal to the given strings.
+ * Firestore counts them without sending them: one read per 1,000 counted.
+ */
+export async function countPublic(
+  collectionId: string,
+  equals: Record<string, string>,
+): Promise<number> {
+  const rows = (await post(":runAggregationQuery", {
+    structuredAggregationQuery: {
+      structuredQuery: { from: [{ collectionId }], where: whereEquals(equals) },
+      aggregations: [{ alias: "count", count: {} }],
+    },
+  })) as { result?: { aggregateFields?: Record<string, Value> } }[];
+  const count = rows.find((row) => row.result)?.result?.aggregateFields?.count;
+  return count ? Number(decode(count)) : 0;
 }

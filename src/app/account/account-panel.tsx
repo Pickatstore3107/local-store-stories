@@ -1,6 +1,7 @@
 "use client";
 
 import { signOut } from "firebase/auth";
+import Link from "next/link";
 import { useEffect, useState, type FormEvent } from "react";
 import { useAuth } from "@/components/auth-provider";
 import { setExitPath } from "@/components/require-account";
@@ -15,6 +16,9 @@ import {
 } from "@/lib/account";
 import { friendlyError } from "@/lib/auth-errors";
 import { getFirebase } from "@/lib/firebase";
+import { refreshPeople } from "@/lib/follows";
+import { personPath } from "@/lib/people";
+import { BlockedPeople } from "./blocked-people";
 import { ModeratorCard } from "./moderator-card";
 import { MyStories } from "./my-stories";
 
@@ -64,6 +68,7 @@ export function AccountPanel() {
     setBusy(true);
     try {
       await updateProfile(user.uid, { displayName: name, city: place });
+      await refreshPeople(user, [user.uid]);
       await refresh();
       setEditing(false);
     } catch (e) {
@@ -166,6 +171,14 @@ export function AccountPanel() {
             </button>
           </div>
         )}
+        {!editing && (
+          <Link
+            href={personPath(user.uid)}
+            className="mt-3 inline-block text-sm font-bold text-brand-red underline underline-offset-4"
+          >
+            See my profile
+          </Link>
+        )}
 
         <h2 className="mt-6 text-sm font-bold uppercase tracking-wider text-ink-soft">
           Private, only you can see this
@@ -181,12 +194,15 @@ export function AccountPanel() {
 
       <MyStories user={user} />
 
+      <BlockedPeople />
+
       <section className={card}>
         <h2 className="text-lg font-extrabold text-ink">Delete my account</h2>
         <p className="mt-2 text-sm text-ink-soft">
           This permanently removes your profile, your memories and photos, your invite links,
-          the list of memories you loved, the reports you sent, your consent record and your
-          sign-in. You also leave the Memory Chain. It cannot be undone.
+          who you follow and who follows you, the people you blocked, the list of memories you
+          loved, the reports you sent, your consent record and your sign-in. You also leave the
+          Memory Chain. It cannot be undone.
         </p>
         {!confirmingDelete ? (
           <button

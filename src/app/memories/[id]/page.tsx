@@ -5,6 +5,7 @@ import { Suspense, type CSSProperties } from "react";
 import { PolaroidPhoto } from "@/components/polaroid";
 import type { MemoryLinks } from "@/lib/chain";
 import { excerpt, memoryPath, placeLine, shortDate, textLang, tilt } from "@/lib/memories";
+import { personPath } from "@/lib/people";
 import { loadMemoryLinks } from "@/lib/server/chain";
 import { loadMemory } from "@/lib/server/wall";
 import { MemoryActions } from "./memory-actions";
@@ -108,7 +109,14 @@ async function MemoryContent({ id }: { id: string }) {
         )}
         {memory.author && (
           <p className="mt-6 text-right font-hand text-xl text-ink">
-            — {memory.author.name}
+            —{" "}
+            <Link
+              href={personPath(memory.author.uid)}
+              lang={textLang(memory.author.name)}
+              className="underline decoration-ink/25 underline-offset-4 hover:text-brand-red hover:decoration-brand-red"
+            >
+              {memory.author.name}
+            </Link>
             {memory.author.city && `, ${memory.author.city}`}
           </p>
         )}
