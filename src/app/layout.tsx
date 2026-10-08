@@ -1,14 +1,14 @@
 import type { Metadata, Viewport } from "next";
-import { Kalam, Nunito } from "next/font/google";
+import { Kalam, Plus_Jakarta_Sans } from "next/font/google";
 import { AuthProvider } from "@/components/auth-provider";
 import { BottomBar } from "@/components/bottom-bar";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import "./globals.css";
 
-// Rounded sans that sits close to the Pick at Store wordmark.
-const nunito = Nunito({
-  variable: "--font-nunito",
+// A clean, modern sans for everything but the memories themselves.
+const jakarta = Plus_Jakarta_Sans({
+  variable: "--font-jakarta",
   subsets: ["latin"],
 });
 
@@ -33,7 +33,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`${nunito.variable} ${kalam.variable} h-full antialiased`}>
+    <html lang="en" className={`${jakarta.variable} ${kalam.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col pb-(--bar-h) font-sans">
         <AuthProvider>
           <SiteHeader />

@@ -1,12 +1,13 @@
 @import "tailwindcss";
 
 /* Pick at Store brand colours, sampled from the official logo files
-   in public/brand. */
+   in public/brand, on a light cream page. */
 :root {
   --brand-red: #a3171b;
   --brand-red-deep: #7d1114;
   --brand-yellow: #ffc000;
-  --paper: #fdf8ef;
+  --paper: #fff8ec;
+  --sand: #f4e8d2;
   --ink: #2b1d1a;
   --ink-soft: #6e5a55;
 }
@@ -16,9 +17,10 @@
   --color-brand-red-deep: var(--brand-red-deep);
   --color-brand-yellow: var(--brand-yellow);
   --color-paper: var(--paper);
+  --color-sand: var(--sand);
   --color-ink: var(--ink);
   --color-ink-soft: var(--ink-soft);
-  --font-sans: var(--font-nunito), ui-rounded, system-ui, sans-serif;
+  --font-sans: var(--font-jakarta), system-ui, sans-serif;
   --font-hand: var(--font-kalam), "Segoe Print", "Bradley Hand", cursive;
 }
 
@@ -26,6 +28,14 @@ html,
 body {
   background: var(--paper);
   color: var(--ink);
+}
+
+/* A soft, warm shadow under white cards and buttons that float on the cream. */
+@utility lift {
+  box-shadow: 0 8px 22px rgb(120 70 30 / 0.1);
+}
+@utility lift-sm {
+  box-shadow: 0 2px 8px rgb(120 70 30 / 0.1);
 }
 
 /* Text and spacing grow with the screen: 13px on a small phone, 15px on a
@@ -39,11 +49,11 @@ html {
   }
 }
 
-/* The menu at the top, and on a phone the bar of buttons at the bottom,
-   which stays clear of the phone's home bar. */
+/* The menu at the top, and on a phone the floating bar of buttons at the
+   bottom, which stays clear of the phone's home bar. */
 :root {
-  --header-h: 3.25rem;
-  --bar-h: calc(3.75rem + env(safe-area-inset-bottom));
+  --header-h: 3.5rem;
+  --bar-h: calc(5.5rem + env(safe-area-inset-bottom));
 }
 @media (min-width: 640px) {
   :root {

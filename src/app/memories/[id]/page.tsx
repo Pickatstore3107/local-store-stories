@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Suspense, type CSSProperties } from "react";
+import { Suspense } from "react";
 import { PolaroidPhoto } from "@/components/polaroid";
-import { excerpt, placeLine, shortDate, textLang, tilt } from "@/lib/memories";
+import { excerpt, placeLine, shortDate, textLang } from "@/lib/memories";
 import { personPath } from "@/lib/people";
 import { mapPath } from "@/lib/pins";
 import { loadMemory } from "@/lib/server/wall";
@@ -75,17 +75,15 @@ async function MemoryContent({ id }: { id: string }) {
 
   return (
     <article className="mt-8">
-      <figure
-        style={{ "--tilt": `${tilt(memory.id) / 2}deg` } as CSSProperties}
-        className="relative mx-auto max-w-lg rotate-(--tilt) bg-white p-4 pb-6 shadow-[0_18px_40px_-20px_rgba(43,29,26,0.6)] ring-1 ring-ink/5"
-      >
-        <span
-          aria-hidden="true"
-          className="absolute -top-3 left-1/2 h-6 w-24 -translate-x-1/2 rotate-2 bg-brand-yellow/70 shadow-sm"
-        />
-        <PolaroidPhoto url={memory.photoUrl} storeName={memory.storeName} whole eager />
-        <figcaption className="px-1 pt-4 font-hand text-ink">
-          <h1 lang={textLang(memory.storeName)} className="text-2xl font-bold leading-tight sm:text-3xl">
+      <figure className="relative mx-auto max-w-lg rounded-[1.75rem] bg-white p-2 lift">
+        <div className="relative overflow-hidden rounded-[1.35rem]">
+          <PolaroidPhoto url={memory.photoUrl} storeName={memory.storeName} whole eager />
+          <span className="absolute left-3 top-3 rounded-full bg-brand-yellow px-2.5 py-1 text-xs font-bold text-ink">
+            {memory.category}
+          </span>
+        </div>
+        <figcaption className="px-3 pb-3 pt-4">
+          <h1 lang={textLang(memory.storeName)} className="text-2xl font-extrabold leading-tight tracking-tight text-ink sm:text-3xl">
             {memory.storeName}
           </h1>
           <p className="mt-1 text-ink-soft">{placeLine(memory)}</p>
@@ -95,7 +93,7 @@ async function MemoryContent({ id }: { id: string }) {
       <div className="mt-10">
         <p
           lang={textLang(memory.caption)}
-          className="whitespace-pre-line font-hand text-xl leading-relaxed text-ink sm:text-2xl"
+          className="whitespace-pre-line font-hand text-2xl leading-relaxed text-ink sm:text-3xl"
         >
           {memory.caption}
         </p>
@@ -106,21 +104,27 @@ async function MemoryContent({ id }: { id: string }) {
           </p>
         )}
         {memory.author && (
-          <p className="mt-6 text-right font-hand text-xl text-ink">
-            —{" "}
-            <Link
-              href={personPath(memory.author.uid)}
-              lang={textLang(memory.author.name)}
-              className="underline decoration-ink/25 underline-offset-4 hover:text-brand-red hover:decoration-brand-red"
+          <p className="mt-6 flex items-center justify-end gap-2 text-ink">
+            <span
+              aria-hidden="true"
+              className="flex h-7 w-7 items-center justify-center rounded-full bg-brand-red text-xs font-bold text-white"
             >
-              {memory.author.name}
-            </Link>
-            {memory.author.city && `, ${memory.author.city}`}
+              {memory.author.name.charAt(0).toUpperCase()}
+            </span>
+            <span>
+              —{" "}
+              <Link
+                href={personPath(memory.author.uid)}
+                lang={textLang(memory.author.name)}
+                className="font-bold hover:text-brand-red"
+              >
+                {memory.author.name}
+              </Link>
+              {memory.author.city && <span className="text-ink-soft">, {memory.author.city}</span>}
+            </span>
           </p>
         )}
         <p className="mt-6 flex flex-wrap gap-x-3 gap-y-1 text-sm text-ink-soft">
-          <span>{memory.category}</span>
-          <span aria-hidden="true">·</span>
           <span>Shared on {shortDate(memory.sharedAt)}</span>
         </p>
         {memory.featuredAt && (
@@ -137,7 +141,7 @@ async function MemoryContent({ id }: { id: string }) {
           </p>
         )}
         {memory.visibility === "link" && (
-          <p className="mt-6 rounded-xl bg-brand-yellow/15 px-4 py-3 text-sm text-ink">
+          <p className="mt-6 rounded-2xl bg-brand-yellow/20 px-4 py-3 text-sm text-ink">
             Its author shared this memory only with people who have the link. It isn&apos;t on
             Home or their profile.
           </p>
@@ -166,10 +170,10 @@ function MemorySkeleton() {
   return (
     <div className="mt-8" role="status">
       <span className="sr-only">Loading the memory…</span>
-      <div className="mx-auto max-w-lg animate-pulse bg-white p-4 pb-6 shadow-sm ring-1 ring-ink/5">
-        <div className="aspect-square w-full bg-paper" />
-        <div className="mt-4 h-7 w-2/3 rounded bg-paper" />
-        <div className="mt-2 h-4 w-1/2 rounded bg-paper" />
+      <div className="mx-auto max-w-lg animate-pulse rounded-[1.75rem] bg-white p-2 pb-5 lift">
+        <div className="aspect-square w-full rounded-[1.35rem] bg-sand" />
+        <div className="mx-3 mt-4 h-7 w-2/3 rounded bg-sand" />
+        <div className="mx-3 mt-2 h-4 w-1/2 rounded bg-sand" />
       </div>
     </div>
   );

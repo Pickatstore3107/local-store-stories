@@ -38,6 +38,11 @@ export function MapSearch({
     [memories, words],
   );
 
+  // The search button at the top of other pages opens the map ready to type.
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("search") === "1") input.current?.focus();
+  }, []);
+
   // Asks Photon once typing pauses; a newer search cancels the one before.
   useEffect(() => {
     if (asked.length < 2) return;

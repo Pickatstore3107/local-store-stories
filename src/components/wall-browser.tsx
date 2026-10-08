@@ -1,26 +1,28 @@
 "use client";
 
 import Link from "next/link";
-import { useDeferredValue, useMemo } from "react";
+import { useDeferredValue, useMemo, type ReactNode } from "react";
 import { useAuth } from "./auth-provider";
+import { ArrowIcon, SearchIcon } from "./icons";
 import { PolaroidCard } from "./polaroid";
 import { setReturnPath } from "./require-account";
-import { input, primaryButton, secondaryButton } from "./ui";
+import { primaryButton, secondaryButton } from "./ui";
 import { useMyFollows } from "./use-my-follows";
 import { memoryMatches, searchWords, type Wall } from "@/lib/memories";
 import { CATEGORIES, type Category } from "@/lib/stories";
 import { setWallFilters, useWallFilters } from "./use-wall-filters";
 
 const chip = "shrink-0 rounded-full px-3.5 py-1.5 text-sm font-bold transition sm:px-4 sm:py-2";
-const chipOff = "bg-white text-brand-red ring-1 ring-brand-red/25 hover:bg-brand-red/5";
+const chipOff = "bg-white text-ink ring-1 ring-ink/10 hover:ring-ink/25";
 const chipOn = "bg-brand-red text-white ring-1 ring-brand-red";
-const tab = "-mb-px border-b-2 px-1 pb-2 text-[0.95rem] font-extrabold transition sm:text-base";
+const tab = "rounded-full px-3 py-1.5 text-xs font-bold transition sm:px-4 sm:text-sm";
 
 /**
- * Everyone's memories or only those of people you follow, then search,
- * categories, the Featured row and every memory, newest first.
+ * Search, then whatever Home shows under it (the map tiles), then
+ * everyone's memories or only those of people you follow, by category,
+ * with the Featured row and every memory, newest first.
  */
-export function WallBrowser({ wall }: { wall: Wall }) {
+export function WallBrowser({ wall, children }: { wall: Wall; children?: ReactNode }) {
   const filters = useWallFilters();
   const query = useDeferredValue(filters.query);
   const { category, following } = filters;
@@ -65,31 +67,18 @@ export function WallBrowser({ wall }: { wall: Wall }) {
 
   return (
     <>
-      <div role="group" aria-label="Whose memories" className="mt-5 flex gap-6 border-b border-ink/10 sm:mt-8">
-        {([false, true] as const).map((each) => (
-          <button
-            key={String(each)}
-            type="button"
-            aria-pressed={following === each}
-            onClick={() => setWallFilters({ ...filters, following: each })}
-            className={`${tab} ${following === each ? "border-brand-red text-brand-red" : "border-transparent text-ink-soft hover:text-ink"}`}
-          >
-            {each ? "Following" : "Everyone"}
-          </button>
-        ))}
-      </div>
-
       <form
         role="search"
         onSubmit={(event) => {
           event.preventDefault();
           (document.activeElement as HTMLElement | null)?.blur(); // closes the phone keyboard
         }}
-        className="mt-4 sm:mt-6"
+        className="relative mt-5 sm:mt-7 sm:max-w-xl"
       >
         <label htmlFor="wall-search" className="sr-only">
           Search by store, area or city
         </label>
+        <SearchIcon className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-ink-soft" />
         <input
           id="wall-search"
           type="search"
@@ -97,10 +86,38 @@ export function WallBrowser({ wall }: { wall: Wall }) {
           autoComplete="off"
           value={filters.query}
           onChange={(event) => setWallFilters({ ...filters, query: event.target.value })}
-          placeholder="Search by store, area or city"
-          className={`${input} max-w-xl`}
+          placeholder="Search a store, area or city"
+          className="h-[3.25rem] w-full rounded-full border-0 bg-white pl-12 pr-14 text-base text-ink outline-none ring-1 ring-ink/5 lift transition placeholder:text-ink-soft/70 focus:ring-2 focus:ring-brand-red/40"
         />
+        <button
+          type="submit"
+          className="absolute right-1.5 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-brand-red text-white transition hover:bg-brand-red-deep"
+        >
+          <ArrowIcon className="h-5 w-5" />
+          <span className="sr-only">Search</span>
+        </button>
       </form>
+
+      {children && <div className="mt-4 sm:mt-6">{children}</div>}
+
+      <div className="mt-7 flex items-center justify-between gap-3 sm:mt-10">
+        <h2 id="memories-heading" className="text-xl font-extrabold tracking-tight text-ink sm:text-2xl">
+          {filtering ? "Memories found" : "Fresh memories"}
+        </h2>
+        <div role="group" aria-label="Whose memories" className="flex shrink-0 rounded-full bg-sand p-1">
+          {([false, true] as const).map((each) => (
+            <button
+              key={String(each)}
+              type="button"
+              aria-pressed={following === each}
+              onClick={() => setWallFilters({ ...filters, following: each })}
+              className={`${tab} ${following === each ? "bg-white text-ink shadow-sm" : "text-ink-soft hover:text-ink"}`}
+            >
+              {each ? "Following" : "Everyone"}
+            </button>
+          ))}
+        </div>
+      </div>
 
       <div
         role="group"
@@ -135,14 +152,14 @@ export function WallBrowser({ wall }: { wall: Wall }) {
       </p>
 
       {featured.length > 0 && (
-        <section aria-labelledby="featured-heading" className="mt-6 sm:mt-10">
-          <h2 id="featured-heading" className="text-lg font-extrabold text-ink sm:text-xl">
+        <section aria-labelledby="featured-heading" className="mt-4 sm:mt-6">
+          <h3 id="featured-heading" className="text-base font-extrabold text-ink sm:text-lg">
             Featured
-          </h2>
-          <p className="mt-1 text-sm text-ink-soft">Picked by the campaign team.</p>
-          <ul className="-mx-4 mt-2 flex snap-x snap-mandatory gap-5 overflow-x-auto px-4 pb-8 pt-5 sm:-mx-5 sm:gap-8 sm:px-5 sm:pb-10 sm:pt-6">
+          </h3>
+          <p className="text-sm text-ink-soft">Picked by the campaign team.</p>
+          <ul className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-6 pt-3 sm:-mx-5 sm:gap-5 sm:px-5 sm:pb-8">
             {featured.map((memory, i) => (
-              <li key={memory.id} className="w-48 shrink-0 snap-center sm:w-72">
+              <li key={memory.id} className="w-44 shrink-0 snap-center sm:w-64">
                 <PolaroidCard memory={memory} featured eager={i < 2} compact />
               </li>
             ))}
@@ -178,14 +195,13 @@ export function WallBrowser({ wall }: { wall: Wall }) {
         </div>
       ) : (
         rest.length > 0 && (
-          <section aria-labelledby="memories-heading" className="mt-6 sm:mt-10">
-            <h2
-              id="memories-heading"
-              className={featured.length ? "text-lg font-extrabold text-ink sm:text-xl" : "sr-only"}
-            >
-              {filtering ? "Memories found" : featured.length ? "More memories" : "All memories"}
-            </h2>
-            <ul className="mt-5 grid grid-cols-2 gap-x-4 gap-y-8 sm:mt-6 sm:gap-x-8 sm:gap-y-12 lg:grid-cols-3 xl:grid-cols-4">
+          <section aria-labelledby={featured.length ? "more-heading" : "memories-heading"} className="mt-4 sm:mt-6">
+            {featured.length > 0 && (
+              <h3 id="more-heading" className="text-base font-extrabold text-ink sm:text-lg">
+                More memories
+              </h3>
+            )}
+            <ul className="mt-3 grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-3 xl:grid-cols-4">
               {rest.map((memory, i) => (
                 <li key={memory.id}>
                   <PolaroidCard memory={memory} featured={!!memory.featuredAt} eager={i < 4} compact />

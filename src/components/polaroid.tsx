@@ -1,21 +1,7 @@
 import Link from "next/link";
-import type { CSSProperties } from "react";
-import { memoryPath, placeLine, textLang, tilt, type WallMemory } from "@/lib/memories";
+import { memoryPath, placeLine, textLang, type WallMemory } from "@/lib/memories";
 import { personPath } from "@/lib/people";
-
-/** A strip of tape holding the print to the wall, with a star when featured. */
-function Tape({ featured, compact }: { featured?: boolean; compact?: boolean }) {
-  return (
-    <span
-      aria-hidden="true"
-      className={`absolute left-1/2 z-10 flex -translate-x-1/2 -rotate-2 items-center justify-center bg-brand-yellow/70 text-sm leading-none text-brand-red-deep shadow-sm ${
-        compact ? "-top-2.5 h-5 w-14 sm:-top-3 sm:h-6 sm:w-20" : "-top-3 h-6 w-20"
-      }`}
-    >
-      {featured ? "★" : ""}
-    </span>
-  );
-}
+import { StarIcon } from "./icons";
 
 function FlagIcon() {
   return (
@@ -32,8 +18,8 @@ function FlagIcon() {
 }
 
 /**
- * A film-toned photo, or a quiet placeholder when there is none. Square on
- * the Wall; on a memory's own page, whole.
+ * A memory's photo, or its store's name written in when there is none.
+ * Square on a card; on a memory's own page, whole.
  */
 export function PolaroidPhoto({
   url,
@@ -48,7 +34,7 @@ export function PolaroidPhoto({
 }) {
   if (!url) {
     return (
-      <div className="flex aspect-square w-full items-center justify-center bg-paper px-4 text-center font-hand text-ink-soft">
+      <div className="flex aspect-square w-full items-center justify-center bg-gradient-to-br from-[#ffe7a0] to-[#ffd2c4] p-3 text-center font-hand text-xl font-bold leading-tight text-brand-red sm:text-2xl">
         {storeName}
       </div>
     );
@@ -62,29 +48,27 @@ export function PolaroidPhoto({
       height={whole ? 1200 : 600}
       loading={eager ? "eager" : "lazy"}
       decoding="async"
-      className={`${whole ? "h-auto" : "aspect-square object-cover"} w-full bg-paper [filter:sepia(0.12)_saturate(1.05)_contrast(1.02)]`}
+      className={`${whole ? "h-auto" : "aspect-square object-cover"} w-full bg-sand`}
     />
   );
 }
 
-// Sizes for a print in a row of two on a phone, and the usual size from a
+// Sizes for a card in a row of two on a phone, and the usual size from a
 // tablet up.
 const sizes = {
-  regular: { print: "p-3", text: "px-1 pt-3", name: "text-xl", small: "text-sm", caption: "mt-2 line-clamp-4" },
+  regular: { name: "text-lg", small: "text-sm", caption: "mt-1 line-clamp-4 text-lg" },
   compact: {
-    print: "p-2 sm:p-3",
-    text: "px-0.5 pt-2 sm:px-1 sm:pt-3",
-    name: "text-base sm:text-xl",
+    name: "text-[0.95rem] sm:text-lg",
     small: "text-xs sm:text-sm",
-    caption: "mt-1 line-clamp-2 text-sm sm:mt-2 sm:line-clamp-4 sm:text-base",
+    caption: "mt-0.5 line-clamp-2 text-base sm:line-clamp-3 sm:text-lg",
   },
 };
 
 /**
- * A memory as a polaroid print pinned to the Wall. The whole print opens
- * the memory's page; the flag in its corner opens it ready to report, and
- * the author's name opens their profile. Compact prints sit two to a row on
- * a phone.
+ * A memory as a white card: the photo with its category, the store's name,
+ * the memory in handwriting and who shared it. The whole card opens the
+ * memory's page; the flag opens it ready to report, and the author's name
+ * opens their profile. Compact cards sit two to a row on a phone.
  */
 export function PolaroidCard({
   memory,
@@ -100,48 +84,63 @@ export function PolaroidCard({
   const path = memoryPath(memory.id);
   const size = compact ? sizes.compact : sizes.regular;
   return (
-    <article
-      style={{ "--tilt": `${tilt(memory.id)}deg` } as CSSProperties}
-      className={`relative rotate-(--tilt) bg-white shadow-[0_14px_30px_-16px_rgba(43,29,26,0.55)] ring-1 ring-ink/5 motion-safe:transition motion-safe:duration-300 motion-safe:hover:-translate-y-1 motion-safe:hover:rotate-0 ${size.print}`}
-    >
-      <Tape featured={featured} compact={compact} />
-      <PolaroidPhoto url={memory.photoUrl} storeName={memory.storeName} eager={eager} />
-      <div className={`font-hand text-ink ${size.text}`}>
-        <h3 lang={textLang(memory.storeName)} className={`font-bold leading-tight ${size.name}`}>
+    <article className="group relative h-full rounded-[1.4rem] bg-white p-1.5 lift transition motion-safe:duration-300 motion-safe:hover:-translate-y-1 sm:p-2">
+      <div className="relative overflow-hidden rounded-2xl">
+        <PolaroidPhoto url={memory.photoUrl} storeName={memory.storeName} eager={eager} />
+        <span className="absolute left-2 top-2 max-w-[calc(100%-3rem)] truncate rounded-full bg-brand-yellow px-2 py-0.5 text-[0.68rem] font-bold text-ink sm:text-xs">
+          {memory.category}
+        </span>
+        {featured && (
+          <span
+            title="Featured"
+            className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-brand-red text-brand-yellow"
+          >
+            <StarIcon className="h-4 w-4" />
+            <span className="sr-only">Featured</span>
+          </span>
+        )}
+      </div>
+      <div className="px-1.5 pb-0.5 pt-2 sm:px-2">
+        <h3 lang={textLang(memory.storeName)} className={`font-bold leading-tight text-ink ${size.name}`}>
           <Link
             href={path}
-            className="outline-none after:absolute after:inset-0 after:content-[''] focus-visible:after:ring-4 focus-visible:after:ring-brand-red/40"
+            className="outline-none after:absolute after:inset-0 after:rounded-[1.4rem] after:content-[''] focus-visible:after:ring-4 focus-visible:after:ring-brand-red/40"
           >
             {memory.storeName}
           </Link>
         </h3>
-        <p className={`mt-0.5 leading-snug text-ink-soft ${size.small}`}>{placeLine(memory)}</p>
-        <p lang={textLang(memory.caption)} className={`leading-snug ${size.caption}`}>
+        <p className={`mt-0.5 truncate text-ink-soft ${size.small}`}>{placeLine(memory)}</p>
+        <p lang={textLang(memory.caption)} className={`font-hand leading-snug text-ink ${size.caption}`}>
           {memory.caption}
         </p>
-        <div className="mt-1 flex items-center justify-between gap-2">
+        <div className="mt-1.5 flex items-center justify-between gap-2">
+          {memory.authorName ? (
+            <Link
+              href={personPath(memory.authorId)}
+              prefetch={false}
+              lang={textLang(memory.authorName)}
+              className={`relative z-10 flex min-w-0 items-center gap-1.5 font-semibold text-ink hover:text-brand-red focus-visible:text-brand-red ${size.small}`}
+            >
+              <span
+                aria-hidden="true"
+                className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brand-red text-[0.65rem] font-bold text-white"
+              >
+                {memory.authorName.charAt(0).toUpperCase()}
+              </span>
+              <span className="truncate">{memory.authorName}</span>
+            </Link>
+          ) : (
+            <span />
+          )}
           <Link
             href={`${path}?report=1`}
             prefetch={false}
             title="Report this memory"
-            className="relative z-10 -ml-2 rounded-full p-2 text-ink-soft/50 transition hover:text-brand-red focus-visible:text-brand-red"
+            className="relative z-10 -mr-1.5 rounded-full p-1.5 text-ink-soft/50 transition hover:text-brand-red focus-visible:text-brand-red"
           >
             <FlagIcon />
             <span className="sr-only">Report this memory</span>
           </Link>
-          {memory.authorName && (
-            <p className={`truncate text-ink-soft ${size.small}`}>
-              —{" "}
-              <Link
-                href={personPath(memory.authorId)}
-                prefetch={false}
-                lang={textLang(memory.authorName)}
-                className="relative z-10 underline decoration-ink/25 underline-offset-4 hover:text-brand-red hover:decoration-brand-red focus-visible:text-brand-red"
-              >
-                {memory.authorName}
-              </Link>
-            </p>
-          )}
         </div>
       </div>
     </article>

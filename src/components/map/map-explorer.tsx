@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useState, type CSSProperties } from "react";
+import { useState } from "react";
 import { PolaroidPhoto } from "@/components/polaroid";
-import { memoryPath, placeLine, textLang, tilt } from "@/lib/memories";
+import { memoryPath, placeLine, textLang } from "@/lib/memories";
 import { personPath } from "@/lib/people";
 import { MemoryMap, type PinnedMemory } from "./memory-map";
 
@@ -80,16 +80,17 @@ export function MapExplorer({
                     type="button"
                     onClick={() => setPicked(memory.id)}
                     aria-pressed={memory.id === selected?.id}
-                    style={{ "--tilt": `${tilt(memory.id) / 2}deg` } as CSSProperties}
-                    className={`block w-full rotate-(--tilt) bg-white p-2 pb-3 text-left shadow-[0_10px_22px_-14px_rgba(43,29,26,0.6)] ring-1 transition hover:-translate-y-1 hover:rotate-0 ${
-                      memory.id === selected?.id ? "ring-2 ring-brand-yellow" : "ring-ink/5"
+                    className={`block w-full rounded-[1.4rem] bg-white p-1.5 pb-3 text-left lift ring-2 transition hover:-translate-y-1 ${
+                      memory.id === selected?.id ? "ring-brand-yellow" : "ring-transparent"
                     }`}
                   >
-                    <PolaroidPhoto url={memory.photoUrl} storeName={memory.storeName} />
-                    <span lang={textLang(memory.storeName)} className="mt-2 block font-hand text-base font-bold leading-tight text-ink">
+                    <span className="block overflow-hidden rounded-2xl">
+                      <PolaroidPhoto url={memory.photoUrl} storeName={memory.storeName} />
+                    </span>
+                    <span lang={textLang(memory.storeName)} className="mt-2 block px-1 font-bold leading-tight text-ink">
                       {memory.storeName}
                     </span>
-                    <span className="block truncate text-xs text-ink-soft">
+                    <span className="block truncate px-1 text-xs text-ink-soft">
                       {memory.neighbourhood ?? memory.city}
                     </span>
                   </button>
@@ -116,7 +117,7 @@ function MapCard({
   return (
     <article
       aria-label={memory.storeName}
-      className="absolute inset-x-3 bottom-3 z-10 grid grid-cols-[6rem_1fr] gap-4 rounded-2xl bg-white p-4 shadow-[0_18px_40px_-16px_rgba(43,29,26,0.55)] ring-1 ring-ink/10 sm:bottom-auto sm:right-auto sm:top-3 sm:w-96"
+      className="absolute inset-x-3 bottom-3 z-10 grid grid-cols-[6rem_1fr] gap-4 rounded-3xl bg-white p-3 lift ring-1 ring-ink/5 sm:bottom-auto sm:right-auto sm:top-3 sm:w-96"
     >
       <button
         type="button"
@@ -126,17 +127,17 @@ function MapCard({
         <span aria-hidden="true">×</span>
         <span className="sr-only">Close</span>
       </button>
-      <div className="-rotate-2 self-start bg-white p-1.5 pb-4 shadow-[0_6px_14px_-8px_rgba(43,29,26,0.6)] ring-1 ring-ink/10">
+      <div className="self-start overflow-hidden rounded-2xl">
         <PolaroidPhoto url={memory.photoUrl} storeName={memory.storeName} eager />
       </div>
       <div className="min-w-0 pr-6">
-        <h3 lang={textLang(memory.storeName)} className="font-hand text-xl font-bold leading-tight text-ink">
+        <h3 lang={textLang(memory.storeName)} className="text-lg font-bold leading-tight text-ink">
           {memory.storeName}
         </h3>
         <p className="mt-0.5 text-sm text-ink-soft">
           {placeLine(memory)} · {memory.category}
         </p>
-        <p lang={textLang(memory.caption)} className="mt-2 line-clamp-3 font-hand leading-snug text-ink">
+        <p lang={textLang(memory.caption)} className="mt-2 line-clamp-3 font-hand text-lg leading-snug text-ink">
           {memory.caption}
         </p>
         <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
@@ -144,7 +145,7 @@ function MapCard({
             <Link
               href={personPath(memory.authorId)}
               lang={textLang(memory.authorName)}
-              className="font-hand text-ink underline decoration-ink/25 underline-offset-4 hover:text-brand-red"
+              className="text-sm font-bold text-ink hover:text-brand-red"
             >
               — {memory.authorName}
             </Link>

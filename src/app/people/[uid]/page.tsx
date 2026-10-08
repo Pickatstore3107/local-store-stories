@@ -116,13 +116,13 @@ function MemoryGrid({ person }: { person: PublicPerson }) {
           No memories shared with everyone yet.
         </p>
       ) : (
-        <ul className="mt-4 grid grid-cols-3 gap-1 sm:gap-3">
+        <ul className="mt-4 grid grid-cols-3 gap-2 sm:gap-3">
           {person.memories.map((memory, i) => (
             <li key={memory.id}>
               <Link
                 href={memoryPath(memory.id)}
                 title={memory.storeName}
-                className="block aspect-square overflow-hidden bg-white ring-1 ring-ink/5 transition hover:opacity-90 focus-visible:outline-4 focus-visible:outline-brand-red/40"
+                className="block aspect-square overflow-hidden rounded-2xl bg-white lift transition hover:opacity-90 focus-visible:outline-4 focus-visible:outline-brand-red/40"
               >
                 {memory.photoUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element -- a signed link from our image host, already sized
@@ -133,12 +133,12 @@ function MemoryGrid({ person }: { person: PublicPerson }) {
                     height={600}
                     loading={i < 6 ? "eager" : "lazy"}
                     decoding="async"
-                    className="h-full w-full bg-paper object-cover [filter:sepia(0.12)_saturate(1.05)_contrast(1.02)]"
+                    className="h-full w-full bg-sand object-cover"
                   />
                 ) : (
                   <span
                     lang={textLang(memory.storeName)}
-                    className="flex h-full items-center justify-center bg-paper p-2 text-center font-hand text-sm text-ink-soft"
+                    className="flex h-full items-center justify-center bg-gradient-to-br from-[#ffe7a0] to-[#ffd2c4] p-2 text-center font-hand text-base font-bold leading-tight text-brand-red"
                     aria-hidden="true"
                   >
                     {memory.storeName}
