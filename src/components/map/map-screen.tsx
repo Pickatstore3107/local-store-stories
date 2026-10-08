@@ -592,7 +592,7 @@ function LocationNote({
   return (
     <div
       role={location.status === "off" ? undefined : "alert"}
-      className="mb-2 flex items-center gap-3 rounded-2xl bg-[#1a73e8]/8 px-4 py-3"
+      className="mb-2 flex items-center gap-3 rounded-2xl bg-[#fff1c7] px-4 py-3"
     >
       <p className="min-w-0 flex-1 text-sm text-ink">{text}</p>
       {location.status !== "outside" && (

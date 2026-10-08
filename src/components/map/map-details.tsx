@@ -24,7 +24,7 @@ export const outlineButton = `${smallButton} text-brand-red ring-1 ring-brand-re
 /** A memory's photo, small, beside its name. */
 export function MemoryThumb({ memory, className = "w-11" }: { memory: PinnedMemory; className?: string }) {
   return (
-    <span className={`block shrink-0 -rotate-2 bg-white p-0.5 pb-1.5 shadow-sm ring-1 ring-ink/10 ${className}`}>
+    <span className={`block shrink-0 overflow-hidden rounded-xl ${className}`}>
       {memory.photoUrl ? (
         // eslint-disable-next-line @next/next/no-img-element -- a signed link from our image host, already sized
         <img
@@ -34,10 +34,10 @@ export function MemoryThumb({ memory, className = "w-11" }: { memory: PinnedMemo
           height={120}
           loading="lazy"
           decoding="async"
-          className="aspect-square w-full bg-paper object-cover"
+          className="aspect-square w-full bg-sand object-cover"
         />
       ) : (
-        <span className="flex aspect-square w-full items-center justify-center bg-brand-red/10 font-hand text-lg font-bold text-brand-red">
+        <span className="flex aspect-square w-full items-center justify-center bg-gradient-to-br from-[#ffe7a0] to-[#ffd2c4] font-hand text-lg font-bold text-brand-red">
           {memory.storeName.charAt(0)}
         </span>
       )}
@@ -81,7 +81,7 @@ export function MemoryRow({
     <Row onClick={onOpen}>
       <MemoryThumb memory={memory} />
       <span className="min-w-0 flex-1">
-        <span lang={textLang(memory.storeName)} className="block truncate font-hand text-lg font-bold leading-tight text-ink">
+        <span lang={textLang(memory.storeName)} className="block truncate font-bold leading-tight text-ink">
           {memory.storeName}
         </span>
         <span className="block truncate text-sm text-ink-soft">
@@ -150,18 +150,18 @@ export function MemoryDetail({
         </p>
       </DetailHeader>
       <div className="mt-3 grid grid-cols-[5.5rem_1fr] gap-3">
-        <div className="-rotate-2 self-start bg-white p-1 pb-3 shadow-[0_6px_14px_-8px_rgba(43,29,26,0.6)] ring-1 ring-ink/10">
+        <div className="self-start overflow-hidden rounded-2xl">
           <PolaroidPhoto url={memory.photoUrl} storeName={memory.storeName} eager />
         </div>
         <div className="min-w-0">
-          <p lang={textLang(memory.caption)} className="line-clamp-4 font-hand leading-snug text-ink">
+          <p lang={textLang(memory.caption)} className="line-clamp-4 font-hand text-lg leading-snug text-ink">
             {memory.caption}
           </p>
           {showAuthor && memory.authorName && (
             <Link
               href={personPath(memory.authorId)}
               lang={textLang(memory.authorName)}
-              className="mt-1 inline-block font-hand text-ink underline decoration-ink/25 underline-offset-4 hover:text-brand-red"
+              className="mt-1 inline-block text-sm font-bold text-ink hover:text-brand-red"
             >
               — {memory.authorName}
             </Link>

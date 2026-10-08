@@ -7,15 +7,16 @@ import { personPath } from "@/lib/people";
 import { useAuth } from "./auth-provider";
 import { Avatar } from "./avatar";
 import { BellLink } from "./bell";
-import { PersonIcon } from "./icons";
+import { PersonIcon, SearchIcon } from "./icons";
 
-const navLink = "rounded-full px-3 py-2 text-sm font-bold text-brand-red transition hover:bg-brand-red/5";
+const navLink =
+  "rounded-full px-3.5 py-2 text-sm font-bold text-ink-soft transition hover:text-ink aria-[current=page]:bg-white aria-[current=page]:text-brand-red aria-[current=page]:lift-sm";
 
 /**
  * The logo, and on a computer Home, the map, Share, the bell and your
- * profile. Phones get those in the bar at the bottom instead. Visitors get
- * Sign in, and people who signed in but haven't finished joining are sent
- * to finish.
+ * profile. Phones get those in the bar at the bottom instead, and a search
+ * button here. Visitors get Sign in, and people who signed in but haven't
+ * finished joining are sent to finish.
  */
 export function SiteHeader() {
   const { loading, user, profile, consent } = useAuth();
@@ -31,9 +32,19 @@ export function SiteHeader() {
           width={900}
           height={419}
           priority
-          className="h-8 w-auto sm:h-12"
+          className="h-8 w-auto sm:h-11"
         />
       </Link>
+      {pathname !== "/map" && (
+        <Link
+          href="/map?search=1"
+          title="Search stores"
+          className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-ink lift-sm sm:hidden"
+        >
+          <SearchIcon className="h-5 w-5" />
+          <span className="sr-only">Search stores</span>
+        </Link>
+      )}
       <nav aria-label="Main" className="hidden items-center gap-2 sm:flex">
         <Link href="/" aria-current={pathname === "/" ? "page" : undefined} className={navLink}>
           Home
@@ -44,7 +55,7 @@ export function SiteHeader() {
         <Link
           href="/share"
           aria-current={pathname === "/share" ? "page" : undefined}
-          className="rounded-full bg-brand-red px-4 py-2 text-sm font-bold text-white transition hover:bg-brand-red-deep"
+          className="ml-1 rounded-full bg-brand-red px-4 py-2 text-sm font-bold text-white shadow-[0_6px_16px_rgb(163_23_27/0.25)] transition hover:bg-brand-red-deep"
         >
           Share a memory
         </Link>
@@ -72,7 +83,7 @@ export function SiteHeader() {
         {!loading && !user && (
           <Link
             href="/signin"
-            className="ml-1 rounded-full px-4 py-2 text-sm font-bold text-brand-red ring-1 ring-brand-red/30 transition hover:bg-brand-red/5"
+            className="ml-1 rounded-full bg-white px-4 py-2 text-sm font-bold text-ink lift-sm transition hover:text-brand-red"
           >
             Sign in
           </Link>
