@@ -2,7 +2,7 @@
 
 import type { User } from "firebase/auth";
 import { useEffect, useState } from "react";
-import { invitePath } from "@/lib/chain";
+import { invitePath } from "@/lib/invite-links";
 import { friendlyError } from "@/lib/auth-errors";
 import { loadInvite, makeInvite, type MemoryInvite } from "@/lib/invites";
 import type { Visibility } from "@/lib/stories";
@@ -107,10 +107,10 @@ export function PassTheMemory({
       </h2>
       <p className="mt-1 text-sm leading-relaxed text-ink-soft">
         Send your invite link to friends so they can share a store they never forgot, and they
-        can pass it on too. Everyone who joins through it shows on the Memory Chain as someone
-        you passed the memory on to.
+        can pass it on too. You&apos;ll see everyone who joins through it, and they&apos;ll
+        follow you.
         {visibility === "link" &&
-          " Anyone with the link can also see this memory, even though it isn't on the Wall."}
+          " Anyone with the link can also see this memory, even though it isn't on Home."}
       </p>
 
       {invite === undefined ? (

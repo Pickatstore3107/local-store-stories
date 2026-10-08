@@ -2,11 +2,11 @@
 
 import Link from "next/link";
 import { useDeferredValue, useMemo } from "react";
-import { useAuth } from "@/components/auth-provider";
-import { PolaroidCard } from "@/components/polaroid";
-import { setReturnPath } from "@/components/require-account";
-import { input, primaryButton, secondaryButton } from "@/components/ui";
-import { useMyFollows } from "@/components/use-my-follows";
+import { useAuth } from "./auth-provider";
+import { PolaroidCard } from "./polaroid";
+import { setReturnPath } from "./require-account";
+import { input, primaryButton, secondaryButton } from "./ui";
+import { useMyFollows } from "./use-my-follows";
 import type { Wall, WallMemory } from "@/lib/memories";
 import { CATEGORIES, type Category } from "@/lib/stories";
 import { setWallFilters, useWallFilters } from "./use-wall-filters";
@@ -166,7 +166,7 @@ export function WallBrowser({ wall }: { wall: Wall }) {
         <div className="py-16 text-center">
           <p className="font-hand text-2xl text-ink">
             {following && !words.length && !category
-              ? "The people you follow haven't shared a memory on the Wall yet."
+              ? "The people you follow haven't shared a memory yet."
               : "No memories match yet."}
           </p>
           <p className="mt-2 text-ink-soft">Know one? It could be the first.</p>
@@ -233,7 +233,7 @@ function FollowingNote({ note }: { note: "signIn" | "loading" | "nobody" }) {
       {note === "signIn" && (
         <Link
           href={user ? "/welcome" : "/signin"}
-          onClick={() => setReturnPath("/wall?following=1")}
+          onClick={() => setReturnPath("/?following=1")}
           className={`${primaryButton} mt-6`}
         >
           {user ? "Finish joining" : "Sign in"}

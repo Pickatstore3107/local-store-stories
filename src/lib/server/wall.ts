@@ -73,64 +73,42 @@ export function readStory({ id, data }: PublicDocument) {
 
 export type PublicStory = NonNullable<ReturnType<typeof readStory>>;
 
-/** Someone's public profile, with who invited them (the Memory Chain's link). */
-export type Person = {
-  name: string | null;
-  city: string | null;
-  invitedBy: string | null;
-  /** The memory they were invited through. */
-  invitedVia: string | null;
-};
+/** Someone's public profile: the name and city they chose. */
+export type Person = { name: string | null; city: string | null };
 
 export function readPerson(data: Fields): Person {
-  return {
-    name: text(data.displayName),
-    city: text(data.city),
-    invitedBy: text(data.invitedBy),
-    invitedVia: text(data.invitedVia),
-  };
+  return { name: text(data.displayName), city: text(data.city) };
 }
 
 export type PublicMemories = {
   /** Every approved memory shared with everyone. */
   stories: PublicStory[];
-  /** Their authors, and everyone up their invite chains, by user ID. */
+  /** Their authors, by user ID. */
   people: Record<string, Person>;
   /** False when the profiles couldn't be read; names are then missing. */
   complete: boolean;
 };
 
-// How far up an invite chain to look, and how many profiles to read at once.
-const CHAIN_ROUNDS = 25;
 const PROFILES_PER_READ = 100;
 
-/**
- * The public profiles of these people and of everyone who invited them, up
- * each chain. Deleted accounts are left out, which ends their chain there.
- */
+/** The public profiles of these people. Deleted accounts are left out. */
 async function loadPeople(uids: string[]) {
   const people: Record<string, Person> = {};
-  const asked = new Set<string>();
-  let next = [...new Set(uids)];
-  for (let round = 0; next.length && round < CHAIN_ROUNDS; round++) {
-    for (const uid of next) asked.add(uid);
-    for (let i = 0; i < next.length; i += PROFILES_PER_READ) {
-      const batch = next.slice(i, i + PROFILES_PER_READ);
-      const docs = await getPublicDocuments(batch.map((uid) => `users/${uid}`));
-      for (const uid of batch) {
-        const profile = docs.get(`users/${uid}`);
-        if (profile) people[uid] = readPerson(profile.data);
-      }
+  const unique = [...new Set(uids)].filter(isUserId);
+  for (let i = 0; i < unique.length; i += PROFILES_PER_READ) {
+    const batch = unique.slice(i, i + PROFILES_PER_READ);
+    const docs = await getPublicDocuments(batch.map((uid) => `users/${uid}`));
+    for (const uid of batch) {
+      const profile = docs.get(`users/${uid}`);
+      if (profile) people[uid] = readPerson(profile.data);
     }
-    const inviters = next.flatMap((uid) => people[uid]?.invitedBy ?? []);
-    next = [...new Set(inviters)].filter((uid) => isUserId(uid) && !asked.has(uid));
   }
   return people;
 }
 
 /**
- * The data behind the Wall and the Memory Chain: every approved public
- * memory and the people around them. Null on error.
+ * The data behind the Wall and profiles: every approved public memory and
+ * its author. Null on error.
  */
 export async function loadPublicMemories(): Promise<PublicMemories | null> {
   "use cache";
@@ -218,7 +196,6 @@ export async function loadMemory(id: string): Promise<MemoryResult> {
     const name = author?.name;
     return {
       status: "found",
-      invitedBy: author?.invitedBy ? { uid: author.invitedBy, storyId: author.invitedVia } : null,
       memory: {
         id: story.id,
         storeName: story.storeName,

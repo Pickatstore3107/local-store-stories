@@ -1,7 +1,7 @@
 import { revalidateTag } from "next/cache";
-import { isInviteCode } from "@/lib/chain";
+import { isInviteCode } from "@/lib/invite-links";
 import { errorResponse, HttpError, requireConsent, verifyUser } from "@/lib/server/auth";
-import { inviteTag } from "@/lib/server/chain";
+import { inviteTag } from "@/lib/server/invites";
 
 /**
  * Rebuilds the pages of the invites named on their next visit. Called after

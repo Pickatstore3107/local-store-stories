@@ -6,6 +6,7 @@ import { useAuth } from "@/components/auth-provider";
 import { PassTheMemory } from "@/components/pass-the-memory";
 import { card, input, primaryButton } from "@/components/ui";
 import { friendlyError } from "@/lib/auth-errors";
+import { personPath } from "@/lib/people";
 import {
   CAPTION_MAX,
   CAPTION_MIN,
@@ -158,7 +159,7 @@ function StoryForm({
           />
         </div>
         <p className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-sm">
-          <Link href="/account" className="font-bold text-brand-red underline underline-offset-4">
+          <Link href={`${personPath(user.uid)}#memories`} className="font-bold text-brand-red underline underline-offset-4">
             See my memories
           </Link>
           <button
@@ -322,8 +323,8 @@ function StoryForm({
         <legend className="text-sm font-bold text-ink">Who can see it, once approved</legend>
         {(
           [
-            ["public", "Everyone", "On the Memory Wall and Map"],
-            ["link", "Only people I share the link with", "Not listed on the Wall or Map"],
+            ["public", "Everyone", "On Home and my profile"],
+            ["link", "Only people I share the link with", "Not on Home or my profile"],
           ] as const
         ).map(([value, title, detail]) => (
           <label

@@ -32,12 +32,7 @@ export type Memory = Omit<WallMemory, "authorId" | "authorName"> & {
 };
 
 export type MemoryResult =
-  | {
-      status: "found";
-      memory: Memory;
-      /** Who passed the memory on to its author, when they joined through an invite. */
-      invitedBy: { uid: string; storyId: string | null } | null;
-    }
+  | { status: "found"; memory: Memory }
   | { status: "missing" }
   | { status: "error" };
 

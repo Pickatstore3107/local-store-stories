@@ -12,6 +12,7 @@ import { CITY_MAX, CITY_MIN, NAME_MAX, createAccount } from "@/lib/account";
 import { friendlyError } from "@/lib/auth-errors";
 import { MIN_AGE } from "@/lib/consent";
 import { refreshPeople } from "@/lib/follows";
+import { personPath } from "@/lib/people";
 import {
   checkInvite,
   inviterName,
@@ -27,7 +28,7 @@ export function WelcomeForm() {
   useEffect(() => {
     if (loading) return;
     if (!user) router.replace("/signin");
-    else if (consent) router.replace(returnPath() ?? "/account");
+    else if (consent) router.replace(returnPath() ?? personPath(user.uid));
   }, [loading, user, consent, router]);
 
   if (loading || !user || consent) return <Loading />;
@@ -102,8 +103,8 @@ function ConsentForm({ user, refresh }: { user: User; refresh: () => Promise<voi
         <p className="mt-4 rounded-2xl bg-brand-yellow/20 px-4 py-3 text-sm leading-relaxed text-ink">
           You&apos;re joining through {invite.name ? <strong>{invite.name}</strong> : "a friend"}
           &apos;s invite. You&apos;ll follow {invite.name ?? "them"}, so their memories show in
-          your Following tab, and they&apos;ll see that you joined. The Memory Chain will show
-          that they passed the memory on to you. You can unfollow at any time.
+          your Following tab, and they&apos;ll see that you joined. You can unfollow at any
+          time.
         </p>
       )}
       {inviteGone && !error && (

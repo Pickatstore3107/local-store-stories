@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { PolaroidCard } from "@/components/polaroid";
-import { loadInvite } from "@/lib/server/chain";
+import { loadInvite } from "@/lib/server/invites";
 import { InviteActions } from "./invite-actions";
 
 const SITE = "Local Stores & Their Stories";
@@ -82,9 +82,9 @@ async function InviteContent({ code }: { code: string }) {
         <p className="mt-2">
           Local Stores &amp; Their Stories is a people-first campaign by Pick at Store. Share a
           photo and a few lines about the chai stall, bakery or kirana you grew up with. A person
-          reads every memory before it goes up on the{" "}
-          <Link href="/wall" className="font-bold text-brand-red underline underline-offset-4">
-            Memory Wall
+          reads every memory before it goes up on{" "}
+          <Link href="/" className="font-bold text-brand-red underline underline-offset-4">
+            the site
           </Link>
           .
         </p>

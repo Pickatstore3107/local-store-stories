@@ -4,14 +4,14 @@ import Link from "next/link";
 import type { User } from "firebase/auth";
 import { useEffect, useState } from "react";
 import { PassTheMemory } from "@/components/pass-the-memory";
-import { card, primaryButton } from "@/components/ui";
+import { card } from "@/components/ui";
 import { friendlyError } from "@/lib/auth-errors";
 import { memoryPath } from "@/lib/memories";
 import { deleteStory, loadMyStories, type MyStory, type StoryStatus } from "@/lib/stories";
 
 const statusLabels: Record<StoryStatus, string> = {
   pending: "Waiting for review",
-  approved: "On the Wall",
+  approved: "On Home",
   rejected: "Not approved",
   hidden: "Hidden by a moderator",
 };
@@ -81,12 +81,11 @@ export function MyStories({ user }: { user: User }) {
 
   return (
     <section className={card} id="memories">
-      <div className="flex items-center justify-between gap-4">
-        <h2 className="text-lg font-extrabold text-ink">My memories</h2>
-        <Link href="/share" className={`${primaryButton} px-4 py-2 text-sm`}>
-          Share a memory
-        </Link>
-      </div>
+      <h2 className="text-lg font-extrabold text-ink">Manage my memories</h2>
+      <p className="mt-1 text-sm text-ink-soft">
+        Only you can see this part: memories waiting for review, ones shared by link, and
+        everyone&apos;s invite links.
+      </p>
 
       {stories === null ? (
         <p className="mt-4 text-sm text-ink-soft" role="status">

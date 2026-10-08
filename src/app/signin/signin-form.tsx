@@ -18,7 +18,7 @@ export function SignInForm() {
   // Once signed in, continue to consent (first time), or back to where
   // they were going, or the account page.
   useEffect(() => {
-    if (!loading && user) router.replace(consent ? (returnPath() ?? "/account") : "/welcome");
+    if (!loading && user) router.replace(consent ? (returnPath() ?? "/") : "/welcome");
   }, [loading, user, consent, router]);
 
   async function withGoogle() {

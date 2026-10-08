@@ -11,22 +11,22 @@ import {
   writeBatch,
   type Timestamp,
 } from "firebase/firestore";
-import { isInviteCode } from "./chain";
+import { isInviteCode } from "./invite-links";
 import { getFirebase } from "./firebase";
 import type { Visibility } from "./stories";
 
 // "Pass the memory": each memory comes with one invite link, /invite/{code},
 // to send to friends, who can pass it on too. Anyone who hasn't joined yet
-// can join through it. Their profile then records who invited them, which is
-// the Memory Chain's link, and a private record (joins/{uid}) says which link
-// it was, for them and the friend who sent it. The security rules check
-// every step.
+// can join through it. Their profile then records who invited them, they
+// follow that friend, and a private record (joins/{uid}) says which link it
+// was, for them and the friend who sent it. The security rules check every
+// step.
 
 /** invites/{code}. The random code is the link's secret. */
 export type Invite = {
   from: string;
   storyId: string;
-  /** The memory's. Only a memory shared with everyone is named on the chain. */
+  /** The memory's. Only a memory shared with everyone is named on profiles. */
   visibility: Visibility;
   createdAt: Timestamp;
   /**

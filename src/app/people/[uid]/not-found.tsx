@@ -8,8 +8,8 @@ export default function PersonNotFound() {
       <p className="mt-3 leading-relaxed text-ink-soft">
         The link may be wrong, or they may have deleted their account.
       </p>
-      <Link href="/wall" className={`${primaryButton} mt-8`}>
-        See the Memory Wall
+      <Link href="/" className={`${primaryButton} mt-8`}>
+        Go to Home
       </Link>
     </main>
   );

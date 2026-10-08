@@ -9,8 +9,8 @@ export default function MemoryNotFound() {
         The link may be wrong, or the memory may have been taken down by the person who
         shared it or by a moderator.
       </p>
-      <Link href="/wall" className={`${primaryButton} mt-8`}>
-        See the Memory Wall
+      <Link href="/" className={`${primaryButton} mt-8`}>
+        Go to Home
       </Link>
     </main>
   );

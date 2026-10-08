@@ -4,7 +4,7 @@ import { useMemo, useSyncExternalStore } from "react";
 import { CATEGORIES, type Category } from "@/lib/stories";
 
 // The Wall's search, category and Following tab live in its address,
-// /wall?q=…&category=…&following=1, so a filtered Wall can be shared and the
+// /?q=…&category=…&following=1, so a filtered Wall can be shared and the
 // Back button returns to it.
 // Typing changes the page straight away; the address catches up a moment
 // later, because browsers limit how often a page may change it.
@@ -16,7 +16,7 @@ export type WallFilters = {
   following: boolean;
 };
 
-const WALL_PATH = "/wall";
+const WALL_PATH = "/";
 const ADDRESS_DELAY = 400;
 const RETRY_DELAY = 3000;
 
