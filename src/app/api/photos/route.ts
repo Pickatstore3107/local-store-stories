@@ -1,4 +1,10 @@
-import { errorResponse, HttpError, requireConsent, verifyUser } from "@/lib/server/auth";
+import {
+  errorResponse,
+  HttpError,
+  requireConsent,
+  requirePostAllowed,
+  verifyUser,
+} from "@/lib/server/auth";
 import {
   MAX_PHOTO_BYTES,
   deleteAllPhotos,
@@ -12,6 +18,7 @@ export async function POST(request: Request) {
   try {
     const { uid, token } = await verifyUser(request);
     await requireConsent(uid, token);
+    await requirePostAllowed(uid, token);
 
     const form = await request.formData();
     const storyId = form.get("storyId");

@@ -4,6 +4,7 @@ import { ActivityList } from "./activity-list";
 
 export const metadata: Metadata = {
   title: "Activity · Local Stores & Their Stories",
+  robots: { index: false, follow: false },
 };
 
 export default function ActivityPage() {

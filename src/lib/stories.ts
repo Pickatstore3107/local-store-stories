@@ -3,19 +3,25 @@ import {
   deleteDoc,
   deleteField,
   doc,
+  getDoc,
   getDocs,
   query,
   serverTimestamp,
   setDoc,
   updateDoc,
   where,
+  writeBatch,
+  type DocumentData,
+  type DocumentReference,
   type Timestamp,
 } from "firebase/firestore";
+import { FirebaseError } from "firebase/app";
 import type { User } from "firebase/auth";
 import { FriendlyError } from "./auth-errors";
 import { getFirebase } from "./firebase";
 import { deleteStoryInvites } from "./invites";
 import type { Pin } from "./pins";
+import { checkPostLimit, DAILY_MEMORY_LIMIT, readPostLimit } from "./post-limits";
 
 // Must match the list in firestore.rules.
 export const CATEGORIES = [
@@ -177,11 +183,58 @@ function cleanInput(input: StoryInput) {
 }
 
 /**
+ * The person's count of memories shared, and whether this site's security
+ * rules check it yet. Rules from before the limit was added refuse to read it.
+ */
+async function loadPostLimit(uid: string) {
+  try {
+    const snapshot = await getDoc(doc(getFirebase().db, "postLimits", uid));
+    const raw = snapshot.data();
+    const millis = (value: unknown) => (value as Timestamp | undefined)?.toMillis?.();
+    return {
+      enforced: true,
+      raw,
+      before: raw
+        ? readPostLimit({ ...raw, lastAt: millis(raw.lastAt), windowStart: millis(raw.windowStart) })
+        : null,
+    };
+  } catch (error) {
+    if (error instanceof FirebaseError && error.code === "permission-denied") {
+      return { enforced: false, raw: undefined, before: null };
+    }
+    throw error;
+  }
+}
+
+/** Saves the story and, in the same write, counts it towards the person's limit. */
+async function saveWithLimit(
+  storyRef: DocumentReference,
+  story: DocumentData,
+  uid: string,
+  raw: DocumentData | undefined,
+  newWindow: boolean,
+) {
+  const { db } = getFirebase();
+  const batch = writeBatch(db);
+  batch.set(storyRef, story);
+  batch.set(doc(db, "postLimits", uid), {
+    lastAt: serverTimestamp(),
+    windowStart: newWindow || !raw ? serverTimestamp() : raw.windowStart,
+    count: newWindow || !raw ? 1 : raw.count + 1,
+  });
+  await batch.commit();
+}
+
+/**
  * Uploads the photo, then saves the story as pending review. Nobody but
  * the author can see either until a moderator approves it.
  */
 export async function shareStory(user: User, input: StoryInput, photo: Blob) {
   const { db } = getFirebase();
+  const limit = await loadPostLimit(user.uid);
+  const check = checkPostLimit(limit.before, Date.now());
+  if (!check.ok) throw new FriendlyError(check.message);
+
   const storyRef = doc(collection(db, "stories"));
   const form = new FormData();
   form.set("storyId", storyRef.id);
@@ -189,16 +242,42 @@ export async function shareStory(user: User, input: StoryInput, photo: Blob) {
   const response = await callApi(user, "/api/photos", { method: "POST", body: form });
   const { photoId } = (await response.json()) as { photoId: string };
 
+  const story = {
+    authorId: user.uid,
+    ...cleanInput(input),
+    rightsConfirmed: true,
+    status: "pending",
+    photoId,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  };
   try {
-    await setDoc(storyRef, {
-      authorId: user.uid,
-      ...cleanInput(input),
-      rightsConfirmed: true,
-      status: "pending",
-      photoId,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    });
+    if (!limit.enforced) {
+      // The rules in the Firebase console don't count memories yet.
+      await setDoc(storyRef, story);
+    } else {
+      try {
+        await saveWithLimit(storyRef, story, user.uid, limit.raw, check.newWindow);
+      } catch (error) {
+        // This device's clock may disagree with the database's about when the
+        // day's count started again, so the other answer is tried once.
+        const other = !check.newWindow;
+        const canRetry =
+          error instanceof FirebaseError &&
+          error.code === "permission-denied" &&
+          limit.raw &&
+          (other || limit.raw.count < DAILY_MEMORY_LIMIT);
+        if (!canRetry) throw error;
+        try {
+          await saveWithLimit(storyRef, story, user.uid, limit.raw, other);
+        } catch {
+          throw new FriendlyError(
+            "You can share one memory a minute, and up to " +
+              `${DAILY_MEMORY_LIMIT} a day. Please try again a little later.`,
+          );
+        }
+      }
+    }
   } catch (error) {
     await deletePhoto(user, storyRef.id).catch(() => {});
     throw error;

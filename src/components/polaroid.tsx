@@ -136,7 +136,7 @@ export function PolaroidCard({
             href={`${path}?report=1`}
             prefetch={false}
             title="Report this memory"
-            className="relative z-10 -mr-1.5 rounded-full p-1.5 text-ink-soft/50 transition hover:text-brand-red focus-visible:text-brand-red"
+            className="relative z-10 -mr-1.5 rounded-full p-1.5 text-ink-soft/80 transition hover:text-brand-red focus-visible:text-brand-red"
           >
             <FlagIcon />
             <span className="sr-only">Report this memory</span>

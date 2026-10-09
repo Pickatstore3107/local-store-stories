@@ -1,9 +1,12 @@
+import { Analytics } from "@vercel/analytics/next";
 import type { Metadata, Viewport } from "next";
 import { Kalam, Plus_Jakarta_Sans } from "next/font/google";
 import { AuthProvider } from "@/components/auth-provider";
 import { BottomBar } from "@/components/bottom-bar";
+import { CookieBanner } from "@/components/cookie-choice";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
+import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/site";
 import "./globals.css";
 
 // A clean, modern sans for everything but the memories themselves.
@@ -20,9 +23,18 @@ const kalam = Kalam({
 });
 
 export const metadata: Metadata = {
-  title: "Local Stores & Their Stories",
-  description:
-    "Share a memory of the neighbourhood store you never really left. A people-first campaign by Pick at Store.",
+  metadataBase: SITE_URL,
+  title: SITE_NAME,
+  description: SITE_DESCRIPTION,
+  applicationName: SITE_NAME,
+  openGraph: {
+    type: "website",
+    siteName: SITE_NAME,
+    title: SITE_NAME,
+    description: SITE_DESCRIPTION,
+    locale: "en_IN",
+  },
+  twitter: { card: "summary_large_image" },
 };
 
 export const viewport: Viewport = {
@@ -40,7 +52,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           {children}
           <SiteFooter />
           <BottomBar />
+          <CookieBanner />
         </AuthProvider>
+        {/* Counts visits without cookies or anything that identifies a person. */}
+        <Analytics />
       </body>
     </html>
   );

@@ -140,7 +140,7 @@ export function PassTheMemory({
           {invite.joined && (
             <p className={`mt-3 ${invite.joined.length ? "text-emerald-900" : "text-ink-soft"}`}>
               {invite.joined.length
-                ? `✓ ${names(invite.joined)} joined through your link.`
+                ? `${names(invite.joined)} joined through your link.`
                 : "No one has joined through it yet."}
             </p>
           )}

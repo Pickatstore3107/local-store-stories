@@ -4,6 +4,7 @@ import { AccountPanel } from "./account-panel";
 
 export const metadata: Metadata = {
   title: "Profile and settings · Local Stores & Their Stories",
+  robots: { index: false, follow: false },
 };
 
 export default function AccountPage() {

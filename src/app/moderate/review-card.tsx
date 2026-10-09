@@ -2,6 +2,7 @@
 
 import type { User } from "firebase/auth";
 import { useState, type FormEvent, type ReactNode } from "react";
+import { StarIcon } from "@/components/icons";
 import { input, primaryButton, secondaryButton } from "@/components/ui";
 import { friendlyError } from "@/lib/auth-errors";
 import { memoryPath } from "@/lib/memories";
@@ -249,8 +250,9 @@ export function ReviewCard({
             Open its page
           </a>
           {featured && (
-            <span className="rounded-full bg-brand-yellow/25 px-2 py-0.5 font-bold text-ink">
-              ★ Featured
+            <span className="inline-flex items-center gap-1 rounded-full bg-brand-yellow/25 px-2 py-0.5 font-bold text-ink">
+              <StarIcon className="h-3.5 w-3.5" />
+              Featured
             </span>
           )}
         </p>

@@ -128,7 +128,7 @@ function MemoryGrid({ person }: { person: PublicPerson }) {
                   // eslint-disable-next-line @next/next/no-img-element -- a signed link from our image host, already sized
                   <img
                     src={memory.photoUrl}
-                    alt=""
+                    alt={`Photo shared with the memory of ${memory.storeName}`}
                     width={600}
                     height={600}
                     loading={i < 6 ? "eager" : "lazy"}

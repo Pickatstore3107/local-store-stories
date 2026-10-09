@@ -16,6 +16,7 @@ import {
   setDoc,
   updateDoc,
   where,
+  writeBatch,
   type Firestore,
 } from "firebase/firestore";
 import { afterAll, beforeAll, beforeEach, describe, it } from "vitest";
@@ -64,8 +65,26 @@ const story = (uid: string, id: string, overrides: Record<string, unknown> = {})
   ...overrides,
 });
 
-function share(testDb: TestDb, uid: string, id: string, overrides = {}) {
-  return setDoc(doc(asDb(testDb), "stories", id), story(uid, id, overrides));
+// Each new story is counted in postLimits/{signed-in person} in the same batch.
+const firstLimit = () => ({ lastAt: serverTimestamp(), windowStart: serverTimestamp(), count: 1 });
+
+function shareWith(testDb: TestDb, signedInAs: string, id: string, data: Record<string, unknown>) {
+  const db = asDb(testDb);
+  const batch = writeBatch(db);
+  batch.set(doc(db, "stories", id), data);
+  batch.set(doc(db, "postLimits", signedInAs), firstLimit());
+  return batch.commit();
+}
+
+function share(testDb: TestDb, uid: string, id: string, overrides = {}, signedInAs = uid) {
+  return shareWith(testDb, signedInAs, id, story(uid, id, overrides));
+}
+
+/** Lets the next share in a test start a new count. */
+async function forgetLimit(uid: string) {
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    await deleteDoc(doc(asDb(ctx.firestore()), "postLimits", uid));
+  });
 }
 
 async function seedStory(uid: string, id: string) {
@@ -83,7 +102,7 @@ describe("sharing a story", () => {
     const db = env.authenticatedContext("asha").firestore();
     const required: Record<string, unknown> = story("asha", "s1");
     for (const key of ["neighbourhood", "year", "ordered"]) delete required[key];
-    await assertSucceeds(setDoc(doc(asDb(db), "stories", "s1"), required));
+    await assertSucceeds(shareWith(db, "asha", "s1", required));
   });
 
   it("refuses people who have not given consent", async () => {
@@ -97,7 +116,7 @@ describe("sharing a story", () => {
 
   it("refuses a story written in someone else's name", async () => {
     const db = env.authenticatedContext("mallory").firestore();
-    await assertFails(share(db, "asha", "s1"));
+    await assertFails(share(db, "asha", "s1", {}, "mallory"));
     await assertFails(share(db, "mallory", "s1", { authorId: "asha" }));
   });
 
@@ -149,7 +168,9 @@ describe("sharing a story", () => {
   it("accepts a pin on the map: a square of the grid in Hyderabad", async () => {
     const db = env.authenticatedContext("asha").firestore();
     await assertSucceeds(share(db, "asha", "s1", { pin: { row: 3875, col: 16691 } }));
+    await forgetLimit("asha");
     await assertSucceeds(share(db, "asha", "s2", { pin: { row: 3822, col: 16638 } }));
+    await forgetLimit("asha");
     await assertSucceeds(share(db, "asha", "s3", { pin: { row: 3922, col: 16755 } }));
   });
 
@@ -164,6 +185,82 @@ describe("sharing a story", () => {
     await assertFails(share(db, "asha", "s1", { pin: { row: 3875, col: 16637 } }));
     await assertFails(share(db, "asha", "s1", { pin: { row: 3875, col: 16756 } }));
     await assertFails(share(db, "asha", "s1", { pin: "Ameerpet" }));
+  });
+});
+
+describe("how often a person can share", () => {
+  const minutesAgo = (minutes: number) => new Date(Date.now() - minutes * 60 * 1000);
+
+  async function seedLimit(uid: string, lastAt: Date, windowStart: Date, count: number) {
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(asDb(ctx.firestore()), "postLimits", uid), { lastAt, windowStart, count });
+    });
+  }
+
+  function shareCounted(id: string, limit: Record<string, unknown>) {
+    const db = asDb(env.authenticatedContext("asha").firestore());
+    const batch = writeBatch(db);
+    batch.set(doc(db, "stories", id), story("asha", id));
+    batch.set(doc(db, "postLimits", "asha"), limit);
+    return batch.commit();
+  }
+
+  it("refuses a story that isn't counted", async () => {
+    const db = env.authenticatedContext("asha").firestore();
+    await assertFails(setDoc(doc(asDb(db), "stories", "s1"), story("asha", "s1")));
+  });
+
+  it("refuses a first count that doesn't start at one", async () => {
+    await assertFails(shareCounted("s1", { ...firstLimit(), count: 0 }));
+  });
+
+  it("counts the next story of the day", async () => {
+    const start = minutesAgo(30);
+    await seedLimit("asha", minutesAgo(5), start, 3);
+    await assertSucceeds(
+      shareCounted("s1", { lastAt: serverTimestamp(), windowStart: start, count: 4 }),
+    );
+  });
+
+  it("refuses a second story within a minute", async () => {
+    const start = minutesAgo(30);
+    await seedLimit("asha", new Date(), start, 1);
+    await assertFails(shareCounted("s1", { lastAt: serverTimestamp(), windowStart: start, count: 2 }));
+    await assertFails(shareCounted("s1", firstLimit()));
+  });
+
+  it("refuses an eleventh story in a day", async () => {
+    const start = minutesAgo(600);
+    await seedLimit("asha", minutesAgo(5), start, 10);
+    await assertFails(shareCounted("s1", { lastAt: serverTimestamp(), windowStart: start, count: 11 }));
+    await assertFails(shareCounted("s1", firstLimit()));
+  });
+
+  it("refuses a count that skips or restarts early", async () => {
+    const start = minutesAgo(30);
+    await seedLimit("asha", minutesAgo(5), start, 3);
+    await assertFails(shareCounted("s1", { lastAt: serverTimestamp(), windowStart: start, count: 1 }));
+    await assertFails(shareCounted("s1", { lastAt: serverTimestamp(), windowStart: start, count: 5 }));
+  });
+
+  it("starts a new count a day after the last one started", async () => {
+    await seedLimit("asha", minutesAgo(5), minutesAgo(24 * 60 + 1), 10);
+    await assertSucceeds(shareCounted("s1", firstLimit()));
+  });
+
+  it("lets only the person read their count", async () => {
+    await seedLimit("asha", minutesAgo(5), minutesAgo(30), 1);
+    await assertSucceeds(getDoc(doc(asDb(env.authenticatedContext("asha").firestore()), "postLimits", "asha")));
+    await assertFails(getDoc(doc(asDb(env.authenticatedContext("mallory").firestore()), "postLimits", "asha")));
+    await assertFails(getDoc(doc(asDb(env.unauthenticatedContext().firestore()), "postLimits", "asha")));
+  });
+
+  it("lets the count go only with the account", async () => {
+    await seedLimit("asha", minutesAgo(5), minutesAgo(30), 1);
+    const db = asDb(env.authenticatedContext("asha").firestore());
+    await assertFails(deleteDoc(doc(db, "postLimits", "asha")));
+    await assertSucceeds(deleteDoc(doc(db, "usersPrivate", "asha")));
+    await assertSucceeds(deleteDoc(doc(db, "postLimits", "asha")));
   });
 });
 

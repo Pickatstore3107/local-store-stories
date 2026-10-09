@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useState, type FormEvent } from "react";
 import { useAuth } from "@/components/auth-provider";
 import { setExitPath } from "@/components/require-account";
+import { BackIcon } from "@/components/icons";
 import { card, input, primaryButton, secondaryButton } from "@/components/ui";
 import {
   CITY_MAX,
@@ -109,9 +110,10 @@ export function AccountPanel() {
     <div className="flex flex-col gap-6">
       <Link
         href={personPath(user.uid)}
-        className="text-sm font-bold text-brand-red underline-offset-4 hover:underline"
+        className="inline-flex items-center gap-0.5 text-sm font-bold text-brand-red underline-offset-4 hover:underline"
       >
-        ← My profile
+        <BackIcon className="h-4 w-4" />
+        My profile
       </Link>
       <section className={card}>
         <h1 className="text-xl font-extrabold text-brand-red sm:text-2xl">Profile and settings</h1>

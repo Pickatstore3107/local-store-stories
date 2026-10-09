@@ -3,6 +3,7 @@ import { SignInForm } from "./signin-form";
 
 export const metadata: Metadata = {
   title: "Sign in · Local Stores & Their Stories",
+  robots: { index: false, follow: false },
 };
 
 export default function SignInPage() {

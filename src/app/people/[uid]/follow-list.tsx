@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
+import { BackIcon } from "@/components/icons";
 import { Avatar } from "@/components/avatar";
 import { textLang } from "@/lib/memories";
 import { followListPath, personPath, type FollowKind } from "@/lib/people";
@@ -54,9 +55,10 @@ async function FollowList({ uid, kind }: { uid: string; kind: FollowKind }) {
     <article>
       <Link
         href={personPath(owner.uid)}
-        className="text-sm font-bold text-brand-red underline-offset-4 hover:underline"
+        className="inline-flex items-center gap-0.5 text-sm font-bold text-brand-red underline-offset-4 hover:underline"
       >
-        ← {owner.name}
+        <BackIcon className="h-4 w-4" />
+        {owner.name}
       </Link>
       <h1 className="sr-only">
         {kind === "followers" ? `${owner.name}'s followers` : `People ${owner.name} follows`}
