@@ -3,9 +3,9 @@
 import { useMemo, useSyncExternalStore } from "react";
 import { CATEGORIES, type Category } from "@/lib/stories";
 
-// The Wall's search, category and Following tab live in its address,
-// /?q=…&category=…&following=1, so a filtered Wall can be shared and the
-// Back button returns to it.
+// Home's category and Following tab, and Explore's search and category,
+// live in the page's address (/?category=…&following=1, /explore?q=…), so
+// a filtered page can be shared and the Back button returns to it.
 // Typing changes the page straight away; the address catches up a moment
 // later, because browsers limit how often a page may change it.
 
@@ -16,25 +16,25 @@ export type WallFilters = {
   following: boolean;
 };
 
-const WALL_PATH = "/";
 const ADDRESS_DELAY = 400;
 const RETRY_DELAY = 3000;
 
 const listeners = new Set<() => void>();
-/** Filters shown on the page but not yet written to the address. */
+/** Filters shown on the page but not yet written to the address, and that page. */
 let unsaved: string | null = null;
+let unsavedPath = "/";
 let timer: ReturnType<typeof setTimeout> | undefined;
 
 function save() {
   clearTimeout(timer);
   if (unsaved === null) return;
-  // Never write the Wall's filters into another page's address.
-  if (window.location.pathname !== WALL_PATH) {
+  // Never write one page's filters into another page's address.
+  if (window.location.pathname !== unsavedPath) {
     unsaved = null;
     return;
   }
   try {
-    window.history.replaceState(null, "", unsaved ? `${WALL_PATH}?${unsaved}` : WALL_PATH);
+    window.history.replaceState(null, "", unsaved ? `${unsavedPath}?${unsaved}` : unsavedPath);
     unsaved = null;
   } catch {
     timer = setTimeout(save, RETRY_DELAY); // too many changes in a row
@@ -64,7 +64,9 @@ function subscribe(listener: () => void) {
 }
 
 function getSnapshot() {
-  return unsaved ?? window.location.search.slice(1);
+  return unsaved !== null && window.location.pathname === unsavedPath
+    ? unsaved
+    : window.location.search.slice(1);
 }
 
 function parse(search: string): WallFilters {
@@ -77,7 +79,7 @@ function parse(search: string): WallFilters {
   };
 }
 
-/** The filters in the address. The server always renders the whole Wall. */
+/** The filters in the address. The server always renders the whole page. */
 export function useWallFilters() {
   const search = useSyncExternalStore(subscribe, getSnapshot, () => "");
   return useMemo(() => parse(search), [search]);
@@ -89,6 +91,7 @@ export function setWallFilters({ query, category, following }: WallFilters) {
   if (query) params.set("q", query);
   if (category) params.set("category", category);
   unsaved = params.toString();
+  unsavedPath = window.location.pathname;
   notify();
   clearTimeout(timer);
   timer = setTimeout(save, ADDRESS_DELAY);

@@ -40,13 +40,14 @@ export default function PrivacyPage() {
             <li>Stories and photos you choose to share, once they are approved.</li>
             <li>Photos are resized on your phone and the location hidden inside them is removed before upload. They are stored privately with our image provider, Cloudinary, until they are approved.</li>
             <li>If you put a memory on the Hyderabad map, the 500-metre square of the city you tapped, never the exact spot.</li>
-            <li>Which memories you love. Only you can see this; the person who shared a memory sees only how many people loved it.</li>
-            <li>Reports you send about a memory. Only moderators can read them.</li>
+            <li>Which memories you like. Anyone can see who liked a memory, as on Instagram. Loves from before 9 October 2026, when likes started showing names, stay private: they count, but nobody can see who.</li>
+            <li>Comments you write under memories. Anyone who can see the memory can read them, with your name.</li>
+            <li>Reports you send about a memory or a comment. Only moderators can read them.</li>
             <li>The invite links you make, and who joined through them. If you joined through a friend&apos;s invite link, who invited you and through which link.</li>
             <li>Who you follow and who follows you. Anyone can see this, as on Instagram.</li>
             <li>The people you block. Only you can see this, and they aren&apos;t told.</li>
             <li>When someone last followed you and when you last opened your activity, to show the dot on the bell. Only you can see this.</li>
-            <li>When you last shared a memory and how many you shared that day, to stop bots and scripts from flooding the site. Only you can see this.</li>
+            <li>When you last shared a memory or wrote a comment, and how many that day, to stop bots and scripts from flooding the site. Only you can see this.</li>
             <li>When you agreed to this notice, and that you confirmed you are 18 or older.</li>
           </ul>
         </section>
@@ -151,6 +152,11 @@ export default function PrivacyPage() {
             your profile. We ask search engines not to list profiles.
           </p>
           <p className="mt-2">
+            Members can find each other by name in Explore. To make that work, your profile
+            also keeps your name in small letters without accents. Nothing else about you can be
+            searched.
+          </p>
+          <p className="mt-2">
             You can follow anyone who has joined, unfollow them at any time, remove someone who
             follows you, or block someone. Blocking ends any follow between you and stops them
             following you; it&apos;s private, and they aren&apos;t told. If you join through a
@@ -161,13 +167,25 @@ export default function PrivacyPage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-bold">Reporting a memory</h2>
+          <h2 className="text-lg font-bold">Likes and comments</h2>
+          <p className="mt-2">
+            When you like a memory, your name shows in its list of likes, and may show under it
+            as the latest person to like it. Unliking takes your name off. Comments show at once,
+            with your name, to anyone who can see the memory. You can delete your own comments,
+            and the person who shared a memory can delete comments on it. Comments can&apos;t
+            have links, and each person can write a few a minute, to keep out spam.
+          </p>
+        </section>
+
+        <section>
+          <h2 className="text-lg font-bold">Reporting a memory or a comment</h2>
           <p className="mt-2">
             If a memory is unkind, shows private details, or uses your photo or your store
             without your agreement, report it from the memory&apos;s page. A moderator reads
             every report and decides whether to hide the memory; it stays up until they do.
-            Moderators can see who sent a report, but the memory&apos;s author can&apos;t. You
-            can also email us without an account.
+            Comments can be reported the same way, and a moderator decides whether to delete
+            them. Moderators can see who sent a report, but the author of the memory or comment
+            can&apos;t. You can also email us without an account.
           </p>
         </section>
 
@@ -184,9 +202,9 @@ export default function PrivacyPage() {
           <h2 className="text-lg font-bold">Your choices</h2>
           <p className="mt-2">
             You can see and edit your public details, and delete your account and everything
-            linked to it (your memories and photos, your invite links, who you follow and who
-            follows you, the people you blocked, the list of memories you loved and the reports
-            you sent), from <strong>Profile and settings</strong> on your profile at any time. You can also write to us to
+            linked to it (your memories and photos, your likes and comments, your invite links,
+            who you follow and who follows you, the people you blocked, the memories you loved
+            and the reports you sent), from <strong>Profile and settings</strong> on your profile at any time. You can also write to us to
             access, correct or erase your data.
           </p>
         </section>

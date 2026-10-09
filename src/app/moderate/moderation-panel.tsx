@@ -18,15 +18,18 @@ import {
   type ReviewStory,
 } from "@/lib/moderation";
 import type { StoryStatus } from "@/lib/stories";
+import { countOpenCommentReports } from "@/lib/comments";
+import { CommentReports } from "./comment-reports";
 import { ModerationLog } from "./moderation-log";
 import { ReportCard, type ReportOutcome } from "./report-card";
 import { ReviewCard } from "./review-card";
 
-type Tab = StoryStatus | "reports" | "log";
+type Tab = StoryStatus | "reports" | "comments" | "log";
 
 const TABS: { key: Tab; label: string; empty: string }[] = [
   { key: "pending", label: "Waiting", empty: "Nothing is waiting. Every memory has been reviewed." },
   { key: "reports", label: "Reports", empty: "No open reports. Nobody has flagged a memory." },
+  { key: "comments", label: "Comments", empty: "" },
   { key: "approved", label: "Approved", empty: "No approved memories yet." },
   { key: "rejected", label: "Not approved", empty: "No memories have been turned down." },
   { key: "hidden", label: "Hidden", empty: "No memories are hidden." },
@@ -75,6 +78,7 @@ function ReviewQueue({ user }: { user: User }) {
   const [more, setMore] = useState(false);
   const [waiting, setWaiting] = useState<number | null>(null);
   const [reported, setReported] = useState<number | null>(null);
+  const [commentsReported, setCommentsReported] = useState<number | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [round, setRound] = useState(0);
@@ -97,6 +101,9 @@ function ReviewQueue({ user }: { user: User }) {
     countOpenReports()
       .then((count) => current && setReported(count))
       .catch((e) => console.error("Could not count the reports", e));
+    countOpenCommentReports()
+      .then((count) => current && setCommentsReported(count))
+      .catch((e) => console.error("Could not count the comment reports", e));
     if (tab === "reports") {
       loadReports(user)
         .then((found) => {
@@ -109,7 +116,7 @@ function ReviewQueue({ user }: { user: User }) {
           setGroups([]);
           setError(friendlyError(e));
         });
-    } else if (tab !== "log") {
+    } else if (tab !== "log" && tab !== "comments") {
       loadReviewQueue(user, tab)
         .then((queue) => {
           if (!current) return;
@@ -175,6 +182,7 @@ function ReviewQueue({ user }: { user: User }) {
               {t.label}
               {t.key === "pending" && waiting !== null && ` (${waiting})`}
               {t.key === "reports" && reported !== null && ` (${reported})`}
+              {t.key === "comments" && commentsReported !== null && ` (${commentsReported})`}
             </button>
           ))}
         </div>
@@ -190,6 +198,11 @@ function ReviewQueue({ user }: { user: User }) {
       <div role="tabpanel" aria-label={current.label} className="flex flex-col gap-6">
         {tab === "log" ? (
           <ModerationLog />
+        ) : tab === "comments" ? (
+          <CommentReports
+            user={user}
+            onClosed={(count) => setCommentsReported((n) => (n === null ? n : Math.max(0, n - count)))}
+          />
         ) : tab === "reports" ? (
           groups === null ? (
             <Loading />
@@ -224,7 +237,7 @@ function ReviewQueue({ user }: { user: User }) {
             )}
           </>
         )}
-        {tab !== "log" && (tab === "reports" ? groups : stories) !== null && (
+        {tab !== "log" && tab !== "comments" && (tab === "reports" ? groups : stories) !== null && (
           <button
             type="button"
             onClick={() => {

@@ -7,15 +7,15 @@ import { personPath } from "@/lib/people";
 import { useAuth } from "./auth-provider";
 import { Avatar } from "./avatar";
 import { BellLink } from "./bell";
-import { PersonIcon, SearchIcon } from "./icons";
+import { PersonIcon } from "./icons";
 
 const navLink =
   "rounded-full px-3.5 py-2 text-sm font-bold text-ink-soft transition hover:text-ink aria-[current=page]:bg-white aria-[current=page]:text-brand-red aria-[current=page]:lift-sm";
 
 /**
- * The logo, and on a computer Home, the map, Share, the bell and your
- * profile. Phones get those in the bar at the bottom instead, and a search
- * button here. Visitors get Sign in, and people who signed in but haven't
+ * The logo, and on a computer Home, Explore, the map, Share, the bell and
+ * your profile. Phones get those in the bar at the bottom instead, and the
+ * bell here. Visitors get Sign in, and people who signed in but haven't
  * finished joining are sent to finish.
  */
 export function SiteHeader() {
@@ -35,19 +35,18 @@ export function SiteHeader() {
           className="h-8 w-auto sm:h-11"
         />
       </Link>
-      {pathname !== "/map" && (
-        <Link
-          href="/map?search=1"
-          title="Search stores"
-          className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-ink lift-sm sm:hidden"
-        >
-          <SearchIcon className="h-5 w-5" />
-          <span className="sr-only">Search stores</span>
-        </Link>
+      {/* On a phone, the bell sits here, as on Instagram; the rest is in the bar at the bottom. */}
+      {!loading && me && (
+        <div className="sm:hidden">
+          <BellLink />
+        </div>
       )}
       <nav aria-label="Main" className="hidden items-center gap-2 sm:flex">
         <Link href="/" aria-current={pathname === "/" ? "page" : undefined} className={navLink}>
           Home
+        </Link>
+        <Link href="/explore" aria-current={pathname === "/explore" ? "page" : undefined} className={navLink}>
+          Explore
         </Link>
         <Link href="/map" aria-current={pathname === "/map" ? "page" : undefined} className={navLink}>
           Map

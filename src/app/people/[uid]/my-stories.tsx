@@ -31,9 +31,15 @@ function statusLabel(story: MyStory) {
 }
 
 /** Only the author sees this. */
-function lovedBy(count: number | undefined) {
-  if (!count) return null;
-  return count === 1 ? "Loved by 1 person" : `Loved by ${count} people`;
+/** "12 likes · 3 comments", or null before any. */
+function reactions(story: { likeCount?: number; reactionCount?: number; commentCount?: number }) {
+  const likes = (story.likeCount ?? 0) + (story.reactionCount ?? 0);
+  const comments = story.commentCount ?? 0;
+  const parts = [
+    likes ? (likes === 1 ? "1 like" : `${likes} likes`) : null,
+    comments ? (comments === 1 ? "1 comment" : `${comments} comments`) : null,
+  ].filter(Boolean);
+  return parts.length ? parts.join(" · ") : null;
 }
 
 const statusStyles: Record<StoryStatus, string> = {
@@ -160,8 +166,8 @@ export function MyStories({ user }: { user: User }) {
                         {story.status === "approved" && story.visibility === "public" ? "On the map" : "Pinned"}
                       </span>
                     )}
-                    {story.status === "approved" && lovedBy(story.reactionCount) && (
-                      <span className="text-ink-soft">{lovedBy(story.reactionCount)}</span>
+                    {story.status === "approved" && reactions(story) && (
+                      <span className="text-ink-soft">{reactions(story)}</span>
                     )}
                   </p>
                   <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">

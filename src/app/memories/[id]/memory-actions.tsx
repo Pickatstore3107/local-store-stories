@@ -2,14 +2,13 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useRef, useState, useSyncExternalStore, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { FirebaseError } from "firebase/app";
 import { useAuth } from "@/components/auth-provider";
 import { setReturnPath } from "@/components/require-account";
 import { input, primaryButton } from "@/components/ui";
 import { friendlyError } from "@/lib/auth-errors";
 import { memoryPath } from "@/lib/memories";
-import { hasLoved, setLoved } from "@/lib/reactions";
 import {
   hasReported,
   REPORT_DETAILS_MAX,
@@ -20,21 +19,8 @@ import {
 } from "@/lib/reports";
 import { GRIEVANCE_EMAIL } from "@/lib/site";
 
-type Props = { id: string; storeName: string; city: string };
-
-const pill =
-  "inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-bold ring-1 transition disabled:cursor-not-allowed disabled:opacity-60";
-const quietPill = `${pill} bg-white text-brand-red ring-brand-red/25 hover:bg-brand-red/5`;
-
-const noChanges = () => () => {};
-
-/** The site's address, known only in the browser. */
-function useOrigin() {
-  return useSyncExternalStore(noChanges, () => window.location.origin, () => null);
-}
-
-/** Love, share and report, under a memory on its own page. */
-export function MemoryActions(props: Props) {
+/** Reporting the memory, under its comments. */
+export function MemoryActions({ id }: { id: string }) {
   const { user, consent } = useAuth();
 
   // They're back from signing in, so sign-in shouldn't bring them here again.
@@ -43,15 +29,8 @@ export function MemoryActions(props: Props) {
   }, [user, consent]);
 
   return (
-    <div className="mt-10 border-t border-ink/10 pt-6">
-      <div className="flex flex-wrap items-center gap-3">
-        <LoveButton id={props.id} />
-        <ShareButtons {...props} />
-      </div>
-      <p className="mt-3 text-xs text-ink-soft">
-        Loves are private. Only the person who shared this memory sees how many it got.
-      </p>
-      <ReportPanel id={props.id} />
+    <div className="mt-8 border-t border-ink/10 pt-4">
+      <ReportPanel id={id} />
     </div>
   );
 }
@@ -67,133 +46,6 @@ function SignInPrompt({ id, todo }: { id: string; todo: string }) {
     >
       {user ? `Finish joining to ${todo}` : `Sign in to ${todo}`}
     </Link>
-  );
-}
-
-function HeartIcon({ filled }: { filled: boolean }) {
-  return (
-    <svg viewBox="0 0 20 20" aria-hidden="true" className="h-5 w-5">
-      <path
-        d="M10 16.5s-6.5-3.9-6.5-8.6A3.4 3.4 0 0 1 10 6a3.4 3.4 0 0 1 6.5 1.9c0 4.7-6.5 8.6-6.5 8.6Z"
-        fill={filled ? "currentColor" : "none"}
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function LoveButton({ id }: { id: string }) {
-  const { loading, user, consent } = useAuth();
-  // Whose love this is, so it never shows for the wrong person.
-  const [mine, setMine] = useState<{ uid: string; loved: boolean } | null>(null);
-  const [asked, setAsked] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const loved = user && mine?.uid === user.uid ? mine.loved : null;
-
-  useEffect(() => {
-    if (!user || !consent) return;
-    let current = true;
-    hasLoved(user, id)
-      .then((yes) => current && setMine({ uid: user.uid, loved: yes }))
-      .catch((e) => console.error("Could not check whether you loved this", e));
-    return () => {
-      current = false;
-    };
-  }, [user, consent, id]);
-
-  async function toggle() {
-    if (!user || !consent) {
-      setAsked(true);
-      return;
-    }
-    if (loved === null) return;
-    setError(null);
-    setBusy(true);
-    setMine({ uid: user.uid, loved: !loved });
-    try {
-      await setLoved(user, id, !loved);
-    } catch (e) {
-      setMine({ uid: user.uid, loved });
-      setError(friendlyError(e));
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  const signedIn = !!user && !!consent;
-  return (
-    <>
-      <button
-        type="button"
-        aria-label="Love this memory"
-        aria-pressed={loved === true}
-        disabled={loading || busy || (signedIn && loved === null)}
-        onClick={toggle}
-        className={
-          loved
-            ? `${pill} bg-brand-red text-white ring-brand-red hover:bg-brand-red-deep`
-            : quietPill
-        }
-      >
-        <HeartIcon filled={!!loved} />
-        {loved ? "Loved" : "Love"}
-      </button>
-      {asked && !signedIn && (
-        <p className="w-full text-sm">
-          <SignInPrompt id={id} todo="love this memory" />
-        </p>
-      )}
-      {error && (
-        <p role="alert" className="w-full text-sm text-brand-red-deep">
-          {error}
-        </p>
-      )}
-    </>
-  );
-}
-
-function ShareButtons({ id, storeName, city }: Props) {
-  const origin = useOrigin();
-  const [copied, setCopied] = useState<boolean | null>(null);
-  const url = origin && `${origin}${memoryPath(id)}`;
-  const message = `A memory of ${storeName}, ${city}, on Local Stores & Their Stories:`;
-
-  async function copy() {
-    if (!url) return;
-    try {
-      await navigator.clipboard.writeText(url);
-      setCopied(true);
-      setTimeout(() => setCopied(null), 4000);
-    } catch {
-      setCopied(false); // not allowed here; show the link to copy by hand
-    }
-  }
-
-  return (
-    <>
-      <a
-        href={url ? `https://wa.me/?text=${encodeURIComponent(`${message} ${url}`)}` : undefined}
-        target="_blank"
-        rel="noopener noreferrer"
-        className={quietPill}
-      >
-        Share on WhatsApp
-      </a>
-      <button type="button" disabled={!url} onClick={copy} className={quietPill}>
-        {copied ? "Link copied" : "Copy link"}
-      </button>
-      <span role="status" className="sr-only">
-        {copied ? "Link copied." : ""}
-      </span>
-      {copied === false && url && (
-        <p className="w-full text-sm">
-          Copy this link: <span className="select-all break-all font-bold">{url}</span>
-        </p>
-      )}
-    </>
   );
 }
 
@@ -282,7 +134,7 @@ function ReportPanel({ id }: { id: string }) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="mt-6 inline-flex items-center gap-2 text-sm font-bold text-ink-soft underline underline-offset-4 hover:text-brand-red"
+        className="inline-flex items-center gap-2 text-sm font-bold text-ink-soft underline underline-offset-4 hover:text-brand-red"
       >
         <FlagIcon />
         Report this memory
@@ -302,7 +154,7 @@ function ReportPanel({ id }: { id: string }) {
   return (
     <section
       aria-labelledby="report-heading"
-      className="mt-6 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-ink/5"
+      className="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-ink/5"
     >
       <div className="flex items-start justify-between gap-4">
         <h2

@@ -124,6 +124,7 @@ function ConsentForm({ user, refresh }: { user: User; refresh: () => Promise<voi
             <li>Your city</li>
             <li>Stories you choose to publish, after review</li>
             <li>Who you follow, and who follows you</li>
+            <li>Memories you like, and comments you write</li>
             <li>Who invited you, if you join through a friend&apos;s invite</li>
           </ul>
         </section>

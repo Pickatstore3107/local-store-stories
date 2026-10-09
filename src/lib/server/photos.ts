@@ -101,6 +101,11 @@ export function cardPhotoUrl(id: string) {
   return signedUrl(checkedId(id), { width: 600, height: 600, crop: "fill", ...forBrowsers });
 }
 
+/** A photo four wide by five tall, like Instagram's, for a post in the feed. */
+export function postPhotoUrl(id: string) {
+  return signedUrl(checkedId(id), { width: 800, height: 1000, crop: "fill", ...forBrowsers });
+}
+
 /** The whole photo, for a memory's own page. */
 export function fullPhotoUrl(id: string) {
   return signedUrl(checkedId(id), { width: 1200, height: 1200, crop: "limit", ...forBrowsers });

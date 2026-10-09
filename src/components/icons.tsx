@@ -141,3 +141,39 @@ export function StarIcon(props: IconProps) {
     </Icon>
   );
 }
+
+export function HeartIcon({ filled = false, ...props }: IconProps & { filled?: boolean }) {
+  return (
+    <Icon {...props}>
+      <path
+        d="M12 20s-7.5-4.6-7.5-10.1A4.2 4.2 0 0 1 12 7.4a4.2 4.2 0 0 1 7.5 2.5C19.5 15.4 12 20 12 20Z"
+        fill={filled ? "currentColor" : "none"}
+      />
+    </Icon>
+  );
+}
+
+export function CommentIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M20 11.5a7.5 7.5 0 0 1-11 6.6L4.5 19.5l1.4-4.2A7.5 7.5 0 1 1 20 11.5Z" />
+    </Icon>
+  );
+}
+
+/** A paper plane, for sending a memory to someone. */
+export function ShareIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M20.5 3.5 10 14M20.5 3.5 14 20.5l-4-6.5-6.5-4 17-6.5Z" />
+    </Icon>
+  );
+}
+
+export function FlagIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M5.5 21V4.5m0 0h11l-2.5 4.25 2.5 4.25h-11" />
+    </Icon>
+  );
+}

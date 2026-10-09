@@ -62,6 +62,7 @@ export default function TermsPage() {
 
         <section>
           <h2 className="text-lg font-bold">What is not allowed</h2>
+          <p className="mt-2">In memories, comments, names and anything else you post:</p>
           <ul className="mt-2 list-disc space-y-1 pl-6">
             <li>Anything unkind, hateful or threatening about a person, a store or a community.</li>
             <li>Private details such as phone numbers, home addresses or someone else&apos;s photo.</li>
@@ -69,7 +70,7 @@ export default function TermsPage() {
             <li>Advertising, paid promotion or links to sell something.</li>
             <li>Memories you know are made up, or that pretend to be someone else.</li>
             <li>Anything against Indian law.</li>
-            <li>Using bots or scripts to post, follow, report or sign up.</li>
+            <li>Using bots or scripts to post, comment, like, follow, report or sign up.</li>
           </ul>
         </section>
 
@@ -80,7 +81,9 @@ export default function TermsPage() {
             memory, or take one down later, if it breaks these terms or someone reports it with
             good reason, and you&apos;ll see why on your profile. To keep the site free of spam,
             each person can share one new memory a minute and up to {DAILY_MEMORY_LIMIT} a day.
-            We may close the account of anyone who keeps breaking these terms.
+            Comments show at once, without links, a few a minute; a moderator deletes any that
+            break these terms once they are reported. We may close the account of anyone who
+            keeps breaking these terms.
           </p>
         </section>
 

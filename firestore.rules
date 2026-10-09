@@ -33,11 +33,16 @@ service cloud.firestore {
       allow get: if isOwner(uid);
     }
 
-    // Public profile. Anyone may read one profile; nobody may list them all.
+    // Public profile. Anyone may read one profile. Members may search them
+    // by name, 20 at a time; nobody may list them all at once.
     match /users/{uid} {
+      // nameLower is the name in small letters without accents, for
+      // searching by name (searchName() in src/lib/people.ts). The rules
+      // can't make it the same way, so the search checks each result's name.
       function validProfile(data) {
         return isText(data.displayName, 1, 40)
           && isText(data.city, 2, 60)
+          && (!('nameLower' in data) || isText(data.nameLower, 1, 80))
           && data.updatedAt == request.time;
       }
 
@@ -57,12 +62,15 @@ service cloud.firestore {
       }
 
       allow get: if true;
+      allow list: if signedIn()
+        && exists(/databases/$(database)/documents/usersPrivate/$(request.auth.uid))
+        && request.query.limit <= 20;
 
       // Created together with the consent record, in one batch. Who invited
       // someone is set here, once, and can never be changed.
       allow create: if isOwner(uid)
-        && request.resource.data.keys().hasOnly(['displayName', 'city', 'createdAt', 'updatedAt',
-             'invitedBy', 'invitedVia'])
+        && request.resource.data.keys().hasOnly(['displayName', 'nameLower', 'city', 'createdAt',
+             'updatedAt', 'invitedBy', 'invitedVia'])
         && request.resource.data.keys().hasAll(['displayName', 'city', 'createdAt', 'updatedAt'])
         && request.resource.data.createdAt == request.time
         && validProfile(request.resource.data)
@@ -72,7 +80,7 @@ service cloud.firestore {
 
       allow update: if isOwner(uid)
         && request.resource.data.diff(resource.data).affectedKeys()
-             .hasOnly(['displayName', 'city', 'updatedAt'])
+             .hasOnly(['displayName', 'nameLower', 'city', 'updatedAt'])
         && validProfile(request.resource.data);
 
       allow delete: if isOwner(uid);
@@ -126,8 +134,9 @@ service cloud.firestore {
       allow create, update: if isOwner(uid) && validConsent(request.resource.data);
       allow delete: if isOwner(uid);
 
-      // The memories this person loved. Only they can see these; a memory's
-      // author sees how many people loved it, never who.
+      // The memories this person loved before likes were public (see likes
+      // below). Only they can see these, and nobody ever learns who loved a
+      // memory. No new ones are made; each can still be taken back.
       match /reactions/{storyId} {
         function story() {
           return /databases/$(database)/documents/stories/$(storyId);
@@ -139,14 +148,8 @@ service cloud.firestore {
 
         allow get, list: if isOwner(uid);
 
-        // Written in the same batch as the memory's count (checked there too).
-        allow create: if isOwner(uid)
-          && exists(/databases/$(database)/documents/usersPrivate/$(uid))
-          && request.resource.data.keys().hasOnly(['at'])
-          && request.resource.data.at == request.time
-          && loves(getAfter(story())) == loves(get(story())) + 1;
-
-        // Once the memory is deleted there is no count left to change.
+        // Taken back in the same batch as the memory's count (checked there
+        // too). Once the memory is deleted there is no count left to change.
         allow delete: if isOwner(uid)
           && (!exists(story()) || loves(getAfter(story())) == loves(get(story())) - 1);
       }
@@ -165,9 +168,9 @@ service cloud.firestore {
 
       // Must match CATEGORIES in src/lib/stories.ts.
       function categories() {
-        return ['Tea Stalls', 'Bakeries', 'School Canteens', 'Kirana Stores', 'Bookstores',
-          '₹10 Treats', 'Festival Memories', 'Family Traditions', 'Local Legends',
-          'Stores We Miss'];
+        return ['Restaurants', 'Cafes', 'Tea Stalls', 'Bakeries', 'School Canteens',
+          'Kirana Stores', 'Bookstores', '₹10 Treats', 'Festival Memories',
+          'Family Traditions', 'Local Legends', 'Stores We Miss'];
       }
 
       // Where the store was, for the map: a square of about 500 metres in
@@ -263,18 +266,62 @@ service cloud.firestore {
         return /databases/$(database)/documents/usersPrivate/$(request.auth.uid)/reactions/$(storyId);
       }
 
-      // Loving a memory adds one to its count, in the same batch as the
-      // person's private reaction record; taking it back takes one away.
+      // Taking back a private love from before likes were public takes one
+      // away from its count, in the same batch as deleting the love.
       function validReactionCount(before, after) {
         return signedIn()
           && after.diff(before).affectedKeys().hasOnly(['reactionCount'])
-          && ((after.reactionCount == before.get('reactionCount', 0) + 1
+          && after.reactionCount == before.get('reactionCount', 0) - 1
+          && exists(myReaction())
+          && !existsAfter(myReaction());
+      }
+
+      function myLike() {
+        return /databases/$(database)/documents/likes/$(storyId + '_' + request.auth.uid);
+      }
+
+      // Liking a memory adds one to its count and makes the person its
+      // latest liker, in the same batch as their like (see likes below).
+      // Someone who loved it privately before likes were public takes that
+      // back first, so nobody is counted twice. Unliking takes one away, and
+      // the latest liker is cleared if it was them.
+      function validLike(before, after) {
+        return signedIn()
+          && after.diff(before).affectedKeys().hasOnly(['likeCount', 'lastLikerId'])
+          && ((after.likeCount == before.get('likeCount', 0) + 1
                 && before.status == 'approved'
-                && !exists(myReaction())
-                && existsAfter(myReaction()))
-            || (after.reactionCount == before.get('reactionCount', 0) - 1
-                && exists(myReaction())
-                && !existsAfter(myReaction())));
+                && after.lastLikerId == request.auth.uid
+                && !exists(myLike())
+                && existsAfter(myLike())
+                && !exists(myReaction()))
+            || (after.likeCount == before.get('likeCount', 0) - 1
+                && exists(myLike())
+                && !existsAfter(myLike())
+                && (before.get('lastLikerId', null) == request.auth.uid
+                    ? !('lastLikerId' in after)
+                    : after.get('lastLikerId', null) == before.get('lastLikerId', null))));
+      }
+
+      // A comment added to the memory adds one to its count, and one taken
+      // away takes one away, in the same batch. commentChange names that
+      // comment, so the count only ever moves with a real one.
+      function commentAt(id) {
+        return /databases/$(database)/documents/comments/$(id);
+      }
+
+      function validCommentCount(before, after) {
+        return signedIn()
+          && after.diff(before).affectedKeys().hasOnly(['commentCount', 'commentChange'])
+          && after.get('commentChange', null) is string
+          && ((after.commentCount == before.get('commentCount', 0) + 1
+                && before.status == 'approved'
+                && !exists(commentAt(after.commentChange))
+                && existsAfter(commentAt(after.commentChange))
+                && getAfter(commentAt(after.commentChange)).data.storyId == storyId)
+            || (after.commentCount == before.get('commentCount', 0) - 1
+                && exists(commentAt(after.commentChange))
+                && !existsAfter(commentAt(after.commentChange))
+                && get(commentAt(after.commentChange)).data.storyId == storyId));
       }
 
       // Only people who have given consent can share, and each new story is
@@ -295,6 +342,8 @@ service cloud.firestore {
       allow update: if validReview(resource.data, request.resource.data)
         || validFeature(resource.data, request.resource.data)
         || validReactionCount(resource.data, request.resource.data)
+        || validLike(resource.data, request.resource.data)
+        || validCommentCount(resource.data, request.resource.data)
         || validPinChange(resource.data, request.resource.data);
       allow delete: if isAuthor();
     }
@@ -377,6 +426,220 @@ service cloud.firestore {
 
       // People can find and take back their own reports, for example when
       // they delete their account.
+      allow get: if isModerator();
+      allow list: if isModerator() || (signedIn() && resource.data.by == request.auth.uid);
+      allow update: if validClose(resource.data, request.resource.data);
+      allow delete: if signedIn() && resource.data.by == request.auth.uid;
+    }
+
+    // Who liked which memory. Likes are public, as on Instagram: anyone can
+    // see who liked a memory. The ID is the memory's ID, then the person's,
+    // so nobody likes the same memory twice. Each like moves the memory's
+    // count in the same batch (checked there too).
+    match /likes/{likeId} {
+      function story(id) {
+        return /databases/$(database)/documents/stories/$(id);
+      }
+
+      function likes(storyDoc) {
+        return storyDoc.data.get('likeCount', 0);
+      }
+
+      // The memory's author deletes every like with the memory itself.
+      function goesWithStory(id) {
+        return exists(story(id))
+          && get(story(id)).data.authorId == request.auth.uid
+          && !existsAfter(story(id));
+      }
+
+      allow get, list: if true;
+
+      // Only people who have given consent can like.
+      allow create: if signedIn()
+        && exists(/databases/$(database)/documents/usersPrivate/$(request.auth.uid))
+        && request.resource.data.keys().hasOnly(['storyId', 'uid', 'at'])
+        && request.resource.data.keys().hasAll(['storyId', 'uid', 'at'])
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.storyId is string
+        && likeId == request.resource.data.storyId + '_' + request.auth.uid
+        && request.resource.data.at == request.time
+        && likes(getAfter(story(request.resource.data.storyId)))
+             == likes(get(story(request.resource.data.storyId))) + 1;
+
+      // Unliking. Once the memory is deleted there is no count left to change.
+      allow delete: if signedIn()
+        && ((resource.data.uid == request.auth.uid
+              && (!exists(story(resource.data.storyId))
+                  || likes(getAfter(story(resource.data.storyId)))
+                       == likes(get(story(resource.data.storyId))) - 1))
+          || goesWithStory(resource.data.storyId));
+    }
+
+    // Comments under a memory. They show at once, to anyone who can see the
+    // memory. Their author, the memory's author and moderators can delete
+    // them, and anyone can report one (see commentReports below).
+    match /comments/{commentId} {
+      function story(id) {
+        return /databases/$(database)/documents/stories/$(id);
+      }
+
+      function profile(uid) {
+        return /databases/$(database)/documents/users/$(uid);
+      }
+
+      function count(storyDoc) {
+        return storyDoc.data.get('commentCount', 0);
+      }
+
+      // Written with the memory's count and commentChange (checked there too).
+      function counted(id, change) {
+        return count(getAfter(story(id))) == count(get(story(id))) + change
+          && getAfter(story(id)).data.commentChange == commentId;
+      }
+
+      // Links are the usual sign of spam, so comments can't have them.
+      function noLinks(text) {
+        return !text.lower().matches('(?s).*(https?://|www[.]).*');
+      }
+
+      // Must match COMMENT_MAX in src/lib/comments.ts.
+      function validComment(data) {
+        return data.keys().hasOnly(['storyId', 'authorId', 'text', 'createdAt'])
+          && data.keys().hasAll(['storyId', 'authorId', 'text', 'createdAt'])
+          && data.authorId == request.auth.uid
+          && data.storyId is string
+          && isText(data.text, 1, 500)
+          && data.text.trim().size() > 0
+          && noLinks(data.text)
+          && data.createdAt == request.time;
+      }
+
+      // Nobody can comment on the memories of someone who blocked them.
+      function blockedBy(uid) {
+        return exists(/databases/$(database)/documents/blocks/$(uid + '_' + request.auth.uid));
+      }
+
+      // The memory's author deletes every comment with the memory itself.
+      function goesWithStory(id) {
+        return exists(story(id))
+          && get(story(id)).data.authorId == request.auth.uid
+          && !existsAfter(story(id));
+      }
+
+      function mayRemove(data) {
+        return data.authorId == request.auth.uid
+          || isModerator()
+          || (exists(story(data.storyId)) && get(story(data.storyId)).data.authorId == request.auth.uid);
+      }
+
+      // Anyone may read the comments of an approved memory. Their authors,
+      // the memory's author and moderators may read them whatever happens to
+      // the memory, to tidy them away.
+      allow get, list: if get(story(resource.data.storyId)).data.status == 'approved'
+        || (signedIn()
+            && (resource.data.authorId == request.auth.uid
+                || isModerator()
+                || get(story(resource.data.storyId)).data.authorId == request.auth.uid));
+
+      // People who have given consent and have a profile comment on an
+      // approved memory, a few a minute (commentLimits below, in the same
+      // batch).
+      allow create: if signedIn()
+        && exists(/databases/$(database)/documents/usersPrivate/$(request.auth.uid))
+        && exists(profile(request.auth.uid))
+        && validComment(request.resource.data)
+        && get(story(request.resource.data.storyId)).data.status == 'approved'
+        && !blockedBy(get(story(request.resource.data.storyId)).data.authorId)
+        && counted(request.resource.data.storyId, 1)
+        && getAfter(/databases/$(database)/documents/commentLimits/$(request.auth.uid))
+             .data.lastAt == request.time;
+
+      allow delete: if signedIn()
+        && ((mayRemove(resource.data)
+              && (!exists(story(resource.data.storyId)) || counted(resource.data.storyId, -1)))
+          || goesWithStory(resource.data.storyId));
+    }
+
+    // Keeps bots from flooding memories with comments: one every 10 seconds
+    // and 100 in a rolling day per person. Written in the same batch as each
+    // new comment, which checks it. Must match src/lib/comments.ts.
+    match /commentLimits/{uid} {
+      function validLimit(data) {
+        return data.keys().hasOnly(['lastAt', 'windowStart', 'count'])
+          && data.keys().hasAll(['lastAt', 'windowStart', 'count'])
+          && data.lastAt == request.time
+          && data.count is int;
+      }
+
+      allow get: if isOwner(uid);
+
+      allow create: if isOwner(uid)
+        && validLimit(request.resource.data)
+        && request.resource.data.windowStart == request.time
+        && request.resource.data.count == 1;
+
+      allow update: if isOwner(uid)
+        && validLimit(request.resource.data)
+        && resource.data.lastAt + duration.value(10, 's') <= request.time
+        && ((resource.data.windowStart + duration.value(1, 'd') <= request.time
+              && request.resource.data.windowStart == request.time
+              && request.resource.data.count == 1)
+          || (resource.data.windowStart + duration.value(1, 'd') > request.time
+              && request.resource.data.windowStart == resource.data.windowStart
+              && request.resource.data.count == resource.data.count + 1
+              && request.resource.data.count <= 100));
+
+      // Only when the whole account goes, with the consent record.
+      allow delete: if isOwner(uid)
+        && !existsAfter(/databases/$(database)/documents/usersPrivate/$(uid));
+    }
+
+    // A report about a comment. Each person can report a comment once.
+    // Moderators read reports and close them; the comment's author never
+    // sees who reported it.
+    match /commentReports/{reportId} {
+      function comment(id) {
+        return /databases/$(database)/documents/comments/$(id);
+      }
+
+      // Must match COMMENT_REPORT_REASONS in src/lib/comments.ts.
+      function reasons() {
+        return ['unkind', 'private', 'spam', 'other'];
+      }
+
+      function validReport(report) {
+        return report.keys().hasOnly(['commentId', 'storyId', 'reason', 'details', 'by', 'at', 'status'])
+          && report.keys().hasAll(['commentId', 'storyId', 'reason', 'by', 'at', 'status'])
+          && report.commentId is string
+          && reportId == report.commentId + '_' + request.auth.uid
+          && report.reason in reasons()
+          && (report.reason == 'other'
+              ? isText(report.get('details', null), 5, 500)
+              : (!('details' in report) || isText(report.details, 1, 500)))
+          && report.by == request.auth.uid
+          && report.at == request.time
+          && report.status == 'open'
+          && get(comment(report.commentId)).data.storyId == report.storyId;
+      }
+
+      // A moderator closes a report once the comment is deleted, or kept
+      // after a look.
+      function validClose(before, after) {
+        return isModerator()
+          && after.diff(before).affectedKeys().hasOnly(['status', 'outcome', 'closedBy', 'closedAt'])
+          && before.status == 'open'
+          && after.status == 'closed'
+          && after.closedBy == request.auth.uid
+          && after.closedAt == request.time
+          && (after.outcome == 'gone'
+              ? !existsAfter(comment(before.commentId))
+              : (after.outcome == 'kept' && existsAfter(comment(before.commentId))));
+      }
+
+      allow create: if signedIn()
+        && exists(/databases/$(database)/documents/usersPrivate/$(request.auth.uid))
+        && validReport(request.resource.data);
+
       allow get: if isModerator();
       allow list: if isModerator() || (signedIn() && resource.data.by == request.auth.uid);
       allow update: if validClose(resource.data, request.resource.data);

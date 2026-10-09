@@ -39,7 +39,7 @@ export async function loadInvite(code: string): Promise<InviteLanding | null> {
     return {
       status: "open",
       inviter: inviter?.name ? { name: inviter.name, city: inviter.city } : null,
-      memory: story ? wallMemory(story, inviter?.name ?? null) : null,
+      memory: story ? wallMemory(story, inviter ? { [story.authorId]: inviter } : {}) : null,
       shareImageUrl: story ? safely(() => sharePhotoUrl(story.photoId)) : null,
     };
   } catch (error) {

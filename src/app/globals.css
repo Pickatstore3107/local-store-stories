@@ -95,3 +95,41 @@ html {
     font-size: 16px;
   }
 }
+
+/* A heart that appears for a moment when a photo is double-tapped to like
+   it. Without motion, it only fades. */
+@keyframes heart-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  15% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+  30% {
+    transform: scale(1);
+  }
+  75% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1);
+  }
+}
+@keyframes heart-fade {
+  0%,
+  70% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@utility heart-pop {
+  animation: heart-pop 0.8s ease-out forwards;
+  @media (prefers-reduced-motion: reduce) {
+    animation: heart-fade 0.6s linear forwards;
+  }
+}

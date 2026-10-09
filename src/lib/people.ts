@@ -1,7 +1,6 @@
 // What visitors see of people's profiles and who follows whom, shared by the
 // server pages and the browser. Plain data and helpers only: no Firebase here.
-import type { WallMemory } from "./memories";
-
+import { fold, type WallMemory } from "./memories";
 
 /** Someone's public profile page. */
 export type PublicPerson = {
@@ -54,4 +53,14 @@ export function followListPath(uid: string, kind: FollowKind) {
 /** The first letter of a name, for the circle shown instead of a photo. */
 export function initial(name: string) {
   return (Array.from(name.trim())[0] ?? "?").toLocaleUpperCase();
+}
+
+/**
+ * The name as people search for it: small letters, without accents, so
+ * "emile" finds "Émile". Kept on each profile as nameLower. Null when
+ * nothing is left, as for a name of only accents.
+ */
+export function searchName(name: string) {
+  const folded = fold(name.trim()).replace(/\s+/g, " ");
+  return folded && folded.length <= 80 ? folded : null;
 }

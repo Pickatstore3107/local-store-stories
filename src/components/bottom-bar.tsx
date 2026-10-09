@@ -6,8 +6,7 @@ import { useSyncExternalStore, type ReactNode } from "react";
 import { personPath } from "@/lib/people";
 import { useAuth } from "./auth-provider";
 import { Avatar } from "./avatar";
-import { useBell } from "./bell";
-import { BellIcon, HomeIcon, MapIcon, PersonIcon, PlusIcon, SearchIcon } from "./icons";
+import { HomeIcon, MapIcon, PersonIcon, PlusIcon, SearchIcon } from "./icons";
 
 // Whether someone is typing in a box, when the phone's keyboard is up and
 // the bar would only be in the way.
@@ -71,17 +70,15 @@ function Item({
 
 /**
  * The phone's main buttons, on a bar floating at the bottom where a thumb
- * reaches: Home, Map, Share, Activity and your profile. Before signing in,
- * Search takes Activity's place, so Share stays in the middle. Computers
- * have them in the menu at the top.
+ * reaches: Home, Explore, Share, the map and your profile, as on Instagram.
+ * The bell sits at the top of the page. Computers have them in the menu at
+ * the top.
  */
 export function BottomBar() {
   const { loading, user, profile, consent } = useAuth();
   const pathname = usePathname();
   const typing = useTyping();
-  const bell = useBell();
   const me = user && consent && profile ? { uid: user.uid, name: profile.displayName } : null;
-  const unseen = !!bell && bell.ringAt > bell.seenAt;
   const mine = me ? personPath(me.uid) : null;
 
   return (
@@ -93,8 +90,8 @@ export function BottomBar() {
         <Item href="/" label="Home" current={pathname === "/"}>
           <HomeIcon className="h-6 w-6" />
         </Item>
-        <Item href="/map" label="Map" current={pathname === "/map"}>
-          <MapIcon className="h-6 w-6" />
+        <Item href="/explore" label="Explore" current={pathname === "/explore"}>
+          <SearchIcon className="h-6 w-6" />
         </Item>
         <li className="flex flex-1 items-center justify-center">
           <Link
@@ -106,27 +103,9 @@ export function BottomBar() {
             <span className="sr-only">Share</span>
           </Link>
         </li>
-        {me ? (
-          <Item
-            href="/activity"
-            label="Activity"
-            spoken={unseen ? "Activity, something new" : undefined}
-            current={pathname === "/activity"}
-          >
-            <span className="relative">
-              <BellIcon className="h-6 w-6" />
-              {unseen && (
-                <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-brand-red ring-2 ring-white" />
-              )}
-            </span>
-          </Item>
-        ) : loading ? (
-          <li aria-hidden="true" className="flex-1" />
-        ) : (
-          <Item href="/map?search=1" label="Search" current={false}>
-            <SearchIcon className="h-6 w-6" />
-          </Item>
-        )}
+        <Item href="/map" label="Map" current={pathname === "/map"}>
+          <MapIcon className="h-6 w-6" />
+        </Item>
         {me && mine ? (
           <Item href={mine} label="Me" spoken="My profile" current={pathname === mine || pathname === "/account"}>
             <span className={`rounded-full ring-2 ${pathname === mine ? "ring-brand-red" : "ring-transparent"}`}>
