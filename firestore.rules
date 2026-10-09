@@ -78,6 +78,40 @@ service cloud.firestore {
       allow delete: if isOwner(uid);
     }
 
+    // Keeps bots and scripts from flooding the moderators: one new story a
+    // minute and 10 in a rolling day per person. Written in the same batch as
+    // each new story, which checks it. Must match src/lib/post-limits.ts.
+    match /postLimits/{uid} {
+      function validLimit(data) {
+        return data.keys().hasOnly(['lastAt', 'windowStart', 'count'])
+          && data.keys().hasAll(['lastAt', 'windowStart', 'count'])
+          && data.lastAt == request.time
+          && data.count is int;
+      }
+
+      allow get: if isOwner(uid);
+
+      allow create: if isOwner(uid)
+        && validLimit(request.resource.data)
+        && request.resource.data.windowStart == request.time
+        && request.resource.data.count == 1;
+
+      allow update: if isOwner(uid)
+        && validLimit(request.resource.data)
+        && resource.data.lastAt + duration.value(1, 'm') <= request.time
+        && ((resource.data.windowStart + duration.value(1, 'd') <= request.time
+              && request.resource.data.windowStart == request.time
+              && request.resource.data.count == 1)
+          || (resource.data.windowStart + duration.value(1, 'd') > request.time
+              && request.resource.data.windowStart == resource.data.windowStart
+              && request.resource.data.count == resource.data.count + 1
+              && request.resource.data.count <= 10));
+
+      // Only when the whole account goes, with the consent record.
+      allow delete: if isOwner(uid)
+        && !existsAfter(/databases/$(database)/documents/usersPrivate/$(uid));
+    }
+
     // Private consent record. Only its owner can read it.
     match /usersPrivate/{uid} {
       function validConsent(data) {
@@ -243,10 +277,13 @@ service cloud.firestore {
                 && !existsAfter(myReaction())));
       }
 
-      // Only people who have given consent can share.
+      // Only people who have given consent can share, and each new story is
+      // counted in postLimits in the same batch (see below).
       allow create: if signedIn()
         && exists(/databases/$(database)/documents/usersPrivate/$(request.auth.uid))
-        && validNewStory(request.resource.data);
+        && validNewStory(request.resource.data)
+        && getAfter(/databases/$(database)/documents/postLimits/$(request.auth.uid))
+             .data.lastAt == request.time;
 
       // Anyone can open an approved story; the Wall lists only those shared
       // with everyone. Authors always see their own, moderators see all.

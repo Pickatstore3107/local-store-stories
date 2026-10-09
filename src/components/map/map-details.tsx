@@ -158,13 +158,16 @@ export function MemoryDetail({
             {memory.caption}
           </p>
           {showAuthor && memory.authorName && (
-            <Link
-              href={personPath(memory.authorId)}
-              lang={textLang(memory.authorName)}
-              className="mt-1 inline-block text-sm font-bold text-ink hover:text-brand-red"
-            >
-              — {memory.authorName}
-            </Link>
+            <p className="mt-1 text-sm text-ink-soft">
+              by{" "}
+              <Link
+                href={personPath(memory.authorId)}
+                lang={textLang(memory.authorName)}
+                className="font-bold text-ink hover:text-brand-red"
+              >
+                {memory.authorName}
+              </Link>
+            </p>
           )}
         </div>
       </div>

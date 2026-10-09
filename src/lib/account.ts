@@ -1,5 +1,6 @@
 import { deleteUser, type User } from "firebase/auth";
 import {
+  deleteDoc,
   doc,
   getDoc,
   serverTimestamp,
@@ -134,6 +135,9 @@ export async function deleteAccount(user: User) {
   batch.delete(doc(db, "joins", user.uid));
   batch.delete(doc(db, "bells", user.uid));
   await batch.commit();
+  // The count of memories shared, deleted with the consent record gone. Rules
+  // from before the count was added refuse this, and then there is none.
+  await deleteDoc(doc(db, "postLimits", user.uid)).catch(() => {});
   // Their profile page goes straight away too.
   await refreshPeople(user, [user.uid]);
   await deleteUser(user);

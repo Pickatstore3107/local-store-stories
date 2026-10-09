@@ -81,3 +81,20 @@ proving the rest stays closed. Deploy rules with:
 ```bash
 npx firebase deploy --only firestore:rules,storage --project dev
 ```
+
+## Launch basics
+
+- **Spam:** each person can share one memory a minute and 10 in a rolling day
+  (`src/lib/post-limits.ts`). The count lives in `postLimits/<uid>`, written
+  in the same batch as each new story and checked by the rules; `/api/photos`
+  checks it too before storing a photo.
+- **Cookies:** the only third-party cookies would come from the Curator
+  Instagram feed on Home, so it loads only after the visitor allows it
+  (`src/components/cookie-choice.tsx`). Sign-in storage is essential.
+- **Analytics:** Vercel Web Analytics (`@vercel/analytics`), cookieless. Turn
+  it on in the Vercel project's **Analytics** tab.
+- **Search engines:** `src/app/sitemap.ts`, `src/app/robots.ts`, canonical
+  links and link previews use the production address Vercel reports
+  (`VERCEL_PROJECT_PRODUCTION_URL`), so a custom domain needs no code change.
+  Set `NEXT_PUBLIC_SITE_URL` only to override it. Test links are never listed.
+- **Headers:** HTTPS-only (HSTS) and other security headers in `next.config.ts`.

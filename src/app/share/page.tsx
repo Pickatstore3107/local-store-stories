@@ -5,6 +5,14 @@ import { ShareForm } from "./share-form";
 
 export const metadata: Metadata = {
   title: "Share a memory · Local Stores & Their Stories",
+  description:
+    "Tell the story of a neighbourhood store you remember, with a photo, and put it on the Hyderabad map.",
+  alternates: { canonical: "/share" },
+  openGraph: {
+    title: "Share a memory",
+    description:
+      "Tell the story of a neighbourhood store you remember, with a photo, and put it on the Hyderabad map.",
+  },
 };
 
 export default function SharePage() {

@@ -12,6 +12,27 @@ const nextConfig: NextConfig = {
       { source: "/chain", destination: "/", permanent: true },
     ];
   },
+  // Browsers always use HTTPS for the site, and pages can't be framed by
+  // other sites or sniffed as another type. Sign-in opens a Google window,
+  // which needs to talk back to the page, so the opener policy allows popups.
+  headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains" },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "X-Frame-Options", value: "SAMEORIGIN" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          { key: "Cross-Origin-Opener-Policy", value: "same-origin-allow-popups" },
+          {
+            key: "Permissions-Policy",
+            value: "camera=(), microphone=(), payment=(), usb=(), geolocation=(self)",
+          },
+        ],
+      },
+    ];
+  },
   turbopack: {
     rules: {
       "*.css": {

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
+import { BackIcon, StarIcon } from "@/components/icons";
 import { PolaroidPhoto } from "@/components/polaroid";
 import { excerpt, placeLine, shortDate, textLang } from "@/lib/memories";
 import { personPath } from "@/lib/people";
@@ -30,6 +31,7 @@ export async function generateMetadata({ params }: PageProps<"/memories/[id]">):
   return {
     title: `${title} · ${SITE}`,
     description,
+    alternates: { canonical: `/memories/${id}` },
     // Shared by link only: keep it out of search engines.
     robots: memory.visibility === "link" ? { index: false, follow: false } : undefined,
     // The preview WhatsApp and others show when the link is shared.
@@ -38,19 +40,21 @@ export async function generateMetadata({ params }: PageProps<"/memories/[id]">):
       siteName: SITE,
       title,
       description,
+      // Without a photo, the site's own picture.
       images: memory.shareImageUrl
         ? [{ url: memory.shareImageUrl, width: 1200, height: 630, alt: `A memory of ${title}` }]
-        : undefined,
+        : ["/opengraph-image.png"],
     },
-    twitter: { card: memory.shareImageUrl ? "summary_large_image" : "summary" },
+    twitter: { card: "summary_large_image" },
   };
 }
 
 export default function MemoryPage({ params }: PageProps<"/memories/[id]">) {
   return (
     <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-6 sm:px-5 sm:py-10">
-      <Link href="/" className="text-sm font-bold text-brand-red underline-offset-4 hover:underline">
-        ← Home
+      <Link href="/" className="inline-flex items-center gap-0.5 text-sm font-bold text-brand-red underline-offset-4 hover:underline">
+        <BackIcon className="h-4 w-4" />
+        Home
       </Link>
       <Suspense fallback={<MemorySkeleton />}>
         {params.then(({ id }) => (
@@ -112,7 +116,7 @@ async function MemoryContent({ id }: { id: string }) {
               {memory.author.name.charAt(0).toUpperCase()}
             </span>
             <span>
-              —{" "}
+              by{" "}
               <Link
                 href={personPath(memory.author.uid)}
                 lang={textLang(memory.author.name)}
@@ -128,7 +132,10 @@ async function MemoryContent({ id }: { id: string }) {
           <span>Shared on {shortDate(memory.sharedAt)}</span>
         </p>
         {memory.featuredAt && (
-          <p className="mt-1 text-sm font-bold text-brand-red-deep">★ Featured on Home</p>
+          <p className="mt-1 flex items-center gap-1 text-sm font-bold text-brand-red-deep">
+            <StarIcon className="h-4 w-4" />
+            Featured on Home
+          </p>
         )}
         {memory.pin && memory.visibility === "public" && (
           <p className="mt-3 text-sm">

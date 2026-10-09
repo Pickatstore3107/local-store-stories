@@ -1,4 +1,5 @@
 import { createRemoteJWKSet, decodeJwt, jwtVerify } from "jose";
+import { checkPostLimit, readPostLimit } from "@/lib/post-limits";
 
 const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
 
@@ -69,6 +70,31 @@ export async function requireConsent(uid: string, token: string) {
   if (!(await ownDocExists("usersPrivate", uid, token))) {
     throw new HttpError(403, "Please finish setting up your account first.");
   }
+}
+
+/**
+ * Refuses a photo for a new memory when the person has shared too many too
+ * quickly (src/lib/post-limits.ts), so bots can't fill the photo store.
+ * Rules from before the limit was added refuse the read; then nothing is checked.
+ */
+export async function requirePostAllowed(uid: string, token: string) {
+  const host = useEmulators ? "http://127.0.0.1:8080" : "https://firestore.googleapis.com";
+  const response = await fetch(
+    `${host}/v1/projects/${projectId}/databases/(default)/documents/postLimits/${uid}`,
+    { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" },
+  );
+  if (response.status === 404 || response.status === 403) return;
+  if (!response.ok) throw new HttpError(502, "We couldn't check your account. Please try again.");
+  const { fields = {} } = (await response.json()) as {
+    fields?: Record<string, { timestampValue?: string; integerValue?: string }>;
+  };
+  const limit = readPostLimit({
+    lastAt: fields.lastAt?.timestampValue && Date.parse(fields.lastAt.timestampValue),
+    windowStart: fields.windowStart?.timestampValue && Date.parse(fields.windowStart.timestampValue),
+    count: fields.count?.integerValue && Number(fields.count.integerValue),
+  });
+  const check = checkPostLimit(limit, Date.now());
+  if (!check.ok) throw new HttpError(429, check.message);
 }
 
 /** Only moderators, listed in moderators/{uid}, may see photos waiting for review. */

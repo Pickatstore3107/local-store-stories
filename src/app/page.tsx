@@ -1,8 +1,13 @@
+import type { Metadata } from "next";
 import { InstagramFeed } from "@/components/instagram-feed";
 import { MapPoster } from "@/components/map/map-poster";
 import type { PinnedMemory } from "@/components/map/memory-map";
 import { WallBrowser } from "@/components/wall-browser";
 import { loadWall } from "@/lib/server/wall";
+
+export const metadata: Metadata = {
+  alternates: { canonical: "/" },
+};
 
 /** Home: the campaign's name, search, the map tiles, then every approved memory shared with everyone. */
 export default async function Home() {

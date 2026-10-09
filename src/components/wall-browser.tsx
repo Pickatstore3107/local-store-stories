@@ -87,7 +87,7 @@ export function WallBrowser({ wall, children }: { wall: Wall; children?: ReactNo
           value={filters.query}
           onChange={(event) => setWallFilters({ ...filters, query: event.target.value })}
           placeholder="Search a store, area or city"
-          className="h-[3.25rem] w-full rounded-full border-0 bg-white pl-12 pr-14 text-base text-ink outline-none ring-1 ring-ink/5 lift transition placeholder:text-ink-soft/70 focus:ring-2 focus:ring-brand-red/40"
+          className="h-[3.25rem] w-full rounded-full border-0 bg-white pl-12 pr-14 text-base text-ink outline-none ring-1 ring-ink/5 lift transition placeholder:text-ink-soft/85 focus:ring-2 focus:ring-brand-red/40"
         />
         <button
           type="submit"

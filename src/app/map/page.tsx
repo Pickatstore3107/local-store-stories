@@ -6,6 +6,11 @@ import { loadWall } from "@/lib/server/wall";
 export const metadata: Metadata = {
   title: "Hyderabad Memory Map · Local Stores & Their Stories",
   description: "Every pin is a Hyderabad store someone still remembers.",
+  alternates: { canonical: "/map" },
+  openGraph: {
+    title: "Hyderabad Memory Map",
+    description: "Every pin is a Hyderabad store someone still remembers.",
+  },
 };
 
 /** The Hyderabad map, filling the screen: every memory shared with everyone that has a pin. */

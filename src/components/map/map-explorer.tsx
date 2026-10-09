@@ -142,13 +142,16 @@ function MapCard({
         </p>
         <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
           {showAuthor && memory.authorName && (
-            <Link
-              href={personPath(memory.authorId)}
-              lang={textLang(memory.authorName)}
-              className="text-sm font-bold text-ink hover:text-brand-red"
-            >
-              — {memory.authorName}
-            </Link>
+            <span className="text-sm text-ink-soft">
+              by{" "}
+              <Link
+                href={personPath(memory.authorId)}
+                lang={textLang(memory.authorName)}
+                className="font-bold text-ink hover:text-brand-red"
+              >
+                {memory.authorName}
+              </Link>
+            </span>
           )}
           <Link
             href={memoryPath(memory.id)}

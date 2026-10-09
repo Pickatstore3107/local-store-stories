@@ -3,6 +3,7 @@
 import Link from "next/link";
 import type { User } from "firebase/auth";
 import { useEffect, useState } from "react";
+import { StarIcon } from "@/components/icons";
 import { PinPicker } from "@/components/map/pin-picker";
 import { PassTheMemory } from "@/components/pass-the-memory";
 import { card } from "@/components/ui";
@@ -149,8 +150,9 @@ export function MyStories({ user }: { user: User }) {
                       {statusLabel(story)}
                     </span>
                     {story.status === "approved" && story.featuredAt && (
-                      <span className="rounded-full bg-brand-yellow/25 px-2 py-0.5 font-bold text-ink">
-                        ★ Featured
+                      <span className="inline-flex items-center gap-1 rounded-full bg-brand-yellow/25 px-2 py-0.5 font-bold text-ink">
+                        <StarIcon className="h-3.5 w-3.5" />
+                        Featured
                       </span>
                     )}
                     {story.pin && (

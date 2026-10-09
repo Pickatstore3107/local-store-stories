@@ -190,6 +190,13 @@ function ConsentForm({ user, refresh }: { user: User; refresh: () => Promise<voi
       <button type="submit" disabled={!ready || busy} className={`${primaryButton} mt-6 w-full`}>
         {busy ? "Saving…" : "Agree and continue"}
       </button>
+      <p className="mt-3 text-center text-xs text-ink-soft">
+        By joining, you also agree to the{" "}
+        <Link href="/terms" className="font-bold text-brand-red underline underline-offset-4">
+          terms and conditions
+        </Link>
+        .
+      </p>
 
       {error && (
         <p role="alert" className="mt-4 rounded-xl bg-brand-red/10 px-4 py-3 text-sm text-brand-red-deep">

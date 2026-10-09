@@ -3,6 +3,7 @@ import { WelcomeForm } from "./welcome-form";
 
 export const metadata: Metadata = {
   title: "Welcome · Local Stores & Their Stories",
+  robots: { index: false, follow: false },
 };
 
 export default function WelcomePage() {

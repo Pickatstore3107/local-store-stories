@@ -1,8 +1,13 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { GRIEVANCE_EMAIL } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "Privacy · Local Stores & Their Stories",
+  description:
+    "What Local Stores & Their Stories collects, who sees it, the cookies we use and how to delete your data.",
+  alternates: { canonical: "/privacy" },
+  openGraph: { title: "Privacy notice" },
 };
 
 export default function PrivacyPage() {
@@ -10,7 +15,7 @@ export default function PrivacyPage() {
     <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-6 sm:px-5 sm:py-12 text-ink">
       <h1 className="text-2xl font-extrabold text-brand-red sm:text-3xl">Privacy notice</h1>
       <p className="mt-2 text-sm text-ink-soft">
-        Draft for the pilot. Last updated 8 October 2026.
+        Draft for the pilot. Last updated 9 October 2026.
       </p>
 
       <div className="mt-8 space-y-6 leading-relaxed">
@@ -18,7 +23,12 @@ export default function PrivacyPage() {
           <h2 className="text-lg font-bold">Who we are</h2>
           <p className="mt-2">
             Local Stores &amp; Their Stories is a campaign run by Pick at Store. We collect
-            only what we need to let you share memories of local stores.
+            only what we need to let you share memories of local stores. The rules for using
+            the site are in our{" "}
+            <Link href="/terms" className="font-bold text-brand-red underline underline-offset-4">
+              terms and conditions
+            </Link>
+            .
           </p>
         </section>
 
@@ -27,7 +37,7 @@ export default function PrivacyPage() {
           <ul className="mt-2 list-disc space-y-1 pl-6">
             <li>Your Google email address, to sign you in. Never shown publicly.</li>
             <li>The name and city you choose. Shown publicly with your stories.</li>
-            <li>Stories, photos and videos you choose to share, once they are approved.</li>
+            <li>Stories and photos you choose to share, once they are approved.</li>
             <li>Photos are resized on your phone and the location hidden inside them is removed before upload. They are stored privately with our image provider, Cloudinary, until they are approved.</li>
             <li>If you put a memory on the Hyderabad map, the 500-metre square of the city you tapped, never the exact spot.</li>
             <li>Which memories you love. Only you can see this; the person who shared a memory sees only how many people loved it.</li>
@@ -36,6 +46,7 @@ export default function PrivacyPage() {
             <li>Who you follow and who follows you. Anyone can see this, as on Instagram.</li>
             <li>The people you block. Only you can see this, and they aren&apos;t told.</li>
             <li>When someone last followed you and when you last opened your activity, to show the dot on the bell. Only you can see this.</li>
+            <li>When you last shared a memory and how many you shared that day, to stop bots and scripts from flooding the site. Only you can see this.</li>
             <li>When you agreed to this notice, and that you confirmed you are 18 or older.</li>
           </ul>
         </section>
@@ -96,6 +107,24 @@ export default function PrivacyPage() {
             scroll down to them. Your phone or computer then gets them from Curator and
             Instagram, which see your internet address, as any website would, and may use
             their own cookies. They never see who you are on this site or your memories.
+          </p>
+        </section>
+
+        <section id="cookies" className="scroll-mt-20">
+          <h2 className="text-lg font-bold">Cookies and visit counts</h2>
+          <p className="mt-2">
+            We don&apos;t use advertising or tracking cookies. To keep you signed in, Google
+            sign-in saves a small record in your browser&apos;s storage; the site can&apos;t work
+            without it. Your browser also remembers your cookie choice. The Instagram posts on
+            Home are the only part that may bring cookies of its own, from Curator and Instagram,
+            so they load only if you allow them. You can change your choice at any time with{" "}
+            <strong>Cookie choices</strong> at the bottom of each page.
+          </p>
+          <p className="mt-2">
+            To see how many people visit and which pages they open, we use Vercel Web Analytics,
+            from the company that hosts this site. It sets no cookies and doesn&apos;t record who
+            you are: it counts page visits, with the kind of device and browser and the country
+            they come from, and forgets the rest within a day.
           </p>
         </section>
 

@@ -554,6 +554,10 @@ export function MapScreen({
               and put its store on the map. ·{" "}
               <Link href="/privacy" className="underline underline-offset-4">
                 Privacy
+              </Link>{" "}
+              ·{" "}
+              <Link href="/terms" className="underline underline-offset-4">
+                Terms
               </Link>
             </p>
           </>
