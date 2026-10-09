@@ -98,3 +98,13 @@ npx firebase deploy --only firestore:rules,storage --project dev
   (`VERCEL_PROJECT_PRODUCTION_URL`), so a custom domain needs no code change.
   Set `NEXT_PUBLIC_SITE_URL` only to override it. Test links are never listed.
 - **Headers:** HTTPS-only (HSTS) and other security headers in `next.config.ts`.
+
+## Inside the Pick at Store app
+
+Google blocks its sign-in page inside apps' web views, so the Pick at Store
+app signs in with Google itself and hands the page an ID token
+(`src/lib/google-sign-in.ts`). The contract, web view settings and examples
+for React Native, Flutter, Android and iOS are in
+[docs/pick-at-store-app.md](docs/pick-at-store-app.md). In other apps'
+browsers (Instagram, Facebook) the sign-in pages explain how to open the site
+in the phone's browser instead.

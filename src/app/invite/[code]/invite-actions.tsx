@@ -1,22 +1,19 @@
 "use client";
 
-import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/components/auth-provider";
 import { FollowButton } from "@/components/follow-button";
+import { OpenInBrowserNote } from "@/components/open-in-browser-note";
 import { setReturnPath } from "@/components/require-account";
 import { primaryButton } from "@/components/ui";
 import { friendlyError } from "@/lib/auth-errors";
 import { personPath } from "@/lib/people";
-import { getFirebase } from "@/lib/firebase";
+import { signInWithGoogle } from "@/lib/google-sign-in";
 import { checkInvite, pendingInvite, setPendingInvite, type InviteCheck } from "@/lib/invites";
 
 const note = "rounded-2xl bg-white px-5 py-4 text-ink shadow-sm ring-1 ring-ink/5";
-
-// Google blocks its sign-in inside these apps' own browsers.
-const IN_APP_BROWSER = /Instagram|FBAN|FBAV/;
 
 /**
  * Joining through the invite, or what to do when it can't be used. Members
@@ -28,9 +25,6 @@ export function InviteActions({ code, inviterName }: { code: string; inviterName
   const [check, setCheck] = useState<InviteCheck | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [inApp] = useState(
-    () => typeof navigator !== "undefined" && IN_APP_BROWSER.test(navigator.userAgent),
-  );
 
   // The page may be a few minutes old, so check the invite as it is now.
   useEffect(() => {
@@ -67,7 +61,7 @@ export function InviteActions({ code, inviterName }: { code: string; inviterName
     setBusy(true);
     accept();
     try {
-      await signInWithPopup(getFirebase().auth, new GoogleAuthProvider());
+      await signInWithGoogle();
     } catch (e) {
       setPendingInvite(null);
       setReturnPath(null);
@@ -172,12 +166,7 @@ export function InviteActions({ code, inviterName }: { code: string; inviterName
         <p className="mt-3 text-sm text-ink-soft">
           You&apos;ll see exactly what is shown publicly before you share anything.
         </p>
-        {inApp && !user && (
-          <p className="mt-4 rounded-xl bg-brand-yellow/20 px-4 py-3 text-sm text-ink">
-            Google sign-in doesn&apos;t work inside the Instagram or Facebook app. Tap the ⋯ menu
-            and choose <strong>Open in browser</strong> first.
-          </p>
-        )}
+        {!user && <OpenInBrowserNote className="mt-4" />}
         {failed}
       </div>
     );
