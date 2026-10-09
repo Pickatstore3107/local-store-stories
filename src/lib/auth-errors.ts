@@ -6,6 +6,7 @@ const messages: Record<string, string> = {
   "auth/cancelled-popup-request": "The Google window was closed before you finished.",
   "auth/popup-blocked": "Your browser blocked the Google window. Please allow pop-ups and try again.",
   "auth/operation-not-allowed": "Google sign-in isn't switched on yet.",
+  "auth/invalid-credential": "Google sign-in wasn't accepted. Please try again.",
   "auth/unauthorized-domain": "Sign-in isn't enabled for this web address yet.",
   "auth/web-storage-unsupported": "Please allow cookies for this site, then try again.",
   "auth/network-request-failed": "No connection. Please check your internet and try again.",

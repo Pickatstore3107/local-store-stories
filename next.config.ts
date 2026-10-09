@@ -22,6 +22,13 @@ const nextConfig: NextConfig = {
         headers: [
           { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains" },
           { key: "X-Content-Type-Options", value: "nosniff" },
+          // Only the rules that can't block the map, sign-in or the Instagram
+          // feed: no plugins, no changing where links and forms point, and
+          // only this site may show its pages in a frame.
+          {
+            key: "Content-Security-Policy",
+            value: "object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'",
+          },
           { key: "X-Frame-Options", value: "SAMEORIGIN" },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
           { key: "Cross-Origin-Opener-Policy", value: "same-origin-allow-popups" },

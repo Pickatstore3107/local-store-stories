@@ -3,6 +3,7 @@ import {
   HttpError,
   requireConsent,
   requirePostAllowed,
+  requireUnsavedStory,
   verifyUser,
 } from "@/lib/server/auth";
 import {
@@ -10,10 +11,11 @@ import {
   deleteAllPhotos,
   deletePhoto,
   isJpeg,
+  isStoryId,
   uploadPhoto,
 } from "@/lib/server/photos";
 
-/** Uploads the photo for one of the signed-in person's stories. */
+/** Uploads the photo for a story the signed-in person is about to save. */
 export async function POST(request: Request) {
   try {
     const { uid, token } = await verifyUser(request);
@@ -26,6 +28,8 @@ export async function POST(request: Request) {
     if (typeof storyId !== "string" || !(photo instanceof Blob)) {
       throw new HttpError(400, "Please choose a photo.");
     }
+    if (!isStoryId(storyId)) throw new HttpError(400, "That story could not be found.");
+    await requireUnsavedStory(storyId, token);
     if (photo.size > MAX_PHOTO_BYTES) throw new HttpError(413, "That photo is too large.");
     const bytes = Buffer.from(await photo.arrayBuffer());
     if (!isJpeg(bytes)) throw new HttpError(415, "Please choose a JPG or PNG photo.");

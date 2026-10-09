@@ -1,13 +1,13 @@
 "use client";
 
-import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/components/auth-provider";
+import { OpenInBrowserNote } from "@/components/open-in-browser-note";
 import { returnPath } from "@/components/require-account";
 import { card, primaryButton } from "@/components/ui";
 import { friendlyError } from "@/lib/auth-errors";
-import { getFirebase } from "@/lib/firebase";
+import { signInWithGoogle } from "@/lib/google-sign-in";
 
 export function SignInForm() {
   const { loading, user, consent } = useAuth();
@@ -25,7 +25,7 @@ export function SignInForm() {
     setError(null);
     setBusy(true);
     try {
-      await signInWithPopup(getFirebase().auth, new GoogleAuthProvider());
+      await signInWithGoogle();
     } catch (e) {
       setError(friendlyError(e));
     } finally {
@@ -49,6 +49,8 @@ export function SignInForm() {
       >
         {busy ? "Opening Google…" : "Continue with Google"}
       </button>
+
+      <OpenInBrowserNote className="mt-4" />
 
       {error && (
         <p role="alert" className="mt-4 rounded-xl bg-brand-red/10 px-4 py-3 text-sm text-brand-red-deep">

@@ -97,6 +97,24 @@ export async function requirePostAllowed(uid: string, token: string) {
   if (!check.ok) throw new HttpError(429, check.message);
 }
 
+/**
+ * A photo can only be uploaded for a memory that hasn't been saved yet.
+ * Otherwise someone could swap the photo of a memory a moderator already
+ * approved. The memory's ID is checked before this is called.
+ */
+export async function requireUnsavedStory(storyId: string, token: string) {
+  const host = useEmulators ? "http://127.0.0.1:8080" : "https://firestore.googleapis.com";
+  const response = await fetch(
+    `${host}/v1/projects/${projectId}/databases/(default)/documents/stories/${storyId}`,
+    { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" },
+  );
+  // Missing, or someone else's memory that isn't public: either way, not one
+  // of the person's own saved memories.
+  if (response.status === 404 || response.status === 403) return;
+  if (!response.ok) throw new HttpError(502, "We couldn't check the memory. Please try again.");
+  throw new HttpError(409, "This memory already has its photo. To change it, share the memory again.");
+}
+
 /** Only moderators, listed in moderators/{uid}, may see photos waiting for review. */
 export async function requireModerator(uid: string, token: string) {
   if (!(await ownDocExists("moderators", uid, token))) {
