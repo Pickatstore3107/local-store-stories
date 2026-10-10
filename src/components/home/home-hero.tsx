@@ -10,10 +10,10 @@ export function HomeHero() {
       <div className="min-w-0 flex-1">
         <h1
           id="home-title"
-          className="text-[1.6rem] font-extrabold leading-[1.1] tracking-tight text-ink sm:text-[2.4rem]"
+          className="text-[1.75rem] leading-[1.08] text-ink sm:text-[2.6rem]"
         >
           Discover local places{" "}
-          <span className="block font-hand font-bold tracking-normal text-brand-red">and their stories</span>
+          <span className="block font-serif italic text-brand-red">and their stories</span>
         </h1>
         <p className="mt-1.5 text-[0.9rem] leading-snug text-ink-soft sm:mt-3 sm:text-base">
           Shops, stalls and landmarks, remembered by the people of Hyderabad.

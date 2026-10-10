@@ -1,4 +1,4 @@
-import type { GeoJSONSource, Map as MapLibreMap } from "maplibre-gl";
+import type { ControlPosition, GeoJSONSource, Map as MapLibreMap } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { HYDERABAD, PIN_RADIUS_METRES, type LatLng } from "@/lib/pins";
 
@@ -23,7 +23,10 @@ export async function openMap(
   container: HTMLElement,
   signal: AbortSignal,
   view: { center?: LatLng; zoom?: number } = {},
-  { interactive = true } = {},
+  {
+    interactive = true,
+    credits = "bottom-right",
+  }: { interactive?: boolean; credits?: ControlPosition } = {},
 ) {
   const { default: maplibregl } = await import("maplibre-gl");
   if (signal.aborted) return null;
@@ -41,23 +44,19 @@ export async function openMap(
       [east, north],
     ],
     interactive,
-    // A map that's only a picture credits OpenStreetMap in its own words.
-    attributionControl: interactive ? { compact: true } : false,
+    attributionControl: false,
     dragRotate: false,
     pitchWithRotate: false,
     touchPitch: false,
   });
+  // A map that's only a picture credits OpenStreetMap in its own words.
   if (interactive) {
+    map.addControl(new maplibregl.AttributionControl({ compact: true }), credits);
     map.touchZoomRotate.disableRotation();
     map.keyboard.disableRotation();
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
   }
   map.on("load", () => addPinImages(map));
-  // Numbered circles are drawn as they're needed: "lss-cluster-12".
-  map.on("styleimagemissing", ({ id }) => {
-    const count = /^lss-cluster-(\d+)$/.exec(id)?.[1];
-    if (count && !map.hasImage(id)) map.addImage(id, clusterImage(count), { pixelRatio: SCALE });
-  });
   return map;
 }
 
@@ -92,34 +91,12 @@ function pinImage(fill: string, stroke: string, dot: string) {
   return g.getImageData(0, 0, 36 * SCALE, 46 * SCALE);
 }
 
-function clusterImage(count: string) {
-  const size = Math.min(56, 34 + count.length * 6);
-  const g = canvas(size, size);
-  const r = size / 2;
-  g.beginPath();
-  g.arc(r, r, r - 1, 0, Math.PI * 2);
-  g.fillStyle = YELLOW;
-  g.fill();
-  g.beginPath();
-  g.arc(r, r, r - 5, 0, Math.PI * 2);
-  g.fillStyle = RED;
-  g.fill();
-  g.fillStyle = "#ffffff";
-  g.font = `800 ${count.length > 2 ? 13 : 15}px system-ui, sans-serif`;
-  g.textAlign = "center";
-  g.textBaseline = "middle";
-  g.fillText(count, r, r + 1);
-  return g.getImageData(0, 0, size * SCALE, size * SCALE);
-}
-
 function addPinImages(map: MapLibreMap) {
-  if (!map.hasImage("lss-pin")) {
-    map.addImage("lss-pin", pinImage(RED, "#ffffff", YELLOW), { pixelRatio: SCALE });
-  }
+  // The pin someone drops when sharing a post.
   if (!map.hasImage("lss-pin-selected")) {
     map.addImage("lss-pin-selected", pinImage(YELLOW, RED_DEEP, RED), { pixelRatio: SCALE });
   }
-  // A shop or place someone tapped or searched for, not a memory.
+  // A shop or place someone tapped or searched for, not a post.
   if (!map.hasImage("lss-pin-place")) {
     map.addImage("lss-pin-place", pinImage(INK, "#ffffff", "#ffffff"), { pixelRatio: SCALE });
   }
@@ -259,5 +236,3 @@ export function addPlaceLayer(map: MapLibreMap) {
 export function showPlace(map: MapLibreMap, spot: LatLng | null) {
   (map.getSource("lss-place") as GeoJSONSource | undefined)?.setData(collection(spot ? [point(spot)] : []));
 }
-
-export const COLORS = { RED, YELLOW };

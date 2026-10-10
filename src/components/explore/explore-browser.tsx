@@ -14,6 +14,7 @@ import { MediaBadge } from "../polaroid";
 import { setReturnPath } from "../require-account";
 import { secondaryButton } from "../ui";
 import { setWallFilters, useWallFilters } from "../use-wall-filters";
+import { Illustration } from "@/components/illustration";
 
 const PEOPLE_SHOWN = 6;
 const PLACES_SHOWN = 5;
@@ -227,7 +228,8 @@ export function ExploreBrowser({ memories }: { memories: WallMemory[] }) {
         </h2>
         {posts.length === 0 ? (
           <div className="py-12 text-center">
-            <p className="font-hand text-2xl text-ink">
+            <Illustration name={searching ? "lost" : "share"} />
+            <p className="mt-3 font-hand text-2xl text-ink">
               {searching ? "No posts match yet." : "No posts here yet."}
             </p>
             <p className="mt-2 text-ink-soft">

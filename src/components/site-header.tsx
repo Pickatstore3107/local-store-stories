@@ -28,7 +28,7 @@ export function SiteHeader() {
       : null;
 
   return (
-    <header className="flex h-(--header-h) shrink-0 items-center justify-between gap-3 px-4 sm:px-8">
+    <header style={{ viewTransitionName: "site-header" }} className="flex h-(--header-h) shrink-0 items-center justify-between gap-3 px-4 sm:px-8">
       <Link href="/" aria-label="Local Stores & Their Stories home">
         <Image
           src="/brand/pas-logo-horizontal.webp"

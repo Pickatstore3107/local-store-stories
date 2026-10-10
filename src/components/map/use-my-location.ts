@@ -4,9 +4,9 @@ import { useEffect, useState } from "react";
 import { inHyderabad } from "@/lib/nearby";
 import type { LatLng } from "@/lib/pins";
 
-// Where you are, for the blue dot and the stores near you. The phone only
-// asks once someone taps the locate button, and the spot stays in the page:
-// it's never saved or sent to us.
+// Where you are, for the blue dot and the posts near you. The phone only
+// asks once someone taps Near me, and the spot stays in the page: it's
+// never saved or sent to us.
 
 export type MyLocation =
   | { status: "off" }

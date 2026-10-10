@@ -11,6 +11,7 @@ import { useMyFollows } from "./use-my-follows";
 import { memoryMatches, searchWords, type Wall } from "@/lib/memories";
 import { CATEGORIES, type Category } from "@/lib/stories";
 import { setWallFilters, useWallFilters } from "./use-wall-filters";
+import { Illustration } from "@/components/illustration";
 
 const chip = "shrink-0 rounded-full px-3.5 py-1.5 text-sm font-bold transition sm:px-4 sm:py-2";
 const chipOff = "bg-white text-ink ring-1 ring-ink/10 hover:ring-ink/25";
@@ -171,7 +172,8 @@ export function WallBrowser({ wall, children }: { wall: Wall; children?: ReactNo
         <FollowingNote note={followingNote} />
       ) : shown.length === 0 ? (
         <div className="py-16 text-center">
-          <p className="font-hand text-2xl text-ink">
+          <Illustration name="lost" />
+          <p className="mt-3 font-hand text-2xl text-ink">
             {following && !words.length && !category
               ? "The people you follow haven't shared a post yet."
               : "No posts match yet."}

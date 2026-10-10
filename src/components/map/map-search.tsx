@@ -3,7 +3,7 @@
 import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { CloseIcon, PlaceIcon, SearchIcon, StoreIcon } from "@/components/icons";
 import { memoryMatches, placeLine, searchWords, textLang } from "@/lib/memories";
-import { MemoryThumb } from "./map-details";
+import { MemoryThumb } from "./map-cards";
 import type { PinnedMemory } from "./memory-map";
 import { searchPlaces, type Place } from "./place-search";
 

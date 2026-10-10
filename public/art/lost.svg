@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 250" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <circle cx="122" cy="138" r="92" fill="#FFF0C4"/>
+  <!-- back arm -->
+  <path d="M114 94 C112 118 130 120 150 116" stroke="#211A17" stroke-width="15"/>
+  <path d="M114 94 C112 118 130 120 150 116" stroke="#fff" stroke-width="11"/>
+  <!-- trousers -->
+  <path d="M100 136 H144 L150 228 H128 L122 168 L117 228 H95 Z" fill="#211A17"/>
+  <path d="M122 168 V146" stroke="#fff" stroke-width="1.4"/>
+  <!-- boots -->
+  <path d="M96 226 H117 V237 H90 C90 232 92 228 96 226 Z" fill="#211A17"/>
+  <path d="M128 226 H149 C155 228 159 232 159 237 H128 Z" fill="#211A17"/>
+  <!-- sweater -->
+  <path d="M101 86 C106 77 132 75 139 85 L146 140 C130 145 110 145 98 140 Z" fill="#fff" stroke="#211A17" stroke-width="2"/>
+  <!-- neck and head -->
+  <path d="M116 66 V80 H127 V66" fill="#fff" stroke="#211A17" stroke-width="2"/>
+  <path d="M112 50 C112 38 120 32 130 34 C138 36 141 44 140 50 L143 56 L139 57 C139 64 135 69 128 69 C119 69 112 62 112 50 Z" fill="#fff" stroke="#211A17" stroke-width="2"/>
+  <path d="M106 66 C98 50 104 28 124 27 C136 27 143 33 141 41 C133 38 126 40 123 46 C121 52 124 60 122 66 C120 74 110 76 106 66 Z" fill="#211A17"/>
+  <!-- map -->
+  <path d="M146 86 L162 82 L178 88 L194 82 L198 120 L182 126 L166 120 L150 124 Z" fill="#FFC907" stroke="#211A17" stroke-width="2"/>
+  <path d="M162 82 L166 120 M178 88 L182 126" stroke="#211A17" stroke-width="1.4"/>
+  <path d="M154 114 C160 104 168 112 174 102 C178 96 184 100 188 94" stroke="#B22825" stroke-width="2" stroke-dasharray="3 4"/>
+  <path d="M188 96 C184 90 185 86 189 86 C193 86 194 90 190 96 Z" fill="#B22825"/>
+  <!-- front arm -->
+  <path d="M132 92 C142 112 146 120 152 112" stroke="#211A17" stroke-width="15"/>
+  <path d="M132 92 C142 112 146 120 152 112" stroke="#fff" stroke-width="11"/>
+  <circle cx="152" cy="110" r="5" fill="#fff" stroke="#211A17" stroke-width="2"/>
+  <circle cx="196" cy="104" r="5" fill="#fff" stroke="#211A17" stroke-width="2"/>
+  <!-- question marks -->
+  <path d="M168 54 C168 46 180 46 180 54 C180 60 174 60 174 66 M174 72 V73" stroke="#B22825" stroke-width="2.4"/>
+  <path d="M190 64 C190 59 197 59 197 64 C197 67 194 68 194 71 M194 75 V76" stroke="#211A17" stroke-width="1.8"/>
+  <!-- ground -->
+  <path d="M44 237 H200" stroke="#211A17" stroke-width="1.6"/>
+</svg>

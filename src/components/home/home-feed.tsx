@@ -10,6 +10,7 @@ import { primaryButton, secondaryButton } from "../ui";
 import { useMyFollows } from "../use-my-follows";
 import { setWallFilters, useWallFilters } from "../use-wall-filters";
 import { PlaceCard } from "./place-card";
+import { Illustration } from "@/components/illustration";
 
 const tab = "rounded-full px-3 py-1.5 text-xs font-bold transition sm:px-4 sm:text-sm";
 
@@ -111,7 +112,8 @@ export function HomeFeed({ memories, builtAt }: { memories: WallMemory[]; builtA
         <FollowingNote note={followingNote} />
       ) : shown.length === 0 ? (
         <div className="py-14 text-center">
-          <p className="font-hand text-2xl text-ink">
+          <Illustration name="share" />
+          <p className="mt-3 font-hand text-2xl text-ink">
             {following && !category
               ? "The people you follow haven't shared a post yet."
               : "No posts here yet."}

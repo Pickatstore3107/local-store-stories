@@ -1,26 +1,30 @@
 "use client";
 
 import Link from "next/link";
-import type { ReactNode } from "react";
+import { ViewTransition, type ReactNode } from "react";
 import { Avatar } from "@/components/avatar";
 import { FollowButton } from "@/components/follow-button";
 import { ActionsRow, LikeablePhoto, LikesLine } from "@/components/post/post-parts";
 import { PostMedia } from "@/components/post/post-media";
 import { useLike } from "@/components/post/use-likes";
+import { blockOf } from "@/lib/blocks";
 import { textLang, type Memory } from "@/lib/memories";
 import { personPath } from "@/lib/people";
 
 /**
  * A memory's page, as a post: who shared it with Follow, its photos or
- * video (tap a photo twice to like), Like, Comment and Share, who liked
- * it, then its words.
+ * video (tap a photo twice to like), its year and name like a magazine
+ * cover's, Like, Comment and Share, who liked it, then its words. The photo sits on a blur of its own colours, and
+ * grows out of its cover when opened from Home.
  */
-export function MemoryPost({ memory, children }: { memory: Memory; children: ReactNode }) {
+export function MemoryPost({ memory, title, children }: { memory: Memory; title: ReactNode; children: ReactNode }) {
   const like = useLike(memory.id, memory.likes, memory.builtAt);
   const { author } = memory;
+  const block = blockOf(memory.id);
+  const backdrop = memory.photoUrl;
 
   return (
-    <div className="overflow-hidden rounded-[1.25rem] bg-white ring-1 ring-ink/[0.06]">
+    <div className="overflow-hidden rounded-[1.6rem] bg-white ring-1 ring-ink/[0.06]">
       <header className="flex items-center gap-2.5 px-3.5 py-2.5">
         {author ? (
           <>
@@ -44,14 +48,31 @@ export function MemoryPost({ memory, children }: { memory: Memory; children: Rea
         )}
       </header>
 
-      <LikeablePhoto like={like}>
-        <PostMedia memory={memory} />
-        <span className="pointer-events-none absolute left-3 top-3 rounded-full bg-brand-yellow px-2.5 py-1 text-xs font-bold text-ink">
-          {memory.category}
-        </span>
-      </LikeablePhoto>
+      <div className="relative px-5 pt-4">
+        {/* The photo's own colours, blurred, behind it, fading into the page. */}
+        <div aria-hidden="true" className={`absolute inset-x-0 top-0 bottom-[30%] overflow-hidden ${backdrop ? "" : block.bg}`}>
+          {backdrop && (
+            <span
+              className="absolute inset-0 scale-125 bg-cover bg-center blur-2xl saturate-150"
+              style={{ backgroundImage: `url("${backdrop}")` }}
+            />
+          )}
+          <span className="absolute inset-0 bg-gradient-to-b from-white/10 via-white/30 to-white" />
+        </div>
+        <ViewTransition name={`photo-${memory.id}`} share="morph" default="none">
+          <div className="relative mx-auto w-[84%] overflow-hidden rounded-[1rem] bg-sand shadow-[0_18px_34px_rgb(43_29_26/0.32)]">
+            <LikeablePhoto like={like}>
+              <PostMedia memory={memory} />
+              <span className="pointer-events-none absolute left-3 top-3 rounded-full bg-white px-2.5 py-1 text-xs font-bold text-ink shadow-[0_2px_6px_rgb(43_29_26/0.2)]">
+                {memory.category}
+              </span>
+            </LikeablePhoto>
+          </div>
+        </ViewTransition>
+      </div>
 
-      <div className="flex flex-col items-start gap-1 px-3.5 pt-1.5">
+      <div className="px-3.5 pt-4 animate-[rise_0.45s_ease-out_0.06s_backwards] motion-reduce:animate-none">{title}</div>
+      <div className="flex flex-col items-start gap-1 px-3.5 pt-1 animate-[rise_0.45s_ease-out_0.12s_backwards] motion-reduce:animate-none">
         <ActionsRow
           like={like}
           storyId={memory.id}
@@ -67,7 +88,9 @@ export function MemoryPost({ memory, children }: { memory: Memory; children: Rea
         />
         <LikesLine like={like} storyId={memory.id} privateLoves={memory.likes.privateLoves} />
       </div>
-      <div className="px-3.5 pb-4 pt-2">{children}</div>
+      <div className="px-3.5 pb-4 pt-2 animate-[rise_0.45s_ease-out_0.18s_backwards] motion-reduce:animate-none">
+        {children}
+      </div>
     </div>
   );
 }
