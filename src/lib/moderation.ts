@@ -20,14 +20,14 @@ import type { Profile } from "./account";
 import { FriendlyError } from "./auth-errors";
 import { getFirebase } from "./firebase";
 import type { Report } from "./reports";
-import { callApi, refreshWall, type Story, type StoryStatus } from "./stories";
+import { callApi, coverId, refreshWall, type Story, type StoryStatus } from "./stories";
 
 export type ReviewAction = "approved" | "rejected" | "hidden";
 
 // Where a moderator may move a story from each status.
 // Must match reviewMoves() in firestore.rules.
 export const REVIEW_MOVES: Record<StoryStatus, readonly ReviewAction[]> = {
-  pending: ["approved", "rejected"],
+  pending: ["approved", "rejected", "hidden"],
   approved: ["hidden"],
   rejected: ["approved"],
   hidden: ["approved"],
@@ -61,8 +61,22 @@ export type LogEntry = {
 export type ReviewStory = Story & {
   id: string;
   author: Pick<Profile, "displayName" | "city"> | null;
+  /** The first photo, or the video's first frame. */
   photoUrl: string | null;
+  /** Every photo, in order; empty for a video. */
+  photoUrls: string[];
+  videoUrl: string | null;
 };
+
+/** Taken off the site by reports, waiting for a moderator to put it back up or hide it. */
+export const isHeld = (story: Pick<Story, "status" | "reportCount">) =>
+  story.status === "pending" && (story.reportCount ?? 0) > 0;
+
+/** Every photo of a story, or its video. */
+function mediaIds(story: Story) {
+  if (story.videoId) return [story.videoId];
+  return story.photoIds ?? (story.photoId ? [story.photoId] : []);
+}
 
 // Enough for the pilot; the queue shows a note when there are more.
 export const QUEUE_LIMIT = 100;
@@ -102,19 +116,22 @@ async function loadProfiles(uids: string[]) {
   );
 }
 
-/** Signed links to the private photos, by photo ID. */
-async function photoLinks(user: User, photoIds: string[]): Promise<Record<string, string>> {
-  if (!photoIds.length) return {};
+type Links = { urls: Record<string, string>; videos: Record<string, string> };
+
+/** Signed links to the private photos and videos, by ID. A video gets a still in urls. */
+async function photoLinks(user: User, photoIds: string[]): Promise<Links> {
+  if (!photoIds.length) return { urls: {}, videos: {} };
   try {
     const response = await callApi(user, "/api/photos/review", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ photoIds }),
     });
-    return ((await response.json()) as { urls: Record<string, string> }).urls;
+    const links = (await response.json()) as Partial<Links>;
+    return { urls: links.urls ?? {}, videos: links.videos ?? {} };
   } catch (error) {
     console.error("Could not load photos", error); // the stories still show
-    return {};
+    return { urls: {}, videos: {} };
   }
 }
 
@@ -137,19 +154,22 @@ export async function loadReviewQueue(user: User, status: StoryStatus) {
   return { stories: await withDetails(user, stories), more: snapshot.size === QUEUE_LIMIT };
 }
 
-/** Adds each story's author and a private link to its photo. */
+/** Adds each story's author and private links to its photos or video. */
 async function withDetails(user: User, stories: (Story & { id: string })[]) {
-  const [profiles, urls] = await Promise.all([
+  const [profiles, { urls, videos }] = await Promise.all([
     loadProfiles(stories.map((s) => s.authorId)),
-    photoLinks(user, stories.map((s) => s.photoId)),
+    photoLinks(user, stories.flatMap(mediaIds)),
   ]);
-  return stories.map(
-    (story): ReviewStory => ({
+  return stories.map((story): ReviewStory => {
+    const cover = coverId(story);
+    return {
       ...story,
       author: profiles.get(story.authorId) ?? null,
-      photoUrl: urls[story.photoId] ?? null,
-    }),
-  );
+      photoUrl: cover ? (urls[cover] ?? null) : null,
+      photoUrls: story.videoId ? [] : mediaIds(story).flatMap((id) => urls[id] ?? []),
+      videoUrl: story.videoId ? (videos[story.videoId] ?? null) : null,
+    };
+  });
 }
 
 export type OpenReport = Report & { id: string };
@@ -180,18 +200,31 @@ function closing(user: User, outcome: NonNullable<Report["outcome"]>) {
   return { status: "closed", outcome, closedBy: user.uid, closedAt: serverTimestamp() } as const;
 }
 
+/** The open reports about one memory. */
+async function openReportIds(storyId: string) {
+  const snapshot = await getDocs(
+    query(openReports(), where("storyId", "==", storyId), limit(QUEUE_LIMIT)),
+  );
+  return snapshot.docs.map((d) => d.id);
+}
+
 /**
  * Closes reports: the memory was hidden, a moderator looked and kept it up,
- * or its author has deleted it.
+ * or its author has deleted it. Keeping it up starts its count of reports
+ * again, so it takes three new ones to hold it back.
  */
 export async function closeReports(
   user: User,
   reportIds: string[],
   outcome: NonNullable<Report["outcome"]>,
+  storyId?: string,
 ) {
   const { db } = getFirebase();
   const batch = writeBatch(db);
   for (const id of reportIds) batch.update(doc(db, "reports", id), closing(user, outcome));
+  if (outcome === "kept" && storyId) {
+    batch.update(doc(db, "stories", storyId), { reportCount: deleteField() });
+  }
   try {
     await batch.commit();
   } catch (error) {
@@ -227,16 +260,19 @@ export async function featureStory(user: User, storyId: string, featured: boolea
 /**
  * Approves, turns down or hides a story. The decision is written to the
  * moderation log in the same batch, and the security rules check both.
- * Hiding a reported story closes its reports in the same batch too.
+ * Approving or hiding a reported story closes its reports in the same
+ * batch too, and approving starts its count of reports again.
  */
 export async function reviewStory(
   user: User,
-  story: Pick<ReviewStory, "id" | "storeName" | "status">,
+  story: Pick<ReviewStory, "id" | "storeName" | "status" | "reportCount">,
   action: ReviewAction,
   note = "",
-  reportIds: string[] = [],
+  reportIds?: string[],
 ) {
   const { db } = getFirebase();
+  const toClose =
+    action === "rejected" ? [] : (reportIds ?? (story.reportCount ? await openReportIds(story.id) : []));
   const logRef = doc(collection(db, "moderationLog"));
   const text = note.trim();
   const batch = writeBatch(db);
@@ -246,6 +282,7 @@ export async function reviewStory(
     reviewNote: action === "approved" ? deleteField() : text,
     reviewLogId: logRef.id,
     updatedAt: serverTimestamp(),
+    ...(action === "approved" && { reportCount: deleteField() }),
   });
   batch.set(logRef, {
     storyId: story.id,
@@ -256,8 +293,8 @@ export async function reviewStory(
     at: serverTimestamp(),
     ...(action !== "approved" && { note: text }),
   });
-  if (action === "hidden") {
-    for (const id of reportIds) batch.update(doc(db, "reports", id), closing(user, "hidden"));
+  for (const id of toClose) {
+    batch.update(doc(db, "reports", id), closing(user, action === "hidden" ? "hidden" : "kept"));
   }
   try {
     await batch.commit();

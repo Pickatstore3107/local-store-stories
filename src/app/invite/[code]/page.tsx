@@ -81,8 +81,8 @@ async function InviteContent({ code }: { code: string }) {
         <h2 className="font-bold text-ink">What is this?</h2>
         <p className="mt-2">
           Local Stores &amp; Their Stories is a people-first campaign by Pick at Store. Share a
-          photo and a few lines about the chai stall, bakery or kirana you grew up with. A person
-          reads every post before it goes up on{" "}
+          photo and a few lines about the chai stall, bakery or kirana you grew up with, and see
+          what others shared on{" "}
           <Link href="/" className="font-bold text-brand-red underline underline-offset-4">
             the site
           </Link>

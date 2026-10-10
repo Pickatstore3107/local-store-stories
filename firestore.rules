@@ -19,7 +19,7 @@ service cloud.firestore {
 
     // Must match CONSENT_VERSION in src/lib/consent.ts.
     function currentConsentVersion() {
-      return '2026-10-v3';
+      return '2026-10-v4';
     }
 
     function isModerator() {
@@ -196,12 +196,28 @@ service cloud.firestore {
           && pin.col is int && pin.col >= 16638 && pin.col <= 16755;
       }
 
+      // A post's photos or video at Cloudinary: up to five photos in order,
+      // or one video, or one photo as posts had before. Must match photoId(),
+      // photoIdAt() and videoId() in src/lib/server/photos.ts.
+      function validMedia(data) {
+        let base = 'lss/stories/' + request.auth.uid + '/' + storyId;
+        let photos = [base + '/p1', base + '/p2', base + '/p3', base + '/p4', base + '/p5'];
+        return data.keys().toSet().intersection(['photoId', 'photoIds', 'videoId'].toSet()).size() == 1
+          && (!('photoId' in data) || data.photoId == base)
+          && (!('photoIds' in data)
+              || (data.photoIds is list
+                  && data.photoIds.size() >= 1
+                  && data.photoIds.size() <= 5
+                  && data.photoIds == photos[0:data.photoIds.size()]))
+          && (!('videoId' in data) || data.videoId == base + '/v');
+      }
+
       function validNewStory(data) {
         return data.keys().hasOnly(['authorId', 'storeName', 'category', 'city',
-            'neighbourhood', 'caption', 'year', 'ordered', 'visibility',
-            'rightsConfirmed', 'status', 'photoId', 'pin', 'createdAt', 'updatedAt'])
+            'neighbourhood', 'caption', 'year', 'ordered', 'visibility', 'rightsConfirmed',
+            'status', 'photoId', 'photoIds', 'videoId', 'pin', 'createdAt', 'updatedAt'])
           && data.keys().hasAll(['authorId', 'storeName', 'category', 'city', 'caption',
-            'visibility', 'rightsConfirmed', 'status', 'photoId', 'createdAt', 'updatedAt'])
+            'visibility', 'rightsConfirmed', 'status', 'createdAt', 'updatedAt'])
           && data.authorId == request.auth.uid
           && isText(data.storeName, 2, 80)
           && data.category in categories()
@@ -214,9 +230,10 @@ service cloud.firestore {
           && data.visibility in ['public', 'link']
           && (!('pin' in data) || validPin(data.pin))
           && data.rightsConfirmed == true
-          && data.status == 'pending'
-          // The photo's ID at Cloudinary; must match photoId() in src/lib/server/photos.ts.
-          && data.photoId == 'lss/stories/' + request.auth.uid + '/' + storyId
+          // Posts go up at once. Moderators act on reports (see validReportCount).
+          // Older versions of the site still send 'pending', for a moderator to approve.
+          && data.status in ['pending', 'approved']
+          && validMedia(data)
           && data.createdAt == request.time
           && data.updatedAt == request.time;
       }
@@ -225,7 +242,7 @@ service cloud.firestore {
       // Must match REVIEW_MOVES in src/lib/moderation.ts.
       function reviewMoves() {
         return {
-          'pending': ['approved', 'rejected'],
+          'pending': ['approved', 'rejected', 'hidden'],
           'approved': ['hidden'],
           'rejected': ['approved'],
           'hidden': ['approved']
@@ -237,11 +254,13 @@ service cloud.firestore {
       }
 
       // A moderator's decision. It changes only the review fields, and is
-      // written to the moderation log in the same batch.
+      // written to the moderation log in the same batch. It may start the
+      // count of reports again (see validReportCount).
       function validReview(before, after) {
         return isModerator()
-          && after.diff(before).affectedKeys()
-               .hasOnly(['status', 'reviewedAt', 'reviewNote', 'reviewLogId', 'updatedAt'])
+          && after.diff(before).affectedKeys().hasOnly(['status', 'reviewedAt', 'reviewNote',
+               'reviewLogId', 'updatedAt', 'reportCount'])
+          && (!('reportCount' in after) || after.reportCount == before.reportCount)
           && after.status in reviewMoves().get(before.status, [])
           // The author is told why a story was not approved or was hidden.
           // Must match REVIEW_NOTE_MIN and REVIEW_NOTE_MAX in src/lib/moderation.ts.
@@ -337,6 +356,42 @@ service cloud.firestore {
                 && get(commentAt(after.commentChange)).data.storyId == storyId));
       }
 
+      function myReport() {
+        return /databases/$(database)/documents/reports/$(storyId + '_' + request.auth.uid);
+      }
+
+      // Reporting a post adds one to its count, in the same batch as the
+      // report (see reports below). The third report takes the post off the
+      // site, back to waiting, until a moderator looks. Taking back an open
+      // report takes one away, so nobody counts twice by reporting again.
+      // Must match REPORTS_TO_HOLD in src/lib/reports.ts.
+      function validReportCount(before, after) {
+        let count = before.get('reportCount', 0);
+        return signedIn()
+          && ((before.status == 'approved'
+                && !exists(myReport())
+                && existsAfter(myReport())
+                && after.get('reportCount', null) == count + 1
+                && (count + 1 >= 3
+                    ? after.diff(before).affectedKeys().hasOnly(['reportCount', 'status'])
+                        && after.status == 'pending'
+                    : after.diff(before).affectedKeys().hasOnly(['reportCount'])))
+            || (exists(myReport())
+                && !existsAfter(myReport())
+                && get(myReport()).data.status == 'open'
+                && get(myReport()).data.get('counted', false) == true
+                && after.diff(before).affectedKeys().hasOnly(['reportCount'])
+                && after.get('reportCount', null) == count - 1));
+      }
+
+      // A moderator who looked at a post's reports and kept it up starts its
+      // count again.
+      function validReportReset(before, after) {
+        return isModerator()
+          && after.diff(before).affectedKeys().hasOnly(['reportCount'])
+          && !('reportCount' in after);
+      }
+
       // Only people who have given consent can share, and each new story is
       // counted in postLimits in the same batch (see below).
       allow create: if signedIn()
@@ -357,6 +412,8 @@ service cloud.firestore {
         || validReactionCount(resource.data, request.resource.data)
         || validLike(resource.data, request.resource.data)
         || validCommentCount(resource.data, request.resource.data)
+        || validReportCount(resource.data, request.resource.data)
+        || validReportReset(resource.data, request.resource.data)
         || validPinChange(resource.data, request.resource.data);
       allow delete: if isAuthor();
     }
@@ -399,10 +456,20 @@ service cloud.firestore {
         return ['unkind', 'private', 'notStore', 'rights', 'other'];
       }
 
+      // The post's count of reports, before and after this request.
+      function countBefore(id) {
+        return get(story(id)).data.get('reportCount', 0);
+      }
+
+      function countAfter(id) {
+        return getAfter(story(id)).data.get('reportCount', 0);
+      }
+
       // Must match REPORT_DETAILS_MIN and REPORT_DETAILS_MAX in src/lib/reports.ts.
       function validReport(report) {
-        return report.keys().hasOnly(['storyId', 'reason', 'details', 'by', 'at', 'status'])
-          && report.keys().hasAll(['storyId', 'reason', 'by', 'at', 'status'])
+        return report.keys()
+            .hasOnly(['storyId', 'reason', 'details', 'by', 'at', 'status', 'counted'])
+          && report.keys().hasAll(['storyId', 'reason', 'by', 'at', 'status', 'counted'])
           && report.storyId is string
           && reportId == report.storyId + '_' + request.auth.uid
           && report.reason in reasons()
@@ -413,7 +480,10 @@ service cloud.firestore {
           && report.by == request.auth.uid
           && report.at == request.time
           && report.status == 'open'
-          && get(story(report.storyId)).data.status == 'approved';
+          && get(story(report.storyId)).data.status == 'approved'
+          // Counted on the post in the same batch (see validReportCount).
+          && report.counted == true
+          && countAfter(report.storyId) == countBefore(report.storyId) + 1;
       }
 
       // A moderator closes a report once the memory is hidden, kept up after
@@ -438,11 +508,16 @@ service cloud.firestore {
         && validReport(request.resource.data);
 
       // People can find and take back their own reports, for example when
-      // they delete their account.
+      // they delete their account. Taking back an open report that was
+      // counted on its post takes one off the count in the same batch.
       allow get: if isModerator();
       allow list: if isModerator() || (signedIn() && resource.data.by == request.auth.uid);
       allow update: if validClose(resource.data, request.resource.data);
-      allow delete: if signedIn() && resource.data.by == request.auth.uid;
+      allow delete: if signedIn() && resource.data.by == request.auth.uid
+        && (resource.data.status != 'open'
+            || resource.data.get('counted', false) != true
+            || !existsAfter(story(resource.data.storyId))
+            || countAfter(resource.data.storyId) == countBefore(resource.data.storyId) - 1);
     }
 
     // Who liked which memory. Likes are public, as on Instagram: anyone can

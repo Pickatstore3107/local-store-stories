@@ -254,3 +254,39 @@ export function CheckIcon(props: IconProps) {
     </Icon>
   );
 }
+
+export function PhotosIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <rect x="3.5" y="5.5" width="14" height="13" rx="2.5" />
+      <path d="M7 3.5h11a2.5 2.5 0 0 1 2.5 2.5v10" />
+      <path d="m3.5 15.5 4-4 3.5 3.5 2-2 4.5 4.5" />
+    </Icon>
+  );
+}
+
+export function VideoIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <rect x="3" y="6" width="13" height="12" rx="2.5" />
+      <path d="m16 10.5 5-3v9l-5-3" />
+    </Icon>
+  );
+}
+
+export function PlayIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M8 5.5v13l10.5-6.5L8 5.5Z" fill="currentColor" />
+    </Icon>
+  );
+}
+
+export function TurnIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M19 12a7 7 0 1 1-2.05-4.95" />
+      <path d="M17.5 3.5v4h-4" />
+    </Icon>
+  );
+}

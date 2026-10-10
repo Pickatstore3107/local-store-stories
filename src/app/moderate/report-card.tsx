@@ -5,7 +5,7 @@ import { useState } from "react";
 import { card, secondaryButton } from "@/components/ui";
 import { friendlyError } from "@/lib/auth-errors";
 import { memoryPath } from "@/lib/memories";
-import { closeReports, reviewStory, type ReportGroup } from "@/lib/moderation";
+import { closeReports, isHeld, reviewStory, type ReportGroup } from "@/lib/moderation";
 import { REPORT_REASONS, type Report, type ReportReason } from "@/lib/reports";
 import { NoteForm, StoryDetails } from "./review-card";
 import { when } from "./when";
@@ -37,11 +37,13 @@ export function ReportCard({
     setError(null);
     setBusy(true);
     try {
-      // Hiding a memory closes its reports in the same step.
-      if (outcome === "hidden" && story?.status === "approved") {
+      // Hiding a post, or putting a held one back up, closes its reports in the same step.
+      if (story && outcome === "hidden" && (story.status === "approved" || isHeld(story))) {
         await reviewStory(user, story, "hidden", note, reportIds);
+      } else if (story && outcome === "kept" && isHeld(story)) {
+        await reviewStory(user, story, "approved", "", reportIds);
       } else {
-        await closeReports(user, reportIds, outcome);
+        await closeReports(user, reportIds, outcome, story?.id);
       }
       onClosed(group, outcome);
     } catch (e) {
@@ -124,8 +126,13 @@ export function ReportCard({
             setError(null);
           }}
         />
-      ) : story.status === "approved" ? (
+      ) : story.status === "approved" || isHeld(story) ? (
         <div className="mt-6 flex flex-wrap gap-3">
+          {isHeld(story) && (
+            <p className="w-full text-sm text-ink">
+              Reports took this post off the site. Put it back up if it&apos;s fine, or hide it.
+            </p>
+          )}
           <button
             type="button"
             disabled={busy}
@@ -143,7 +150,7 @@ export function ReportCard({
             onClick={() => close("kept")}
             className={secondaryButton}
           >
-            {busy ? "Saving…" : "Keep it up"}
+            {busy ? "Saving…" : isHeld(story) ? "Put it back up" : "Keep it up"}
           </button>
         </div>
       ) : (

@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { Avatar } from "@/components/avatar";
 import type { PinnedMemory } from "@/components/map/memory-map";
+import { MediaBadge } from "@/components/polaroid";
 import { memoryPath, textLang } from "@/lib/memories";
 import { followListPath, type PublicPerson } from "@/lib/people";
 import { loadPerson } from "@/lib/server/people";
@@ -122,7 +123,7 @@ function MemoryGrid({ person }: { person: PublicPerson }) {
               <Link
                 href={memoryPath(memory.id)}
                 title={memory.storeName}
-                className="block aspect-square overflow-hidden rounded-xl bg-white transition hover:opacity-90 focus-visible:outline-4 focus-visible:outline-brand-red/40"
+                className="relative block aspect-square overflow-hidden rounded-xl bg-white transition hover:opacity-90 focus-visible:outline-4 focus-visible:outline-brand-red/40"
               >
                 {memory.photoUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element -- a signed link from our image host, already sized
@@ -144,6 +145,7 @@ function MemoryGrid({ person }: { person: PublicPerson }) {
                     {memory.storeName}
                   </span>
                 )}
+                <MediaBadge memory={memory} />
                 <span className="sr-only" lang={textLang(memory.storeName)}>
                   {memory.storeName}
                 </span>

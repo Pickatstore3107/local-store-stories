@@ -10,6 +10,7 @@ import { useAuth } from "../auth-provider";
 import { Avatar } from "../avatar";
 import { KindIcon, off, on, pill } from "../home/kind-chips";
 import { CloseIcon, CommentIcon, GridIcon, HeartIcon, SearchIcon } from "../icons";
+import { MediaBadge } from "../polaroid";
 import { setReturnPath } from "../require-account";
 import { secondaryButton } from "../ui";
 import { setWallFilters, useWallFilters } from "../use-wall-filters";
@@ -284,6 +285,7 @@ function GridSquare({ memory, eager }: { memory: WallMemory; eager: boolean }) {
           {memory.storeName}
         </span>
       )}
+      <MediaBadge memory={memory} />
       <span
         aria-hidden="true"
         className="absolute inset-0 hidden items-center justify-center gap-4 bg-ink/40 font-bold text-white group-hover:flex"

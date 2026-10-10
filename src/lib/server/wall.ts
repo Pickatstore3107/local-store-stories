@@ -12,7 +12,14 @@ import {
   type Fields,
   type PublicDocument,
 } from "./firestore";
-import { cardPhotoUrl, fullPhotoUrl, isStoryId, postPhotoUrl, sharePhotoUrl } from "./photos";
+import {
+  cardPhotoUrl,
+  fullPhotoUrl,
+  isStoryId,
+  postPhotoUrl,
+  sharePhotoUrl,
+  videoUrl,
+} from "./photos";
 
 // The Wall and each memory's page are built from Firestore as an anonymous
 // visitor sees it, then cached: visitors get a stored copy and Firestore is
@@ -52,8 +59,27 @@ export function safely<T>(make: () => T) {
   }
 }
 
+const MEDIA_LIMIT = 5;
+
+/**
+ * A story's photos in order and its video, if it has one. Older stories
+ * have one photo, in photoId; newer ones up to five, in photoIds; a story
+ * with a video has no photos.
+ */
+function readMedia(data: Fields) {
+  const videoId = text(data.videoId);
+  if (videoId) return { photoIds: [], videoId };
+  const many = Array.isArray(data.photoIds) ? data.photoIds.map(text) : [];
+  const photoIds = many.length ? many : [text(data.photoId)];
+  return {
+    photoIds: photoIds.filter((id): id is string => id !== null).slice(0, MEDIA_LIMIT),
+    videoId: null,
+  };
+}
+
 /** An approved story's public fields, or null for anything else. */
 export function readStory({ id, data }: PublicDocument) {
+  const { photoIds, videoId } = readMedia(data);
   const story = {
     id,
     authorId: text(data.authorId),
@@ -65,7 +91,10 @@ export function readStory({ id, data }: PublicDocument) {
     year: number(data.year),
     ordered: text(data.ordered),
     visibility: text(data.visibility) as Visibility | null,
-    photoId: text(data.photoId),
+    photoIds,
+    videoId,
+    // Shown on cards, and when a link to it is shared: the video's first frame, or the first photo.
+    coverId: videoId ?? photoIds[0] ?? null,
     sharedAt: number(data.createdAt) ?? 0,
     approvedAt: number(data.reviewedAt) ?? number(data.createdAt) ?? 0,
     featuredAt: number(data.featuredAt),
@@ -75,14 +104,14 @@ export function readStory({ id, data }: PublicDocument) {
     lastLikerId: text(data.lastLikerId),
     commentCount: Math.max(0, number(data.commentCount) ?? 0),
   };
-  const { authorId, storeName, category, city, caption, visibility, photoId } = story;
+  const { authorId, storeName, category, city, caption, visibility, coverId } = story;
   if (
     data.status !== "approved" ||
-    !(authorId && storeName && category && city && caption && visibility && photoId)
+    !(authorId && storeName && category && city && caption && visibility && coverId)
   ) {
     return null;
   }
-  return { ...story, authorId, storeName, category, city, caption, visibility, photoId };
+  return { ...story, authorId, storeName, category, city, caption, visibility, coverId };
 }
 
 export type PublicStory = NonNullable<ReturnType<typeof readStory>>;
@@ -182,8 +211,10 @@ export function wallMemory(story: PublicStory, people: Record<string, Person>, w
     year: story.year,
     authorId: story.authorId,
     authorName: people[story.authorId]?.name ?? null,
-    photoUrl: safely(() => cardPhotoUrl(story.photoId)),
-    postPhotoUrl: safely(() => postPhotoUrl(story.photoId)),
+    photoUrl: safely(() => cardPhotoUrl(story.coverId)),
+    postPhotoUrl: safely(() => postPhotoUrl(story.coverId)),
+    photoCount: story.photoIds.length,
+    hasVideo: story.videoId !== null,
     sharedAt: story.sharedAt,
     approvedAt: story.approvedAt,
     featuredAt: story.featuredAt,
@@ -292,9 +323,13 @@ export async function loadMemory(id: string): Promise<MemoryResult> {
         approvedAt: story.approvedAt,
         featuredAt: story.featuredAt,
         pin: story.pin,
-        photoUrl: safely(() => fullPhotoUrl(story.photoId)),
-        postPhotoUrl: safely(() => postPhotoUrl(story.photoId)),
-        shareImageUrl: safely(() => sharePhotoUrl(story.photoId)),
+        photoUrl: safely(() => fullPhotoUrl(story.coverId)),
+        postPhotoUrl: safely(() => postPhotoUrl(story.coverId)),
+        photoCount: story.photoIds.length,
+        hasVideo: story.videoId !== null,
+        photoUrls: story.photoIds.flatMap((photoId) => safely(() => fullPhotoUrl(photoId)) ?? []),
+        videoUrl: story.videoId ? safely(() => videoUrl(story.videoId!)) : null,
+        shareImageUrl: safely(() => sharePhotoUrl(story.coverId)),
         likes: likesOf(story, people),
         comments: comments ?? [],
         builtAt: Date.now(),

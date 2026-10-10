@@ -25,9 +25,15 @@ export type WallMemory = {
   /** Their profile is at personPath(authorId). */
   authorId: string;
   authorName: string | null;
-  /** A square photo, and one four wide by five tall for the feed. */
+  /**
+   * A square photo, and one four wide by five tall for the feed: its first
+   * photo, or its video's first frame.
+   */
   photoUrl: string | null;
   postPhotoUrl: string | null;
+  /** How many photos it has, 1 to 5; 0 when it's a video. */
+  photoCount: number;
+  hasVideo: boolean;
   sharedAt: number;
   approvedAt: number;
   featuredAt: number | null;
@@ -61,6 +67,10 @@ export type Memory = Omit<WallMemory, "authorId" | "authorName" | "comments" | "
   ordered: string | null;
   visibility: Visibility;
   author: { uid: string; name: string; city: string } | null;
+  /** Every photo, whole, in order; empty when it's a video. */
+  photoUrls: string[];
+  /** Its video, at most 30 seconds; photoUrl is then the video's first frame. */
+  videoUrl: string | null;
   shareImageUrl: string | null;
   /** The oldest first. */
   comments: PublicComment[];

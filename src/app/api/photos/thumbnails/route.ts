@@ -1,16 +1,16 @@
 import { errorResponse, HttpError, verifyUser } from "@/lib/server/auth";
 import { thumbnailUrl } from "@/lib/server/photos";
 
-/** Signed thumbnail links for the signed-in person's own stories. */
+/** Signed thumbnail links for the signed-in person's own photos and videos, keyed by ID. */
 export async function POST(request: Request) {
   try {
     const { uid } = await verifyUser(request);
-    const { storyIds } = (await request.json()) as { storyIds?: unknown };
-    if (!Array.isArray(storyIds) || storyIds.length > 100) {
+    const { photoIds } = (await request.json()) as { photoIds?: unknown };
+    if (!Array.isArray(photoIds) || photoIds.length > 100) {
       throw new HttpError(400, "Could not load your photos.");
     }
     const urls = Object.fromEntries(
-      storyIds.map((id) => [String(id), thumbnailUrl(uid, String(id))]),
+      photoIds.map((id) => [String(id), thumbnailUrl(uid, String(id))]),
     );
     return Response.json({ urls });
   } catch (error) {

@@ -27,6 +27,8 @@ const statusLabels: Record<StoryStatus, string> = {
 
 function statusLabel(story: MyStory) {
   if (story.status === "approved" && story.visibility === "link") return "Shared by link";
+  // Taken off the site after reports, until a moderator looks.
+  if (story.status === "pending" && story.reportCount) return "Held for a moderator to check";
   return statusLabels[story.status];
 }
 
@@ -118,8 +120,8 @@ export function MyStories({ user }: { user: User }) {
     <section className={card} id="memories">
       <h2 className="text-[1.05rem] font-bold text-ink">Manage my posts</h2>
       <p className="mt-1 text-sm text-ink-soft">
-        Only you can see this part: posts waiting for review, ones shared by link, and
-        everyone&apos;s invite links.
+        Only you can see this part: posts shared by link, any held for a moderator to check,
+        and everyone&apos;s invite links.
       </p>
 
       {stories === null ? (
@@ -256,7 +258,7 @@ export function MyStories({ user }: { user: User }) {
                   />
                   <p className="mt-2 text-sm text-ink-soft">
                     {story.visibility === "public"
-                      ? "The map shows posts shared with everyone, once they're approved."
+                      ? "The map shows posts shared with everyone."
                       : "This post is shared by link, so it won't show on the map. The pin is kept in case you share it with everyone later."}
                   </p>
                   <div className="mt-3 flex flex-wrap items-center gap-3">

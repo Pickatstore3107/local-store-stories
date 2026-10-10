@@ -9,6 +9,7 @@ import { memoryPath } from "@/lib/memories";
 import { isPin, pinCenter } from "@/lib/pins";
 import {
   featureStory,
+  isHeld,
   NOTE_SUGGESTIONS,
   REVIEW_MOVES,
   REVIEW_NOTE_MAX,
@@ -33,26 +34,63 @@ function pinLink(pin: unknown) {
   return `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}#map=16/${lat}/${lng}`;
 }
 
+/** Every photo of the post side by side, or its video, so nothing is missed. */
+function Media({ story }: { story: ReviewStory }) {
+  if (story.videoId) {
+    return story.videoUrl ? (
+      <video
+        src={story.videoUrl}
+        poster={story.photoUrl ?? undefined}
+        controls
+        playsInline
+        preload="none"
+        aria-label={`Video shared with the post about ${story.storeName}`}
+        className="max-h-[28rem] w-full bg-ink"
+      />
+    ) : (
+      <Missing what="video" />
+    );
+  }
+  if (!story.photoUrls.length) return <Missing what="photo" />;
+  return (
+    <div className="flex snap-x snap-mandatory gap-1 overflow-x-auto bg-paper">
+      {story.photoUrls.map((url, i) => (
+        // eslint-disable-next-line @next/next/no-img-element -- private, signed link from our server
+        <img
+          key={url}
+          src={url}
+          alt={`Photo ${i + 1} of ${story.photoUrls.length} shared with the post about ${story.storeName}`}
+          className={`max-h-[28rem] shrink-0 snap-center object-contain ${
+            story.photoUrls.length > 1 ? "w-[85%]" : "w-full"
+          }`}
+        />
+      ))}
+    </div>
+  );
+}
+
+function Missing({ what }: { what: string }) {
+  return (
+    <p className="bg-paper px-6 py-12 text-center text-sm text-ink-soft">
+      The {what} couldn&apos;t be loaded. Refresh before you decide.
+    </p>
+  );
+}
+
 export function StoryDetails({ story, children }: { story: ReviewStory; children?: ReactNode }) {
   const place = [story.neighbourhood, story.city].filter(Boolean).join(", ");
   const onMap = pinLink(story.pin);
 
   return (
     <article className="w-full overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-ink/5">
-      {story.photoUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element -- private, signed link from our server
-        <img
-          src={story.photoUrl}
-          alt={`Photo shared with the post about ${story.storeName}`}
-          className="max-h-[28rem] w-full bg-paper object-contain"
-        />
-      ) : (
-        <p className="bg-paper px-6 py-12 text-center text-sm text-ink-soft">
-          The photo couldn&apos;t be loaded. Refresh before you decide.
-        </p>
-      )}
+      <Media story={story} />
 
       <div className="p-6 sm:p-8">
+        {isHeld(story) && (
+          <p className="mb-3 inline-block rounded-full bg-brand-red/10 px-3 py-1 text-xs font-bold text-brand-red-deep">
+            Held back after {story.reportCount} reports
+          </p>
+        )}
         <h2 className="text-xl font-extrabold text-ink">{story.storeName}</h2>
         <p className="text-sm text-ink-soft">
           {story.category} · {place}
@@ -196,6 +234,16 @@ export function NoteForm({
   );
 }
 
+/**
+ * What a moderator can do now. A post held back by reports is put back up
+ * or hidden; an older post still waiting is approved or turned down.
+ */
+function movesFor(story: ReviewStory) {
+  const moves = REVIEW_MOVES[story.status];
+  if (story.status !== "pending") return moves;
+  return moves.filter((action) => action !== (isHeld(story) ? "rejected" : "hidden"));
+}
+
 export function ReviewCard({
   user,
   story,
@@ -271,7 +319,7 @@ export function ReviewCard({
         />
       ) : (
         <div className="mt-6 flex flex-wrap gap-3">
-          {REVIEW_MOVES[story.status].map((action) =>
+          {movesFor(story).map((action) =>
             action === "approved" ? (
               <button
                 key={action}
@@ -280,7 +328,7 @@ export function ReviewCard({
                 onClick={() => decide(action)}
                 className={primaryButton}
               >
-                {busy ? "Saving…" : actionLabels[action]}
+                {busy ? "Saving…" : isHeld(story) ? "Put it back up" : actionLabels[action]}
               </button>
             ) : (
               <button

@@ -5,8 +5,9 @@ import { WALL_TAG, memoryTag } from "@/lib/server/wall";
 
 /**
  * Rebuilds the Wall, and the pages of the memories named, on their next
- * visit. Called after a moderator approves, hides or features a memory, or
- * an author deletes one, so the change shows straight away. After a comment
+ * visit. Called after someone shares a post, reports take one down, a
+ * moderator approves, hides or features one, or an author deletes one, so
+ * the change shows straight away. After a comment
  * only the memory's page is rebuilt (wall: false).
  */
 export async function POST(request: Request) {

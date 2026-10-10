@@ -180,9 +180,12 @@ describe("reviewing a story", () => {
     });
   });
 
+  it("lets a moderator hide a post held back by reports", async () => {
+    await assertSucceeds(review(as("mod"), "s1", "mod", { action: "hidden", from: "pending", note: NOTE }));
+  });
+
   it("allows only the expected moves between statuses", async () => {
     const db = as("mod");
-    await assertFails(review(db, "s1", "mod", { action: "hidden", from: "pending", note: NOTE }));
     await assertFails(review(db, "a1", "mod", { action: "rejected", from: "approved", note: NOTE }));
     await assertFails(review(db, "a1", "mod", { action: "approved", from: "approved" }));
     await assertFails(review(db, "r1", "mod", { action: "hidden", from: "rejected", note: NOTE }));
@@ -247,6 +250,20 @@ describe("reviewing a story", () => {
     await assertFails(review(db, "s1", "mod", { ...approve, story: { authorId: "mod" } }));
     await assertFails(review(db, "s1", "mod", { ...approve, story: { photoId: "lss/stories/mod/x" } }));
     await assertFails(review(db, "s1", "mod", { ...approve, story: { visibility: "link" } }));
+  });
+
+  it("lets approving start a post's count of reports again, but not change it", async () => {
+    await seed({ held: story("held", "pending", { reportCount: 3 }) });
+    const db = as("mod");
+    const approve = { action: "approved", from: "pending" } as const;
+    await assertFails(review(db, "held", "mod", { ...approve, story: { reportCount: 0 } }));
+    await assertFails(review(db, "held", "mod", { ...approve, story: { reportCount: 4 } }));
+    await assertSucceeds(review(db, "held", "mod", { ...approve, story: { reportCount: deleteField() } }));
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      const saved = (await getDoc(doc(asDb(ctx.firestore()), "stories/held"))).data()!;
+      expect(saved.status).toBe("approved");
+      expect(saved).not.toHaveProperty("reportCount");
+    });
   });
 
   it("keeps the moderator's identity off the story", async () => {

@@ -47,7 +47,11 @@ beforeEach(async () => {
 type TestDb = ReturnType<RulesTestContext["firestore"]>;
 const asDb = (testDb: TestDb) => testDb as unknown as Firestore;
 
-const story = (uid: string, id: string, overrides: Record<string, unknown> = {}) => ({
+// An override of undefined leaves that field out.
+const story = (uid: string, id: string, overrides: Record<string, unknown> = {}) =>
+  Object.fromEntries(Object.entries(fields(uid, id, overrides)).filter(([, v]) => v !== undefined));
+
+const fields = (uid: string, id: string, overrides: Record<string, unknown>) => ({
   authorId: uid,
   storeName: "Sharma Tea Stall",
   category: "Tea Stalls",
@@ -120,15 +124,70 @@ describe("sharing a story", () => {
     await assertFails(share(db, "mallory", "s1", { authorId: "asha" }));
   });
 
-  it("refuses a story that approves itself", async () => {
+  it("lets a post go up at once, but not turned down or hidden", async () => {
     const db = env.authenticatedContext("asha").firestore();
-    await assertFails(share(db, "asha", "s1", { status: "approved" }));
+    await assertFails(share(db, "asha", "s1", { status: "rejected" }));
+    await assertFails(share(db, "asha", "s1", { status: "hidden" }));
+    await assertSucceeds(share(db, "asha", "s1", { status: "approved" }));
   });
 
   it("refuses a photo that belongs to someone else or another story", async () => {
     const db = env.authenticatedContext("asha").firestore();
     await assertFails(share(db, "asha", "s1", { photoId: "lss/stories/mallory/s1" }));
     await assertFails(share(db, "asha", "s1", { photoId: "lss/stories/asha/s2" }));
+  });
+
+  const photos = (uid: string, id: string, count: number) =>
+    Array.from({ length: count }, (_, i) => `lss/stories/${uid}/${id}/p${i + 1}`);
+
+  it("accepts one to five photos, in order", async () => {
+    const db = env.authenticatedContext("asha").firestore();
+    for (const count of [1, 3, 5]) {
+      const id = `m${count}`;
+      await assertSucceeds(
+        share(db, "asha", id, { status: "approved", photoId: undefined, photoIds: photos("asha", id, count) }),
+      );
+      await forgetLimit("asha");
+    }
+  });
+
+  it("refuses more than five photos, gaps, other people's photos and anything else", async () => {
+    const db = env.authenticatedContext("asha").firestore();
+    const many = (photoIds: unknown) => share(db, "asha", "s1", { photoId: undefined, photoIds });
+    await assertFails(many([]));
+    await assertFails(many([...photos("asha", "s1", 5), "lss/stories/asha/s1/p6"]));
+    await assertFails(many(["lss/stories/asha/s1/p2"]));
+    await assertFails(many(["lss/stories/asha/s1/p2", "lss/stories/asha/s1/p1"]));
+    await assertFails(many(["lss/stories/asha/s1/p1", "lss/stories/asha/s1/p1"]));
+    await assertFails(many(photos("mallory", "s1", 2)));
+    await assertFails(many(photos("asha", "s2", 2)));
+    await assertFails(many("lss/stories/asha/s1/p1"));
+    await assertFails(many([1, 2]));
+  });
+
+  it("accepts one video instead of photos", async () => {
+    const db = env.authenticatedContext("asha").firestore();
+    await assertSucceeds(
+      share(db, "asha", "s1", { status: "approved", photoId: undefined, videoId: "lss/stories/asha/s1/v" }),
+    );
+  });
+
+  it("refuses a video that isn't the post's own, or a post with both or neither", async () => {
+    const db = env.authenticatedContext("asha").firestore();
+    const video = (videoId: string) => share(db, "asha", "s1", { photoId: undefined, videoId });
+    await assertFails(video("lss/stories/mallory/s1/v"));
+    await assertFails(video("lss/stories/asha/s2/v"));
+    await assertFails(video("lss/stories/asha/s1/p1"));
+    await assertFails(share(db, "asha", "s1", { videoId: "lss/stories/asha/s1/v" }));
+    await assertFails(
+      share(db, "asha", "s1", {
+        photoId: undefined,
+        photoIds: photos("asha", "s1", 1),
+        videoId: "lss/stories/asha/s1/v",
+      }),
+    );
+    await assertFails(share(db, "asha", "s1", { photoIds: photos("asha", "s1", 1) }));
+    await assertFails(share(db, "asha", "s1", { photoId: undefined }));
   });
 
   it("refuses unknown categories, visibility and extra fields", async () => {

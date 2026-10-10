@@ -27,7 +27,7 @@ import { ReviewCard } from "./review-card";
 type Tab = StoryStatus | "reports" | "comments" | "log";
 
 const TABS: { key: Tab; label: string; empty: string }[] = [
-  { key: "pending", label: "Waiting", empty: "Nothing is waiting. Every post has been reviewed." },
+  { key: "pending", label: "Waiting", empty: "Nothing is waiting. No post is held back by reports." },
   { key: "reports", label: "Reports", empty: "No open reports. Nobody has flagged a post." },
   { key: "comments", label: "Comments", empty: "" },
   { key: "approved", label: "Approved", empty: "No approved posts yet." },

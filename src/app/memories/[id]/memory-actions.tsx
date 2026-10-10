@@ -14,6 +14,7 @@ import {
   REPORT_DETAILS_MAX,
   REPORT_DETAILS_MIN,
   REPORT_REASONS,
+  REPORTS_TO_HOLD,
   sendReport,
   type ReportReason,
 } from "@/lib/reports";
@@ -71,6 +72,8 @@ function ReportPanel({ id }: { id: string }) {
   const { loading, user, consent } = useAuth();
   const open = useSearchParams().get("report") === "1";
   const [checked, setChecked] = useState<{ uid: string; reported: boolean } | null>(null);
+  // Their report was the one that took the post off the site.
+  const [held, setHeld] = useState(false);
   const [reason, setReason] = useState<ReportReason | null>(null);
   const [details, setDetails] = useState("");
   const [busy, setBusy] = useState(false);
@@ -114,7 +117,7 @@ function ReportPanel({ id }: { id: string }) {
     setError(null);
     setBusy(true);
     try {
-      await sendReport(user, id, reason, text);
+      setHeld(await sendReport(user, id, reason, text));
       setChecked({ uid: user.uid, reported: true });
       setReason(null);
       setDetails("");
@@ -189,8 +192,9 @@ function ReportPanel({ id }: { id: string }) {
         </p>
       ) : reported ? (
         <p role="status" className="mt-3 rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
-          Thank you. A moderator will look at your report. The post stays up until they
-          decide.
+          {held
+            ? "Thank you. Others reported this post too, so it's off the site until a moderator checks it."
+            : `Thank you. A moderator will look at your report. If ${REPORTS_TO_HOLD} people report a post, it comes down until they check it.`}
         </p>
       ) : (
         <form onSubmit={submit} className="mt-3">

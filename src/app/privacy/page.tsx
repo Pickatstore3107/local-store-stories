@@ -38,8 +38,8 @@ export default function PrivacyPage() {
           <ul className="mt-2 list-disc space-y-1 pl-6">
             <li>Your Google email address, to sign you in. Never shown publicly.</li>
             <li>The name and city you choose. Shown publicly with your posts.</li>
-            <li>Posts and photos you choose to share, once they are approved.</li>
-            <li>Photos are resized on your phone and the location hidden inside them is removed before upload. They are stored privately with our image provider, Cloudinary, until they are approved.</li>
+            <li>Posts, photos and videos you choose to share.</li>
+            <li>Photos are cropped and resized on your phone, and the location hidden inside photos and videos is removed before upload. They are stored privately with our image provider, Cloudinary, and shown only through links our site makes for posts people can see.</li>
             <li>If you put a post on the Hyderabad map, the 500-metre square of the city you tapped, never the exact spot.</li>
             <li>Which posts you like. Anyone can see who liked a post, as on Instagram. Loves from before 9 October 2026, when likes started showing names, stay private: they count, but nobody can see who.</li>
             <li>The places you save with the bookmark. Only you can see this.</li>
@@ -57,18 +57,19 @@ export default function PrivacyPage() {
         <section>
           <h2 className="text-lg font-bold">Who sees your posts</h2>
           <p className="mt-2">
-            A moderator reads every post, with its photo and your public name and city,
-            before anyone else can see it. Moderators never see your email address. Once
-            approved, a post is shown to everyone, or only to people you share its link with
-            if you chose that. If a moderator doesn&apos;t approve a post or hides it later,
-            you&apos;ll see why on your profile. We keep a short record of each
-            decision (the store&apos;s name, what was decided and why, but not your name) so we
-            can answer questions about it later.
+            A post goes up as soon as you share it, shown to everyone, or only to people you
+            share its link with if you chose that. Anyone can report a post. Moderators read
+            the reports and can see the post, with its photos or video and your public name and
+            city, but never your email address. When three people report a post, it comes off
+            the site until a moderator has looked at it. If a moderator hides a post, you&apos;ll
+            see why on your profile. We keep a short record of each decision (the store&apos;s
+            name, what was decided and why, but not your name) so we can answer questions about
+            it later.
           </p>
           <p className="mt-2">
-            Once a post is approved, its photo is shown through a web link. If a moderator
-            hides the post later, anyone who saved that link can still open the photo until
-            you delete the post.
+            A post&apos;s photos and video are shown through web links. If a moderator hides
+            the post later, anyone who saved those links can still open them until you delete
+            the post.
           </p>
         </section>
 
@@ -79,7 +80,7 @@ export default function PrivacyPage() {
             only which 500-metre square of the city you tapped, and the map shows the pin in the
             middle of that square, so it&apos;s within about 500 metres of the store and never
             marks a door or a home. Pins never come from your phone&apos;s location or your
-            photo. Only approved posts shared with everyone appear on the map. You can move
+            photo. Only posts shared with everyone appear on the map. You can move
             the pin or take it off from your profile at any time. The map itself comes from
             OpenStreetMap, through a free service called OpenFreeMap. When a map opens,
             including the one at the top of Home, your phone or computer asks OpenFreeMap for
@@ -135,8 +136,8 @@ export default function PrivacyPage() {
           <h2 className="text-lg font-bold">Invite links</h2>
           <p className="mt-2">
             Each post comes with an invite link for you to send to friends, and they can pass
-            it on. Anyone with the link can join through it and, once the post is approved,
-            see it, even if you shared it only by link. When friends join through yours, you see
+            it on. Anyone with the link can join through it and see the post, even if you
+            shared it only by link. When friends join through yours, you see
             their names under that post and on your activity page. Which link someone joined
             through is visible only to them and to the friend who sent it. Your public profile
             record also notes who invited you, if anyone did. If you delete your account, your
