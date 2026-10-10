@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { CSSProperties } from "react";
 import { fold, groupPlaces, textLang, type WallMemory } from "@/lib/memories";
 import { ArrowIcon } from "../icons";
 
@@ -49,12 +50,12 @@ export function PopularAreas({ memories }: { memories: WallMemory[] }) {
         </Link>
       </div>
       <ul className="-mx-4 mt-2 flex snap-x gap-2 overflow-x-auto scroll-px-4 px-4 pb-2 pt-0.5 [scrollbar-width:none] sm:-mx-5 sm:scroll-px-5 sm:px-5 [&::-webkit-scrollbar]:hidden">
-        {areas.slice(0, SHOWN).map((area) => (
-          <li key={area.key} className="w-[7.6rem] shrink-0 snap-start">
+        {areas.slice(0, SHOWN).map((area, i) => (
+          <li key={area.key} style={{ "--i": Math.min(i, 5) } as CSSProperties} className="anim-up w-[7.6rem] shrink-0 snap-start">
             <Link
               href={`/explore?q=${encodeURIComponent(area.name)}`}
               prefetch={false}
-              className="block overflow-hidden rounded-[1rem] bg-white lift-sm transition hover:brightness-[0.98]"
+              className="group block overflow-hidden rounded-[1rem] bg-white lift-sm transition active:scale-[0.97]"
             >
               {area.photoUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element -- a signed link from our image host, already sized
@@ -65,7 +66,7 @@ export function PopularAreas({ memories }: { memories: WallMemory[] }) {
                   height={600}
                   loading="lazy"
                   decoding="async"
-                  className="aspect-[4/3] w-full bg-sand object-cover"
+                  className="aspect-[4/3] w-full bg-sand object-cover transition-transform duration-500 group-hover:scale-[1.07] motion-reduce:transition-none"
                 />
               ) : (
                 <span aria-hidden="true" className="block aspect-[4/3] bg-gradient-to-br from-[#ffe7a0] to-[#ffd2c4]" />

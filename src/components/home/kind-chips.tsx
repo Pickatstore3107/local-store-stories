@@ -1,5 +1,6 @@
 "use client";
 
+import type { CSSProperties } from "react";
 import { CATEGORIES, type Category } from "@/lib/stories";
 import { CategoryIcon } from "../category-icon";
 import { GridIcon } from "../icons";
@@ -25,7 +26,7 @@ export function KindIcon({ category, picked }: { category: Category; picked: boo
 
 /**
  * Every kind of place as a row of small pills, "All" first. Picking one
- * shows only that kind in Trending and in the posts below.
+ * shows only that kind in the covers and the colour cards below.
  */
 export function KindChips() {
   const filters = useWallFilters();
@@ -41,12 +42,12 @@ export function KindChips() {
         type="button"
         aria-pressed={category === null}
         onClick={() => pick(null)}
-        className={`${pill} ${category === null ? on : off}`}
+        className={`anim-pop ${pill} ${category === null ? on : off}`}
       >
         <GridIcon className="h-[1.1rem] w-[1.1rem]" />
         All
       </button>
-      {CATEGORIES.map((each) => {
+      {CATEGORIES.map((each, i) => {
         const picked = category === each;
         return (
           <button
@@ -54,7 +55,9 @@ export function KindChips() {
             type="button"
             aria-pressed={picked}
             onClick={() => pick(picked ? null : each)}
-            className={`${pill} ${picked ? on : off}`}
+            // They pop in one after another, the ones off screen all at once.
+            style={{ "--i": Math.min(i + 1, 8) } as CSSProperties}
+            className={`anim-pop ${pill} ${picked ? on : off}`}
           >
             <KindIcon category={each} picked={picked} />
             <span className="whitespace-nowrap">{each}</span>

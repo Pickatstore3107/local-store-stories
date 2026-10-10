@@ -75,7 +75,7 @@ export function HomeMap({ memories }: { memories: WallMemory[] }) {
   return (
     <Link
       href="/map"
-      className="group relative isolate block h-[8.8rem] overflow-hidden rounded-[1.3rem] bg-[#efe4cf] lift-sm sm:h-52"
+      className="home-map group relative isolate block h-[8.8rem] overflow-hidden rounded-[1.3rem] bg-[#efe4cf] lift-sm sm:h-52"
     >
       {/* Streets in outline until the real map arrives. */}
       <div
@@ -88,7 +88,13 @@ export function HomeMap({ memories }: { memories: WallMemory[] }) {
         className={`absolute inset-0 transition-opacity duration-700 ${map ? "opacity-100" : "opacity-0"}`}
       />
       <span className="absolute left-2.5 top-2.5 flex items-center gap-1 rounded-full bg-white py-1.5 pl-2 pr-3 text-[0.8rem] font-bold text-ink shadow-[0_3px_10px_rgb(43_29_26/0.15)]">
-        <PlaceIcon className="h-4 w-4 text-brand-red" />
+        <span className="relative flex h-4 w-4">
+          <span
+            aria-hidden="true"
+            className="anim-ring absolute inset-0 rounded-full bg-brand-red/40 opacity-0"
+          />
+          <PlaceIcon className="relative h-4 w-4 text-brand-red" />
+        </span>
         Explore on map
       </span>
       <span className="absolute bottom-2.5 right-2.5 flex items-center gap-1 rounded-full bg-white py-1.5 pl-3 pr-2.5 text-[0.8rem] font-extrabold text-ink shadow-[0_3px_10px_rgb(43_29_26/0.18)] transition group-hover:text-brand-red">
