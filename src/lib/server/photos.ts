@@ -21,7 +21,7 @@ export const MAX_PHOTO_BYTES = 4 * 1024 * 1024;
 export const MAX_PHOTOS = 5;
 export const MAX_VIDEO_BYTES = 100 * 1024 * 1024;
 
-function client() {
+export function client() {
   const { CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET } = process.env;
   if (CLOUDINARY_CLOUD_NAME && CLOUDINARY_API_KEY && CLOUDINARY_API_SECRET) {
     cloudinary.config({

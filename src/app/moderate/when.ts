@@ -8,7 +8,8 @@ const format = new Intl.DateTimeFormat("en-IN", {
   minute: "2-digit",
 });
 
-/** "7 Oct 2026, 1:16 pm" */
-export function when(time: Timestamp | undefined) {
+/** "7 Oct 2026, 1:16 pm", from a timestamp or milliseconds. */
+export function when(time: Timestamp | number | undefined) {
+  if (typeof time === "number") return time ? format.format(new Date(time)) : "";
   return time ? format.format(time.toDate()) : "";
 }

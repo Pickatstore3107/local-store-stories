@@ -2,11 +2,35 @@
 // server pages and the browser. Plain data and helpers only: no Firebase here.
 import { fold, type WallMemory } from "./memories";
 
+/** An approved profile photo: signed links to a small and a large square. */
+export type ProfilePhoto = { id: string; small: string; large: string };
+
+const PHOTO_HOST = "https://res.cloudinary.com/";
+
+/** Whether a profile's photo field is one, as a moderator put it up. */
+export function isProfilePhoto(value: unknown): value is ProfilePhoto {
+  const photo = value as ProfilePhoto | null | undefined;
+  return (
+    typeof photo?.id === "string" &&
+    typeof photo.small === "string" &&
+    typeof photo.large === "string" &&
+    photo.small.startsWith(PHOTO_HOST) &&
+    photo.large.startsWith(PHOTO_HOST)
+  );
+}
+
+/** The photo field of a profile, when it has one. */
+export function photoOf(data: { photo?: unknown } | null | undefined): ProfilePhoto | null {
+  return isProfilePhoto(data?.photo) ? data.photo : null;
+}
+
 /** Someone's public profile page. */
 export type PublicPerson = {
   uid: string;
   name: string;
   city: string | null;
+  bio: string | null;
+  photo: ProfilePhoto | null;
   followers: number;
   following: number;
   /** Their approved memories shared with everyone, newest first. */
@@ -18,8 +42,8 @@ export type PersonResult =
   | { status: "missing" }
   | { status: "error" };
 
-/** Someone in a list of followers, or of people followed. */
-export type ListedPerson = { uid: string; name: string; city: string | null };
+/** Someone in a list of followers, or of people followed. `photo` is the small one. */
+export type ListedPerson = { uid: string; name: string; city: string | null; photo: string | null };
 
 export type FollowKind = "followers" | "following";
 

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  AVATAR_FRAME,
   clampCrop,
   cropLimits,
   NO_CROP,
@@ -42,6 +43,15 @@ describe("cropping a photo", () => {
       x: -0.5,
       y: 0.5,
     });
+  });
+
+  it("crops a square profile photo with its own limits", () => {
+    // A wide photo has less room to move sideways in a square frame than in a tall one.
+    const square = clampCrop(4000, 3000, { ...NO_CROP, x: 2 }, AVATAR_FRAME);
+    expect(square.x).toBeCloseTo(cropLimits(4000, 3000, NO_CROP, 480, 480).x);
+    expect(square.x).toBeCloseTo(1 / 6);
+    expect(clampCrop(4000, 3000, { ...NO_CROP, x: 2 }).x).toBeCloseTo(1 / 3);
+    expect(clampCrop(3000, 4000, { ...NO_CROP, y: -2 }, AVATAR_FRAME).y).toBeCloseTo(-1 / 6);
   });
 
   it("turns a quarter at a time, back to the middle", () => {

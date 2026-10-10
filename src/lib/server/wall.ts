@@ -1,6 +1,6 @@
 import { cacheLife, cacheTag } from "next/cache";
 import type { Likes, MemoryResult, PublicComment, Wall, WallMemory } from "@/lib/memories";
-import { isUserId } from "@/lib/people";
+import { isUserId, photoOf, type ProfilePhoto } from "@/lib/people";
 import { isPin, pinCenter } from "@/lib/pins";
 import type { Category, Visibility } from "@/lib/stories";
 import {
@@ -116,11 +116,11 @@ export function readStory({ id, data }: PublicDocument) {
 
 export type PublicStory = NonNullable<ReturnType<typeof readStory>>;
 
-/** Someone's public profile: the name and city they chose. */
-export type Person = { name: string | null; city: string | null };
+/** Someone's public profile: the name, city and bio they chose, and their approved photo. */
+export type Person = { name: string | null; city: string | null; bio: string | null; photo: ProfilePhoto | null };
 
 export function readPerson(data: Fields): Person {
-  return { name: text(data.displayName), city: text(data.city) };
+  return { name: text(data.displayName), city: text(data.city), bio: text(data.bio), photo: photoOf(data) };
 }
 
 export type PublicMemories = {
@@ -211,6 +211,7 @@ export function wallMemory(story: PublicStory, people: Record<string, Person>, w
     year: story.year,
     authorId: story.authorId,
     authorName: people[story.authorId]?.name ?? null,
+    authorPhoto: people[story.authorId]?.photo?.small ?? null,
     photoUrl: safely(() => cardPhotoUrl(story.coverId)),
     postPhotoUrl: safely(() => postPhotoUrl(story.coverId)),
     photoCount: story.photoIds.length,
@@ -275,7 +276,11 @@ async function loadComments(storyId: string): Promise<PublicComment[]> {
   });
   const people = await loadPeople(comments.map((comment) => comment.authorId));
   return comments
-    .map((comment) => ({ ...comment, authorName: people[comment.authorId]?.name ?? null }))
+    .map((comment) => ({
+      ...comment,
+      authorName: people[comment.authorId]?.name ?? null,
+      authorPhoto: people[comment.authorId]?.photo?.small ?? null,
+    }))
     .sort((a, b) => a.createdAt - b.createdAt);
 }
 
@@ -318,7 +323,9 @@ export async function loadMemory(id: string): Promise<MemoryResult> {
         year: story.year,
         ordered: story.ordered,
         visibility: story.visibility,
-        author: name ? { uid: story.authorId, name, city: author?.city ?? "" } : null,
+        author: name
+          ? { uid: story.authorId, name, city: author?.city ?? "", photo: author?.photo?.small ?? null }
+          : null,
         sharedAt: story.sharedAt,
         approvedAt: story.approvedAt,
         featuredAt: story.featuredAt,

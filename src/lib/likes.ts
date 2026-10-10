@@ -16,7 +16,7 @@ import {
   type Timestamp,
 } from "firebase/firestore";
 import { getFirebase } from "./firebase";
-import type { ListedPerson } from "./people";
+import { photoOf, type ListedPerson } from "./people";
 import { beforeLikes } from "./stories";
 
 // Likes are public, as on Instagram: anyone can see who liked a memory.
@@ -146,7 +146,7 @@ export async function loadLikers(storyId: string): Promise<ListedPerson[]> {
       const profile = (await getDoc(doc(db, "users", uid))).data();
       const name = typeof profile?.displayName === "string" ? profile.displayName : null;
       const city = typeof profile?.city === "string" ? profile.city : null;
-      return name ? { uid, name, city } : null;
+      return name ? { uid, name, city, photo: photoOf(profile)?.small ?? null } : null;
     }),
   );
   return people.filter((person): person is ListedPerson => person !== null);

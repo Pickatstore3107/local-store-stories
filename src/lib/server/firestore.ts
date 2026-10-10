@@ -80,6 +80,20 @@ export async function getPublicDocument(path: string): Promise<PublicDocument | 
   return fromRest((await response.json()) as RestDocument);
 }
 
+/**
+ * One document read with someone's own sign-in, so the rules decide as they
+ * would for them in the browser. Null when it doesn't exist.
+ */
+export async function getDocumentAs(path: string, token: string): Promise<PublicDocument | null> {
+  const response = await fetch(url(`/${path}`), {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store",
+  });
+  if (response.status === 404) return null;
+  if (!response.ok) throw new Error(`Firestore read of ${path} failed with ${response.status}`);
+  return fromRest((await response.json()) as RestDocument);
+}
+
 /** Several documents in one request, by path. Missing ones are left out. */
 export async function getPublicDocuments(paths: string[]): Promise<Map<string, PublicDocument>> {
   if (!paths.length) return new Map();

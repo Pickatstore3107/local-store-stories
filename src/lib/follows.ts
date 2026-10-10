@@ -15,7 +15,7 @@ import {
   type Timestamp,
 } from "firebase/firestore";
 import { getFirebase } from "./firebase";
-import { nameOf, type Join } from "./invites";
+import { personOf, type Join } from "./invites";
 import { callApi } from "./stories";
 
 // Following, as on Instagram: anyone can see who follows whom. Each follow
@@ -191,6 +191,7 @@ export async function markBellSeen(user: User) {
 export type Activity = {
   uid: string;
   name: string | null;
+  photo: string | null;
   /** When it happened, in milliseconds. */
   at: number;
   /** They joined through one of your invite links. */
@@ -219,7 +220,7 @@ export async function loadActivity(user: User): Promise<{ items: Activity[]; see
   const byPerson = new Map<string, Activity>();
   for (const d of joins.docs) {
     const { joinedAt } = d.data() as Join;
-    byPerson.set(d.id, { uid: d.id, name: null, at: millis(joinedAt), joined: true, followsYou: false });
+    byPerson.set(d.id, { uid: d.id, name: null, photo: null, at: millis(joinedAt), joined: true, followsYou: false });
   }
   for (const d of followers.docs) {
     const { from, createdAt } = d.data() as Follow;
@@ -229,12 +230,19 @@ export async function loadActivity(user: User): Promise<{ items: Activity[]; see
       joined.followsYou = true;
       joined.at = Math.max(joined.at, millis(createdAt));
     } else {
-      byPerson.set(from, { uid: from, name: null, at: millis(createdAt), joined: false, followsYou: true });
+      byPerson.set(from, {
+        uid: from,
+        name: null,
+        photo: null,
+        at: millis(createdAt),
+        joined: false,
+        followsYou: true,
+      });
     }
   }
   const newest = [...byPerson.values()].sort((a, b) => b.at - a.at).slice(0, ACTIVITY_SHOWN);
   const items = await Promise.all(
-    newest.map(async (item) => ({ ...item, name: await nameOf(item.uid) })),
+    newest.map(async (item) => ({ ...item, ...(await personOf(item.uid)) })),
   );
   return { items, seenAt };
 }

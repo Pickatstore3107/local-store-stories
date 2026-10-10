@@ -19,17 +19,20 @@ import {
 } from "@/lib/moderation";
 import type { StoryStatus } from "@/lib/stories";
 import { countOpenCommentReports } from "@/lib/comments";
+import { countProfileWork } from "@/lib/profiles";
 import { CommentReports } from "./comment-reports";
 import { ModerationLog } from "./moderation-log";
+import { ProfileReviews } from "./profile-reviews";
 import { ReportCard, type ReportOutcome } from "./report-card";
 import { ReviewCard } from "./review-card";
 
-type Tab = StoryStatus | "reports" | "comments" | "log";
+type Tab = StoryStatus | "reports" | "comments" | "profiles" | "log";
 
 const TABS: { key: Tab; label: string; empty: string }[] = [
   { key: "pending", label: "Waiting", empty: "Nothing is waiting. No post is held back by reports." },
   { key: "reports", label: "Reports", empty: "No open reports. Nobody has flagged a post." },
   { key: "comments", label: "Comments", empty: "" },
+  { key: "profiles", label: "Profiles", empty: "" },
   { key: "approved", label: "Approved", empty: "No approved posts yet." },
   { key: "rejected", label: "Not approved", empty: "No posts have been turned down." },
   { key: "hidden", label: "Hidden", empty: "No posts are hidden." },
@@ -79,6 +82,7 @@ function ReviewQueue({ user }: { user: User }) {
   const [waiting, setWaiting] = useState<number | null>(null);
   const [reported, setReported] = useState<number | null>(null);
   const [commentsReported, setCommentsReported] = useState<number | null>(null);
+  const [profileWork, setProfileWork] = useState<number | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [round, setRound] = useState(0);
@@ -104,6 +108,9 @@ function ReviewQueue({ user }: { user: User }) {
     countOpenCommentReports()
       .then((count) => current && setCommentsReported(count))
       .catch((e) => console.error("Could not count the comment reports", e));
+    countProfileWork()
+      .then((count) => current && setProfileWork(count))
+      .catch((e) => console.error("Could not count the profiles to check", e));
     if (tab === "reports") {
       loadReports(user)
         .then((found) => {
@@ -116,7 +123,7 @@ function ReviewQueue({ user }: { user: User }) {
           setGroups([]);
           setError(friendlyError(e));
         });
-    } else if (tab !== "log" && tab !== "comments") {
+    } else if (tab !== "log" && tab !== "comments" && tab !== "profiles") {
       loadReviewQueue(user, tab)
         .then((queue) => {
           if (!current) return;
@@ -164,7 +171,7 @@ function ReviewQueue({ user }: { user: User }) {
         <p className="mt-2 text-ink-soft">
           Posts go up straight away. When three people report one, it comes down and waits
           here for you. If you turn a post down or hide it, its author sees your note on their
-          account page.
+          account page. New profile photos wait under Profiles until you approve them.
         </p>
         <div role="tablist" aria-label="Posts" className="mt-5 flex flex-wrap gap-2">
           {TABS.map((t) => (
@@ -184,6 +191,7 @@ function ReviewQueue({ user }: { user: User }) {
               {t.key === "pending" && waiting !== null && ` (${waiting})`}
               {t.key === "reports" && reported !== null && ` (${reported})`}
               {t.key === "comments" && commentsReported !== null && ` (${commentsReported})`}
+              {t.key === "profiles" && profileWork !== null && ` (${profileWork})`}
             </button>
           ))}
         </div>
@@ -203,6 +211,11 @@ function ReviewQueue({ user }: { user: User }) {
           <CommentReports
             user={user}
             onClosed={(count) => setCommentsReported((n) => (n === null ? n : Math.max(0, n - count)))}
+          />
+        ) : tab === "profiles" ? (
+          <ProfileReviews
+            user={user}
+            onDone={(count) => setProfileWork((n) => (n === null ? n : Math.max(0, n - count)))}
           />
         ) : tab === "reports" ? (
           groups === null ? (
@@ -238,7 +251,7 @@ function ReviewQueue({ user }: { user: User }) {
             )}
           </>
         )}
-        {tab !== "log" && tab !== "comments" && (tab === "reports" ? groups : stories) !== null && (
+        {tab !== "log" && tab !== "comments" && tab !== "profiles" && (tab === "reports" ? groups : stories) !== null && (
           <button
             type="button"
             onClick={() => {

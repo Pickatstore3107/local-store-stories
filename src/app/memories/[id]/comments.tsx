@@ -20,7 +20,7 @@ import {
 } from "@/lib/comments";
 import { memoryPath, postDate, textLang, type PublicComment } from "@/lib/memories";
 import { isModerator } from "@/lib/moderation";
-import { personPath } from "@/lib/people";
+import { personPath, photoOf } from "@/lib/people";
 import { REPORT_DETAILS_MAX, REPORT_DETAILS_MIN } from "@/lib/reports";
 
 // Whether the signed-in person is a moderator, asked once per visit.
@@ -101,6 +101,7 @@ export function Comments({
           storyId={storyId}
           onAdded={(comment) => setAdded((was) => [...was, comment])}
           authorName={profile?.displayName ?? null}
+          authorPhoto={photoOf(profile)?.small ?? null}
         />
       ) : (
         <p className="mt-4">
@@ -156,7 +157,7 @@ function CommentItem({
   return (
     <li className="flex gap-3 py-3">
       <span className="pt-0.5">
-        <Avatar name={name} size="xxs" />
+        <Avatar name={name} photo={comment.authorPhoto} size="xxs" />
       </span>
       <div className="min-w-0 flex-1">
         <p className="break-words text-[0.95rem] leading-snug text-ink">
@@ -220,10 +221,12 @@ function CommentItem({
 function CommentBox({
   storyId,
   authorName,
+  authorPhoto,
   onAdded,
 }: {
   storyId: string;
   authorName: string | null;
+  authorPhoto: string | null;
   onAdded: (comment: PublicComment) => void;
 }) {
   const { user } = useAuth();
@@ -253,7 +256,7 @@ function CommentBox({
     setBusy(true);
     try {
       const id = await addComment(user, storyId, clean);
-      onAdded({ id, authorId: user.uid, authorName, text: clean, createdAt: Date.now() });
+      onAdded({ id, authorId: user.uid, authorName, authorPhoto, text: clean, createdAt: Date.now() });
       setText("");
       await refreshComments(user, storyId);
     } catch (e) {

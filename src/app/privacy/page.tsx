@@ -37,14 +37,15 @@ export default function PrivacyPage() {
           <h2 className="text-lg font-bold">What we collect</h2>
           <ul className="mt-2 list-disc space-y-1 pl-6">
             <li>Your Google email address, to sign you in. Never shown publicly.</li>
-            <li>The name and city you choose. Shown publicly with your posts.</li>
+            <li>The name and city you choose, and if you like, a short bio and a profile photo. Shown publicly on your profile, and your name and photo with your posts and comments.</li>
+            <li>A profile photo is cropped on your phone, which removes any location saved in it, and stored privately with Cloudinary. A moderator checks it first: it shows only once they approve it. Photos that aren&apos;t approved, or that you change or remove, are deleted.</li>
             <li>Posts, photos and videos you choose to share.</li>
             <li>Photos are cropped and resized on your phone, and the location hidden inside photos and videos is removed before upload. They are stored privately with our image provider, Cloudinary, and shown only through links our site makes for posts people can see.</li>
             <li>If you put a post on the Hyderabad map, the 500-metre square of the city you tapped, never the exact spot.</li>
             <li>Which posts you like. Anyone can see who liked a post, as on Instagram. Loves from before 9 October 2026, when likes started showing names, stay private: they count, but nobody can see who.</li>
             <li>The places you save with the bookmark. Only you can see this.</li>
             <li>Comments you write under posts. Anyone who can see the post can read them, with your name.</li>
-            <li>Reports you send about a post or a comment. Only moderators can read them.</li>
+            <li>Reports you send about a post, a comment or a profile. Only moderators can read them.</li>
             <li>The invite links you make, and who joined through them. If you joined through a friend&apos;s invite link, who invited you and through which link.</li>
             <li>Who you follow and who follows you. Anyone can see this, as on Instagram.</li>
             <li>The people you block. Only you can see this, and they aren&apos;t told.</li>
@@ -148,8 +149,8 @@ export default function PrivacyPage() {
         <section>
           <h2 className="text-lg font-bold">Profiles and following</h2>
           <p className="mt-2">
-            Everyone who joins has a profile page with the name and city they chose, the
-            posts they shared with everyone, and how many people they follow and are followed
+            Everyone who joins has a profile page with the name and city they chose, their bio
+            and photo if they added them, the posts they shared with everyone, and how many people they follow and are followed
             by. Anyone, even without an account, can open a profile and see who that person
             follows and who follows them. A post you shared only by link never appears on
             your profile. We ask search engines not to list profiles.
@@ -181,14 +182,16 @@ export default function PrivacyPage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-bold">Reporting a post or a comment</h2>
+          <h2 className="text-lg font-bold">Reporting a post, a comment or a profile</h2>
           <p className="mt-2">
             If a post is unkind, shows private details, or uses your photo or your store
             without your agreement, report it from the post&apos;s page. A moderator reads
-            every report and decides whether to hide the post; it stays up until they do.
-            Comments can be reported the same way, and a moderator decides whether to delete
-            them. Moderators can see who sent a report, but the author of the post or comment
-            can&apos;t. You can also email us without an account.
+            every report. When three people report a post, it comes off the site until a
+            moderator has looked at it. Comments can be reported the same way, and a moderator
+            decides whether to delete them. A profile can be reported from its page, and a
+            moderator can remove its bio or photo, or change its name to Member. Moderators can
+            see who sent a report, but the person reported can&apos;t. You can also email us
+            without an account.
           </p>
         </section>
 
@@ -205,7 +208,7 @@ export default function PrivacyPage() {
           <h2 className="text-lg font-bold">Your choices</h2>
           <p className="mt-2">
             You can see and edit your public details, and delete your account and everything
-            linked to it (your posts and photos, your likes and comments, your invite links,
+            linked to it (your profile photo, your posts and photos, your likes and comments, your invite links,
             who you follow and who follows you, the people you blocked, the posts you loved,
             the places you saved and the reports you sent), from <strong>Profile and settings</strong> on your profile at any time. You can also write to us to
             access, correct or erase your data.

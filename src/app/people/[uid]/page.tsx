@@ -44,7 +44,7 @@ export default function PersonPage({ params }: PageProps<"/people/[uid]">) {
   );
 }
 
-const statLink = "rounded-lg text-ink transition hover:text-brand-red";
+const statLink = "block rounded-lg text-ink transition hover:text-brand-red";
 
 async function Profile({ uid }: { uid: string }) {
   const result = await loadPerson(uid);
@@ -60,31 +60,41 @@ async function Profile({ uid }: { uid: string }) {
 
   return (
     <article>
-      <header className="flex flex-col items-center gap-3 text-center sm:flex-row sm:items-start sm:gap-8 sm:text-left">
-        <Avatar name={person.name} size="lg" />
-        <div className="min-w-0 flex-1">
-          <h1 lang={textLang(person.name)} className="break-words text-[1.4rem] font-extrabold leading-tight text-ink sm:text-3xl">
+      {/* On a phone, like Instagram: the photo with the numbers beside it,
+          then the name, city and bio, then the buttons. From a tablet up,
+          everything sits beside the photo. */}
+      <header className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-5 sm:items-start sm:gap-x-8">
+        <div className="col-start-1 row-start-1 sm:row-span-3">
+          <Avatar name={person.name} photo={person.photo?.large} size="lg" />
+        </div>
+        <div className="col-span-2 row-start-2 mt-3 min-w-0 sm:col-span-1 sm:col-start-2 sm:row-start-1 sm:mt-0">
+          <h1 lang={textLang(person.name)} className="break-words text-[1.15rem] font-extrabold leading-tight text-ink sm:text-3xl">
             {person.name}
           </h1>
-          {person.city && <p className="mt-0.5 text-[0.9rem] text-ink-soft">{person.city}</p>}
-          <ul className="mt-3 flex flex-wrap justify-center gap-x-5 gap-y-1 text-[0.9rem] sm:justify-start">
-            <li className="text-ink">
-              <Stat count={person.memories.length} one="post" many="posts" />
-            </li>
-            <li>
-              <Link href={followListPath(uid, "followers")} className={statLink}>
-                <Stat count={person.followers} one="follower" many="followers" />
-              </Link>
-            </li>
-            <li>
-              <Link href={followListPath(uid, "following")} className={statLink}>
-                <Stat count={person.following} one="following" many="following" />
-              </Link>
-            </li>
-          </ul>
-          <div className="mt-4">
-            <ProfileActions uid={uid} name={person.name} />
-          </div>
+          {person.city && <p className="text-[0.85rem] text-ink-soft sm:mt-0.5 sm:text-[0.9rem]">{person.city}</p>}
+          {person.bio && (
+            <p lang={textLang(person.bio)} className="mt-1.5 max-w-prose whitespace-pre-line break-words text-[0.9rem] leading-snug text-ink">
+              {person.bio}
+            </p>
+          )}
+        </div>
+        <ul className="col-start-2 row-start-1 grid grid-cols-3 text-center text-[0.8rem] sm:row-start-2 sm:mt-3 sm:flex sm:gap-x-5 sm:text-left sm:text-[0.9rem]">
+          <li className="text-ink">
+            <Stat count={person.memories.length} one="post" many="posts" />
+          </li>
+          <li>
+            <Link href={followListPath(uid, "followers")} className={statLink}>
+              <Stat count={person.followers} one="follower" many="followers" />
+            </Link>
+          </li>
+          <li>
+            <Link href={followListPath(uid, "following")} className={statLink}>
+              <Stat count={person.following} one="following" many="following" />
+            </Link>
+          </li>
+        </ul>
+        <div className="col-span-2 row-start-3 mt-3 sm:col-span-1 sm:col-start-2 sm:mt-4">
+          <ProfileActions uid={uid} name={person.name} />
         </div>
       </header>
 
@@ -94,12 +104,14 @@ async function Profile({ uid }: { uid: string }) {
   );
 }
 
-/** "12 followers", with the number in bold. */
+/** "12 followers", with the number in bold: above the word on a phone, beside it from a tablet up. */
 function Stat({ count, one, many }: { count: number; one: string; many: string }) {
   return (
     <>
-      <span className="font-extrabold">{count.toLocaleString("en-IN")}</span>{" "}
-      {count === 1 ? one : many}
+      <span className="block text-[1.05rem] font-extrabold leading-tight sm:inline sm:text-[0.9rem]">
+        {count.toLocaleString("en-IN")}
+      </span>{" "}
+      <span className="text-ink-soft sm:text-inherit">{count === 1 ? one : many}</span>
     </>
   );
 }
@@ -176,12 +188,12 @@ function ProfileSkeleton() {
   return (
     <div role="status" className="animate-pulse">
       <span className="sr-only">Loading the profile…</span>
-      <div className="flex flex-col items-center gap-5 sm:flex-row sm:items-start sm:gap-8">
-        <div className="h-24 w-24 rounded-full bg-white sm:h-28 sm:w-28" />
+      <div className="flex items-center gap-5 sm:items-start sm:gap-8">
+        <div className="h-20 w-20 shrink-0 rounded-full bg-white sm:h-28 sm:w-28" />
         <div className="w-full max-w-xs">
-          <div className="mx-auto h-8 w-2/3 rounded bg-white sm:mx-0" />
-          <div className="mx-auto mt-3 h-4 w-1/3 rounded bg-white sm:mx-0" />
-          <div className="mx-auto mt-5 h-4 w-full rounded bg-white sm:mx-0" />
+          <div className="h-6 w-2/3 rounded bg-white sm:h-8" />
+          <div className="mt-3 h-4 w-1/3 rounded bg-white" />
+          <div className="mt-5 h-4 w-full rounded bg-white" />
         </div>
       </div>
       <div className="mt-10 grid grid-cols-3 gap-1 sm:gap-3">

@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { personPath } from "@/lib/people";
+import { personPath, photoOf } from "@/lib/people";
 import { useAuth } from "./auth-provider";
 import { Avatar } from "./avatar";
 import { BellLink } from "./bell";
@@ -22,7 +22,10 @@ const navLink =
 export function SiteHeader() {
   const { loading, user, profile, consent } = useAuth();
   const pathname = usePathname();
-  const me = user && consent && profile ? { uid: user.uid, name: profile.displayName } : null;
+  const me =
+    user && consent && profile
+      ? { uid: user.uid, name: profile.displayName, photo: photoOf(profile)?.small ?? null }
+      : null;
 
   return (
     <header className="flex h-(--header-h) shrink-0 items-center justify-between gap-3 px-4 sm:px-8">
@@ -65,7 +68,7 @@ export function SiteHeader() {
             title="My profile"
             className="ml-1 rounded-full p-0.5 ring-2 ring-transparent transition hover:ring-brand-red/30 focus-visible:ring-brand-red/50"
           >
-            <Avatar name={me.name} size="xs" />
+            <Avatar name={me.name} photo={me.photo} size="xs" />
             <span className="sr-only">My profile</span>
           </Link>
         )}

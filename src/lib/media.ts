@@ -9,6 +9,14 @@ export const PHOTO_WIDTH = 1080;
 export const PHOTO_HEIGHT = 1350;
 export const MAX_ZOOM = 3;
 
+/** The size a photo is cropped to. */
+export type Frame = { width: number; height: number };
+
+export const POST_FRAME: Frame = { width: PHOTO_WIDTH, height: PHOTO_HEIGHT };
+// Profile photos are square, and shown in a circle. Well under MAX_AVATAR_BYTES
+// in src/lib/server/avatars.ts.
+export const AVATAR_FRAME: Frame = { width: 480, height: 480 };
+
 // Only a video's first 30 seconds are shown (src/lib/server/photos.ts).
 export const VIDEO_SECONDS = 30;
 // Cloudinary's free plan takes videos up to 100 MB.
@@ -48,9 +56,9 @@ export function cropLimits(
 }
 
 /** Keeps the zoom in range and the photo filling the frame. */
-export function clampCrop(width: number, height: number, crop: Crop): Crop {
+export function clampCrop(width: number, height: number, crop: Crop, frame = POST_FRAME): Crop {
   const zoom = clamp(Number.isFinite(crop.zoom) ? crop.zoom : 1, 1, MAX_ZOOM);
-  const limits = cropLimits(width, height, { ...crop, zoom });
+  const limits = cropLimits(width, height, { ...crop, zoom }, frame.width, frame.height);
   return {
     rotation: crop.rotation,
     zoom,
@@ -102,13 +110,13 @@ export async function openPhoto(file: Blob) {
  * The cropped photo as a JPEG for upload. Drawing to a canvas drops all of
  * the original's metadata, including any GPS location the camera saved.
  */
-export function cropPhoto(image: Drawable, crop: Crop) {
+export function cropPhoto(image: Drawable, crop: Crop, frame = POST_FRAME) {
   const canvas = document.createElement("canvas");
-  canvas.width = PHOTO_WIDTH;
-  canvas.height = PHOTO_HEIGHT;
+  canvas.width = frame.width;
+  canvas.height = frame.height;
   const context = canvas.getContext("2d");
   if (!context) throw new Error("Canvas is not available");
-  drawCrop(context, image, clampCrop(image.width, image.height, crop), PHOTO_WIDTH, PHOTO_HEIGHT);
+  drawCrop(context, image, clampCrop(image.width, image.height, crop, frame), frame.width, frame.height);
   return new Promise<Blob>((resolve, reject) =>
     canvas.toBlob(
       (blob) => (blob ? resolve(blob) : reject(new Error("Could not encode the photo"))),
