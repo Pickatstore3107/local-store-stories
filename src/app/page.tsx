@@ -72,7 +72,7 @@ export default async function Home() {
       ) : (
         <>
           <div className="mt-5">
-            <Trending memories={memories} builtAt={builtAt} />
+            <Trending memories={memories} />
           </div>
           <div className="mt-4">
             <PopularAreas memories={memories} />

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { primaryButton, secondaryButton } from "@/components/ui";
+import { Illustration } from "@/components/illustration";
 
 export const metadata: Metadata = {
   title: "Page not found · Local Stores & Their Stories",
@@ -11,7 +12,8 @@ export const metadata: Metadata = {
 export default function NotFound() {
   return (
     <main className="mx-auto flex w-full max-w-lg flex-1 flex-col items-center justify-center px-4 py-12 text-center sm:px-5 sm:py-16">
-      <p className="text-sm font-bold uppercase tracking-wide text-brand-red">Page not found</p>
+      <Illustration name="lost" />
+      <p className="mt-4 text-sm font-bold uppercase tracking-wide text-brand-red">Page not found</p>
       <h1 className="mt-2 font-hand text-3xl text-ink sm:text-4xl">This page isn&apos;t here.</h1>
       <p className="mt-3 leading-relaxed text-ink-soft">
         The link may be mistyped, or the page may have moved. The posts are all on Home and

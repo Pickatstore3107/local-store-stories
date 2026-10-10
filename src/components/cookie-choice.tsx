@@ -66,7 +66,7 @@ export function CookieBanner() {
   return (
     <section
       aria-label="Cookie choice"
-      className="fixed inset-x-3 bottom-[calc(var(--bar-h)+0.5rem)] z-50 mx-auto max-w-lg rounded-3xl bg-white p-3.5 text-xs text-ink lift ring-1 ring-ink/10 sm:bottom-5 sm:p-4 sm:text-sm"
+      className="fixed inset-x-3 bottom-[calc(var(--bar-h)+var(--bar-lift)+0.5rem)] z-50 mx-auto max-w-lg rounded-3xl bg-white p-3.5 text-xs text-ink lift ring-1 ring-ink/10 sm:bottom-5 sm:p-4 sm:text-sm"
     >
       <p className="leading-snug">
         No tracking cookies here. Only the Instagram posts on Home may set cookies, from Curator

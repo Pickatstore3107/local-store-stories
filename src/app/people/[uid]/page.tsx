@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { Avatar } from "@/components/avatar";
+import { BigNumber } from "@/components/big-number";
 import type { PinnedMemory } from "@/components/map/memory-map";
 import { MediaBadge } from "@/components/polaroid";
 import { memoryPath, textLang } from "@/lib/memories";
@@ -44,7 +45,7 @@ export default function PersonPage({ params }: PageProps<"/people/[uid]">) {
   );
 }
 
-const statLink = "block rounded-lg text-ink transition hover:text-brand-red";
+const tile = "block h-full rounded-[1.1rem] px-3 pb-2.5 pt-3 transition";
 
 async function Profile({ uid }: { uid: string }) {
   const result = await loadPerson(uid);
@@ -60,40 +61,38 @@ async function Profile({ uid }: { uid: string }) {
 
   return (
     <article>
-      {/* On a phone, like Instagram: the photo with the numbers beside it,
-          then the name, city and bio, then the buttons. From a tablet up,
-          everything sits beside the photo. */}
-      <header className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-5 sm:items-start sm:gap-x-8">
-        <div className="col-start-1 row-start-1 sm:row-span-3">
+      <header>
+        <div className="flex items-center gap-4 sm:gap-6">
           <Avatar name={person.name} photo={person.photo?.large} size="lg" />
+          <div className="min-w-0">
+            <h1 lang={textLang(person.name)} className="break-words text-[1.7rem] leading-[1.05] text-ink sm:text-4xl">
+              {person.name}
+            </h1>
+            {person.city && <p className="mt-0.5 text-[0.85rem] text-ink-soft sm:text-[0.95rem]">{person.city}</p>}
+          </div>
         </div>
-        <div className="col-span-2 row-start-2 mt-3 min-w-0 sm:col-span-1 sm:col-start-2 sm:row-start-1 sm:mt-0">
-          <h1 lang={textLang(person.name)} className="break-words text-[1.15rem] font-extrabold leading-tight text-ink sm:text-3xl">
-            {person.name}
-          </h1>
-          {person.city && <p className="text-[0.85rem] text-ink-soft sm:mt-0.5 sm:text-[0.9rem]">{person.city}</p>}
-          {person.bio && (
-            <p lang={textLang(person.bio)} className="mt-1.5 max-w-prose whitespace-pre-line break-words text-[0.9rem] leading-snug text-ink">
-              {person.bio}
-            </p>
-          )}
-        </div>
-        <ul className="col-start-2 row-start-1 grid grid-cols-3 text-center text-[0.8rem] sm:row-start-2 sm:mt-3 sm:flex sm:gap-x-5 sm:text-left sm:text-[0.9rem]">
-          <li className="text-ink">
+        {person.bio && (
+          <p lang={textLang(person.bio)} className="mt-3 max-w-prose whitespace-pre-line break-words text-[0.9rem] leading-snug text-ink">
+            {person.bio}
+          </p>
+        )}
+        {/* The numbers as three bold blocks, counting up as the page opens. */}
+        <ul className="mt-4 grid grid-cols-3 gap-2 sm:max-w-md sm:gap-3">
+          <li className={`${tile} bg-brand-red text-white`}>
             <Stat count={person.memories.length} one="post" many="posts" />
           </li>
           <li>
-            <Link href={followListPath(uid, "followers")} className={statLink}>
+            <Link href={followListPath(uid, "followers")} className={`${tile} bg-brand-yellow text-ink hover:-translate-y-0.5`}>
               <Stat count={person.followers} one="follower" many="followers" />
             </Link>
           </li>
           <li>
-            <Link href={followListPath(uid, "following")} className={statLink}>
+            <Link href={followListPath(uid, "following")} className={`${tile} bg-white text-brand-red ring-2 ring-inset ring-brand-red hover:-translate-y-0.5`}>
               <Stat count={person.following} one="following" many="following" />
             </Link>
           </li>
         </ul>
-        <div className="col-span-2 row-start-3 mt-3 sm:col-span-1 sm:col-start-2 sm:mt-4">
+        <div className="mt-3 sm:mt-4">
           <ProfileActions uid={uid} name={person.name} />
         </div>
       </header>
@@ -104,14 +103,14 @@ async function Profile({ uid }: { uid: string }) {
   );
 }
 
-/** "12 followers", with the number in bold: above the word on a phone, beside it from a tablet up. */
+/** "12 followers": the number big and tall, the word small under it. */
 function Stat({ count, one, many }: { count: number; one: string; many: string }) {
   return (
     <>
-      <span className="block text-[1.05rem] font-extrabold leading-tight sm:inline sm:text-[0.9rem]">
-        {count.toLocaleString("en-IN")}
-      </span>{" "}
-      <span className="text-ink-soft sm:text-inherit">{count === 1 ? one : many}</span>
+      <BigNumber value={count} className="block text-[2.3rem] sm:text-[2.8rem]" />{" "}
+      <span className="mt-1 block text-[0.68rem] font-bold uppercase tracking-[0.12em] opacity-80">
+        {count === 1 ? one : many}
+      </span>
     </>
   );
 }

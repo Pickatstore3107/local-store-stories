@@ -1,15 +1,16 @@
 @import "tailwindcss";
 
 /* Pick at Store brand colours, sampled from the official logo files
-   in public/brand, on a light cream page. */
+   in public/brand: red and yellow on a white page. */
 :root {
   --brand-red: #a3171b;
   --brand-red-deep: #7d1114;
   --brand-yellow: #ffc000;
-  --paper: #fff8ec;
-  --sand: #f4e8d2;
+  --paper: #ffffff;
+  --sand: #fff3d1;
   --ink: #2b1d1a;
   --ink-soft: #6e5a55;
+  --butter: #fff0c4;
 }
 
 @theme inline {
@@ -20,8 +21,10 @@
   --color-sand: var(--sand);
   --color-ink: var(--ink);
   --color-ink-soft: var(--ink-soft);
+  --color-butter: var(--butter);
   --font-sans: var(--font-jakarta), system-ui, sans-serif;
   --font-hand: var(--font-kalam), "Segoe Print", "Bradley Hand", cursive;
+  --font-serif: var(--font-playfair), Georgia, "Times New Roman", serif;
 }
 
 html,
@@ -30,9 +33,17 @@ body {
   color: var(--ink);
 }
 
-/* A faint paper grain on the cream, like a printed poster. */
-body {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .42 0 0 0 0 .3 0 0 0 0 .18 .2 0 0 0 -.06'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+/* Titles and store names are set in the serif, at a lighter weight than
+   the sans so the thick and thin strokes show. Small all-caps labels stay
+   in the sans. Outside a layer, this wins over the utility classes. */
+:is(h1, h2, h3):not(.uppercase) {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  font-variant-numeric: lining-nums;
+}
+h1:not(.uppercase) {
+  font-weight: 500;
 }
 
 /* A die-cut sticker: a white edge all round and a soft shadow under it. */
@@ -65,11 +76,14 @@ html {
 :root {
   --header-h: 3.25rem;
   --bar-h: calc(52px + env(safe-area-inset-bottom));
+  /* How far the round button for the page you're on rises above the bar. */
+  --bar-lift: 18px;
 }
 @media (min-width: 640px) {
   :root {
     --header-h: 4.5rem;
     --bar-h: 0px;
+    --bar-lift: 0px;
   }
 }
 
@@ -143,4 +157,116 @@ html {
   @media (prefers-reduced-motion: reduce) {
     animation: heart-fade 0.6s linear forwards;
   }
+}
+
+/* The icon in the bottom bar's round button, coming in as it moves. */
+@keyframes bar-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+}
+
+/* Words coming up into place as a page opens. */
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
+
+/* Moving between pages (src/app/template.tsx). The header and the bottom
+   bar stay put while the page under them moves. */
+::view-transition {
+  pointer-events: none;
+}
+::view-transition-group(site-header),
+::view-transition-group(bottom-bar) {
+  animation: none;
+  z-index: 100;
+}
+::view-transition-old(site-header),
+::view-transition-old(bottom-bar) {
+  display: none;
+}
+::view-transition-new(site-header),
+::view-transition-new(bottom-bar) {
+  animation: none;
+}
+
+/* Sideways, the way the bottom bar's round button went. */
+::view-transition-old(.nav-forward) {
+  --slide: -48px;
+  animation:
+    160ms ease-in both page-fade reverse,
+    380ms cubic-bezier(0.65, 0, 0.35, 1) both page-slide reverse;
+}
+::view-transition-new(.nav-forward) {
+  --slide: 48px;
+  animation:
+    220ms ease-out 120ms both page-fade,
+    380ms cubic-bezier(0.65, 0, 0.35, 1) both page-slide;
+}
+::view-transition-old(.nav-back) {
+  --slide: 48px;
+  animation:
+    160ms ease-in both page-fade reverse,
+    380ms cubic-bezier(0.65, 0, 0.35, 1) both page-slide reverse;
+}
+::view-transition-new(.nav-back) {
+  --slide: -48px;
+  animation:
+    220ms ease-out 120ms both page-fade,
+    380ms cubic-bezier(0.65, 0, 0.35, 1) both page-slide;
+}
+
+/* Opening a post from Home: Home fades back while the post's colour block
+   and photo grow into place, and the rest comes up after them. */
+::view-transition-old(.leave-page) {
+  animation: 200ms ease-in both page-fade reverse;
+}
+::view-transition-new(.open-post) {
+  animation:
+    260ms ease-out 140ms both page-fade,
+    420ms cubic-bezier(0.2, 0.8, 0.2, 1) both page-rise;
+}
+::view-transition-group(.morph) {
+  animation-duration: 460ms;
+  animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@keyframes page-fade {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes page-slide {
+  from {
+    translate: var(--slide) 0;
+  }
+}
+@keyframes page-rise {
+  from {
+    translate: 0 24px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(*),
+  ::view-transition-new(*),
+  ::view-transition-group(*) {
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
+  }
+}
+
+/* The opening screen (src/components/splash.tsx), only when asked for. */
+.lss-splash {
+  display: none;
+}
+:root[data-splash] .lss-splash {
+  display: flex;
+}
+:root[data-splash] body {
+  overflow: hidden;
 }

@@ -1,17 +1,26 @@
 import { Analytics } from "@vercel/analytics/next";
 import type { Metadata, Viewport } from "next";
-import { Kalam, Plus_Jakarta_Sans } from "next/font/google";
+import Script from "next/script";
+import { Kalam, Playfair_Display, Plus_Jakarta_Sans } from "next/font/google";
 import { AuthProvider } from "@/components/auth-provider";
 import { BottomBar } from "@/components/bottom-bar";
 import { CookieBanner } from "@/components/cookie-choice";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
+import { Splash, splashScript } from "@/components/splash";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/site";
 import "./globals.css";
 
 // A clean, modern sans for everything but the memories themselves.
 const jakarta = Plus_Jakarta_Sans({
   variable: "--font-jakarta",
+  subsets: ["latin"],
+});
+
+// An elegant, high-contrast serif for titles and store names.
+const playfair = Playfair_Display({
+  variable: "--font-playfair",
+  style: ["normal", "italic"],
   subsets: ["latin"],
 });
 
@@ -45,8 +54,13 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`${jakarta.variable} ${kalam.variable} h-full antialiased`}>
-      <body className="flex min-h-full flex-col pb-(--bar-h) font-sans">
+    <html lang="en" suppressHydrationWarning className={`${jakarta.variable} ${playfair.variable} ${kalam.variable} h-full antialiased`}>
+      <body className="flex min-h-full flex-col pb-[calc(var(--bar-h)+var(--bar-lift))] font-sans">
+        {/* Decides before the first paint whether the opening screen shows. */}
+        <Script id="lss-splash" strategy="beforeInteractive">
+          {splashScript}
+        </Script>
+        <Splash />
         <AuthProvider>
           <SiteHeader />
           {children}

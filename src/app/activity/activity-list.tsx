@@ -10,6 +10,7 @@ import { friendlyError } from "@/lib/auth-errors";
 import { loadActivity, markBellSeen, type Activity } from "@/lib/follows";
 import { shortDate, textLang } from "@/lib/memories";
 import { personPath } from "@/lib/people";
+import { Illustration } from "@/components/illustration";
 
 const relative = new Intl.RelativeTimeFormat("en-IN", { numeric: "always" });
 
@@ -69,7 +70,8 @@ export function ActivityList() {
         </p>
       ) : items.items.every((item) => !item.name) ? (
         <div className="mt-6 text-center">
-          <p className="font-hand text-xl text-ink">Nothing here yet.</p>
+          <Illustration name="share" />
+          <p className="mt-3 font-hand text-xl text-ink">Nothing here yet.</p>
           <p className="mt-2 text-sm text-ink-soft">
             Share a post, then send its invite link to a friend who remembers the same stores.
           </p>

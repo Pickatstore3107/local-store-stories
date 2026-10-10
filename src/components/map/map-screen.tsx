@@ -447,7 +447,7 @@ export function MapScreen({
 
       <div
         ref={bottom}
-        className="pointer-events-none absolute inset-x-0 bottom-0 z-20 pb-2.5 sm:pb-4"
+        className="pointer-events-none absolute inset-x-0 bottom-0 z-20 pb-[calc(var(--bar-lift)+0.4rem)] sm:pb-4"
       >
         <div className="mb-1.5 flex items-end justify-end gap-2 px-3">
           {!hideLocationNote && (

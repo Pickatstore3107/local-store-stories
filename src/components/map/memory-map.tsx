@@ -61,7 +61,7 @@ type Latest = RefObject<{
   onSelect: (id: string | null) => void;
   onVisible?: (ids: Set<string>) => void;
   onReady?: () => void;
-  onMap?: (map: MapLibreMap) => void;
+  onMap?: (map: MapLibreMap | null) => void;
   onEmptyClick?: (event: MapMouseEvent) => void;
   focusPadding?: PaddingOptions;
   moveToSelected?: boolean;
@@ -153,7 +153,7 @@ export function MemoryMap({
   onVisible?: (ids: Set<string>) => void;
   onReady?: () => void;
   /** The map itself, once it has loaded, for moving it from outside. */
-  onMap?: (map: MapLibreMap) => void;
+  onMap?: (map: MapLibreMap | null) => void;
   /** A tap away from any pin. Without it, such a tap closes the memory. */
   onEmptyClick?: (event: MapMouseEvent) => void;
   /** Room to leave around a memory brought into view, for anything covering the map. */
@@ -215,7 +215,12 @@ export function MemoryMap({
     return () => {
       gone.abort();
       pins.current?.remove();
+      pins.current = null;
       opened?.remove();
+      // The page can be hidden and shown again (going back to it), which
+      // opens a new map: nothing may use this one after it's gone.
+      setMap(null);
+      latest.current.onMap?.(null);
     };
   }, []);
 

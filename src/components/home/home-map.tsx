@@ -46,6 +46,9 @@ export function HomeMap({ memories }: { memories: WallMemory[] }) {
       clearTimeout(wait);
       gone.abort();
       opened?.remove();
+      // The page can be hidden and shown again (going back to it), which
+      // opens a new map: nothing may use this one after it's gone.
+      setMap(null);
     };
   }, []);
 

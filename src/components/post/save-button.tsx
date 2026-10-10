@@ -42,7 +42,7 @@ export function SaveButton({
           href={user ? "/welcome" : "/signin"}
           onClick={() => setReturnPath(window.location.pathname)}
           role="status"
-          className="fixed inset-x-4 bottom-[calc(var(--bar-h)+1.5rem)] z-50 mx-auto max-w-sm rounded-2xl bg-ink px-4 py-3 text-center text-sm font-bold text-white shadow-[0_10px_30px_rgb(43_29_26/0.35)] sm:bottom-6"
+          className="fixed inset-x-4 bottom-[calc(var(--bar-h)+var(--bar-lift)+1rem)] z-50 mx-auto max-w-sm rounded-2xl bg-ink px-4 py-3 text-center text-sm font-bold text-white shadow-[0_10px_30px_rgb(43_29_26/0.35)] sm:bottom-6"
         >
           {user ? "Finish joining to save places" : "Sign in to save places"}
         </Link>

@@ -2,11 +2,11 @@
 
 import Link from "next/link";
 import { PlaceCard } from "@/components/home/place-card";
-import { BookmarkIcon } from "@/components/icons";
 import { Loading } from "@/components/require-account";
 import { pageLead, pageTitle, primaryButton } from "@/components/ui";
 import { useMySaved } from "@/components/use-saved";
 import type { WallMemory } from "@/lib/memories";
+import { Illustration } from "@/components/illustration";
 
 /** Saved memories, the newest saved first, two to a row. */
 export function SavedPlaces({ memories, builtAt }: { memories: WallMemory[] | null; builtAt: number }) {
@@ -32,7 +32,7 @@ export function SavedPlaces({ memories, builtAt }: { memories: WallMemory[] | nu
       )}
       {memories !== null && shown.length === 0 ? (
         <div className="py-14 text-center">
-          <BookmarkIcon className="mx-auto h-10 w-10 text-brand-red" />
+          <Illustration name="saved" />
           <p className="mt-3 font-hand text-2xl text-ink">Nothing saved yet.</p>
           <p className="mx-auto mt-2 max-w-xs text-ink-soft">
             Tap the bookmark on any post to keep it here.

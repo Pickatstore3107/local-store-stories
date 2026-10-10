@@ -52,7 +52,7 @@ export async function generateMetadata({ params }: PageProps<"/memories/[id]">):
 export default function MemoryPage({ params }: PageProps<"/memories/[id]">) {
   return (
     <main className="mx-auto w-full max-w-xl flex-1 px-4 py-3 sm:px-5 sm:py-8">
-      <Link href="/" className="inline-flex items-center gap-0.5 text-[0.85rem] font-bold text-brand-red underline-offset-4 hover:underline">
+      <Link href="/" transitionTypes={["nav-back"]} className="inline-flex items-center gap-0.5 text-[0.85rem] font-bold text-brand-red underline-offset-4 hover:underline">
         <BackIcon className="h-4 w-4" />
         Home
       </Link>
