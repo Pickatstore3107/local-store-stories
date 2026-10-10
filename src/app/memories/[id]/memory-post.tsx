@@ -13,14 +13,15 @@ import { personPath } from "@/lib/people";
 
 /**
  * A memory's page, as a post: who shared it with Follow, its photos or
- * video (tap a photo twice to like), Like, Comment and Share, who liked
- * it, then its words. The photo sits on the post's colour block, the same
- * one as its card on Home, which it grows out of when opened from there.
+ * video (tap a photo twice to like), its year and name like a magazine
+ * cover's, Like, Comment and Share, who liked it, then its words. The photo sits on a blur of its own colours, and
+ * grows out of its cover when opened from Home.
  */
-export function MemoryPost({ memory, children }: { memory: Memory; children: ReactNode }) {
+export function MemoryPost({ memory, title, children }: { memory: Memory; title: ReactNode; children: ReactNode }) {
   const like = useLike(memory.id, memory.likes, memory.builtAt);
   const { author } = memory;
   const block = blockOf(memory.id);
+  const backdrop = memory.photoUrl;
 
   return (
     <div className="overflow-hidden rounded-[1.6rem] bg-white ring-1 ring-ink/[0.06]">
@@ -48,11 +49,18 @@ export function MemoryPost({ memory, children }: { memory: Memory; children: Rea
       </header>
 
       <div className="relative px-5 pt-4">
-        <ViewTransition name={`block-${memory.id}`} share="morph" default="none">
-          <div className={`absolute inset-x-0 top-0 bottom-[38%] rounded-b-[50%_3rem] ${block.bg}`} />
-        </ViewTransition>
+        {/* The photo's own colours, blurred, behind it, fading into the page. */}
+        <div aria-hidden="true" className={`absolute inset-x-0 top-0 bottom-[30%] overflow-hidden ${backdrop ? "" : block.bg}`}>
+          {backdrop && (
+            <span
+              className="absolute inset-0 scale-125 bg-cover bg-center blur-2xl saturate-150"
+              style={{ backgroundImage: `url("${backdrop}")` }}
+            />
+          )}
+          <span className="absolute inset-0 bg-gradient-to-b from-white/10 via-white/30 to-white" />
+        </div>
         <ViewTransition name={`photo-${memory.id}`} share="morph" default="none">
-          <div className="relative overflow-hidden rounded-[1.2rem] bg-sand shadow-[0_14px_28px_rgb(43_29_26/0.3)] ring-4 ring-white">
+          <div className="relative mx-auto w-[84%] overflow-hidden rounded-[1rem] bg-sand shadow-[0_18px_34px_rgb(43_29_26/0.32)]">
             <LikeablePhoto like={like}>
               <PostMedia memory={memory} />
               <span className="pointer-events-none absolute left-3 top-3 rounded-full bg-white px-2.5 py-1 text-xs font-bold text-ink shadow-[0_2px_6px_rgb(43_29_26/0.2)]">
@@ -63,7 +71,8 @@ export function MemoryPost({ memory, children }: { memory: Memory; children: Rea
         </ViewTransition>
       </div>
 
-      <div className="flex flex-col items-start gap-1 px-3.5 pt-2 animate-[rise_0.45s_ease-out_0.1s_backwards] motion-reduce:animate-none">
+      <div className="px-3.5 pt-4 animate-[rise_0.45s_ease-out_0.06s_backwards] motion-reduce:animate-none">{title}</div>
+      <div className="flex flex-col items-start gap-1 px-3.5 pt-1 animate-[rise_0.45s_ease-out_0.12s_backwards] motion-reduce:animate-none">
         <ActionsRow
           like={like}
           storyId={memory.id}

@@ -6,6 +6,7 @@ import { Avatar } from "@/components/avatar";
 import { BigNumber } from "@/components/big-number";
 import type { PinnedMemory } from "@/components/map/memory-map";
 import { MediaBadge } from "@/components/polaroid";
+import { StreakBadge } from "@/components/streak";
 import { memoryPath, textLang } from "@/lib/memories";
 import { followListPath, type PublicPerson } from "@/lib/people";
 import { loadPerson } from "@/lib/server/people";
@@ -69,6 +70,9 @@ async function Profile({ uid }: { uid: string }) {
               {person.name}
             </h1>
             {person.city && <p className="mt-0.5 text-[0.85rem] text-ink-soft sm:text-[0.95rem]">{person.city}</p>}
+            <div className="mt-1.5 empty:hidden">
+              <StreakBadge sharedAt={person.memories.map((m) => m.sharedAt)} />
+            </div>
           </div>
         </div>
         {person.bio && (

@@ -8,6 +8,7 @@ import { PopularAreas } from "@/components/home/popular-areas";
 import { Trending } from "@/components/home/trending";
 import { ArrowIcon, SearchIcon } from "@/components/icons";
 import { InstagramFeed } from "@/components/instagram-feed";
+import { StreakNudge } from "@/components/streak";
 import { loadWall } from "@/lib/server/wall";
 
 export const metadata: Metadata = {
@@ -52,12 +53,12 @@ export default async function Home() {
         </button>
       </Form>
 
-      <div className="mt-2.5">
-        <KindChips />
+      <div className="mt-2.5 empty:hidden">
+        <StreakNudge memories={memories} />
       </div>
 
-      <div className="mt-1.5">
-        <HomeMap memories={memories} />
+      <div className="mt-2.5">
+        <KindChips />
       </div>
 
       {wall === null ? (
@@ -71,8 +72,12 @@ export default async function Home() {
         </div>
       ) : (
         <>
-          <div className="mt-5">
+          {/* The pile of covers on a band of yellow that fades into the page. */}
+          <div className="-mx-4 mt-3 rounded-b-[2rem] bg-gradient-to-b from-brand-yellow/80 via-brand-yellow/30 to-transparent px-4 pb-3 pt-4 sm:-mx-5 sm:px-5">
             <Trending memories={memories} />
+          </div>
+          <div className="mt-4">
+            <HomeMap memories={memories} />
           </div>
           <div className="mt-4">
             <PopularAreas memories={memories} />

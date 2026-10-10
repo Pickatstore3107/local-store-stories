@@ -9,6 +9,8 @@ import { loadMemory } from "@/lib/server/wall";
 import { Comments } from "./comments";
 import { MemoryActions } from "./memory-actions";
 import { MemoryPost } from "./memory-post";
+import { anton } from "@/lib/anton";
+
 
 const SITE = "Local Stores & Their Stories";
 
@@ -79,14 +81,28 @@ async function MemoryContent({ id }: { id: string }) {
 
   return (
     <article className="mt-3">
-      <MemoryPost memory={memory}>
-        <h1 lang={textLang(memory.storeName)} className="text-[1.3rem] font-extrabold leading-tight tracking-tight text-ink sm:text-2xl">
-          {memory.storeName}
-        </h1>
-        <p className="mt-0.5 text-[0.85rem] text-ink-soft">{placeLine(memory)}</p>
+      <MemoryPost
+        memory={memory}
+        title={
+          <>
+            {memory.year && (
+              <p aria-hidden="true" className={`${anton.className} text-[4.6rem] leading-[0.82] text-ink sm:text-[5.5rem]`}>
+                {memory.year}
+              </p>
+            )}
+            <h1
+              lang={textLang(memory.storeName)}
+              className="mt-1.5 font-serif text-[1.55rem] font-bold uppercase leading-[1.02] tracking-[0.01em] text-ink [text-wrap:balance] sm:text-[2rem]"
+            >
+              {memory.storeName}
+            </h1>
+            <p className="mt-0.5 text-[0.85rem] text-ink-soft">{placeLine(memory)}</p>
+          </>
+        }
+      >
         <p
           lang={textLang(memory.caption)}
-          className="mt-2.5 whitespace-pre-line font-hand text-[1.4rem] leading-snug text-ink sm:text-[1.6rem]"
+          className="whitespace-pre-line font-hand text-[1.4rem] leading-snug text-ink sm:text-[1.6rem]"
         >
           {memory.caption}
         </p>

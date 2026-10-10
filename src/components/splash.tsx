@@ -38,11 +38,11 @@ export function Splash() {
     };
     skip.current = leave;
     const shownFor = performance.now();
-    const whenLoaded = () => setTimeout(leave, Math.max(0, 2400 - shownFor));
+    const whenLoaded = () => setTimeout(leave, Math.max(0, 4200 - shownFor));
     if (document.readyState === "complete") whenLoaded();
     else window.addEventListener("load", whenLoaded, { once: true });
     // Never longer than this, even on a slow connection.
-    const cap = setTimeout(leave, 4000);
+    const cap = setTimeout(leave, 6000);
     return () => {
       clearTimeout(cap);
       window.removeEventListener("load", whenLoaded);

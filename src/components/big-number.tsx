@@ -1,10 +1,7 @@
 "use client";
 
-import { Anton } from "next/font/google";
 import { useEffect, useRef } from "react";
-
-// A tall, heavy face for big numbers only.
-const anton = Anton({ weight: "400", subsets: ["latin"] });
+import { anton } from "@/lib/anton";
 
 /**
  * A count in big tall numerals that counts up from nought the first time it
