@@ -13,6 +13,7 @@ import {
 } from "firebase/firestore";
 import { isInviteCode } from "./invite-links";
 import { getFirebase } from "./firebase";
+import { photoOf } from "./people";
 import type { Visibility } from "./stories";
 
 // "Pass the memory": each memory comes with one invite link, /invite/{code},
@@ -68,15 +69,20 @@ function inviteSet(storyId: string) {
   return doc(getFirebase().db, "inviteSets", storyId);
 }
 
+/** Someone's display name and small photo, or nulls if they can't be read (a deleted account). */
+export async function personOf(uid: string) {
+  try {
+    const data = (await getDoc(doc(getFirebase().db, "users", uid))).data();
+    const name = data?.displayName;
+    return { name: typeof name === "string" ? name : null, photo: photoOf(data)?.small ?? null };
+  } catch {
+    return { name: null, photo: null };
+  }
+}
+
 /** Someone's display name, or null if it can't be read (a deleted account). */
 export async function nameOf(uid: string) {
-  try {
-    const profile = await getDoc(doc(getFirebase().db, "users", uid));
-    const name = profile.get("displayName");
-    return typeof name === "string" ? name : null;
-  } catch {
-    return null;
-  }
+  return (await personOf(uid)).name;
 }
 
 const millis = (at: Timestamp | undefined) => at?.toMillis() ?? 0;

@@ -87,7 +87,7 @@ export function PlaceCard({
               prefetch={false}
               className="relative z-10 flex min-w-0 flex-1 items-center gap-1 text-[0.75rem] text-ink-soft hover:text-ink"
             >
-              <Avatar name={memory.authorName} size="xxs" />
+              <Avatar name={memory.authorName} photo={memory.authorPhoto} size="xxs" />
               <span lang={textLang(memory.authorName)} className="truncate">
                 {memory.authorName}
               </span>

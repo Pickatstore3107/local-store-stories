@@ -25,7 +25,7 @@ export function MemoryPost({ memory, children }: { memory: Memory; children: Rea
         {author ? (
           <>
             <Link href={personPath(author.uid)} tabIndex={-1} aria-hidden="true">
-              <Avatar name={author.name} size="xs" />
+              <Avatar name={author.name} photo={author.photo} size="xs" />
             </Link>
             <div className="min-w-0 flex-1 leading-tight">
               <Link

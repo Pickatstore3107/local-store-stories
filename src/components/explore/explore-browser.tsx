@@ -152,7 +152,7 @@ export function ExploreBrowser({ memories }: { memories: WallMemory[] }) {
             {people.list.slice(0, PEOPLE_SHOWN).map((person) => (
               <li key={person.uid}>
                 <Link href={personPath(person.uid)} prefetch={false} className="flex items-center gap-3 py-2.5">
-                  <Avatar name={person.name} size="xs" />
+                  <Avatar name={person.name} photo={person.photo} size="xs" />
                   <span className="min-w-0">
                     <span lang={textLang(person.name)} className="block truncate font-bold text-ink">
                       {person.name}
@@ -317,7 +317,7 @@ function usePeople(memories: WallMemory[], query: string, words: string[]) {
     const byUid = new Map<string, ListedPerson>();
     for (const m of memories) {
       if (m.authorName && !byUid.has(m.authorId) && nameMatches(m.authorName, words)) {
-        byUid.set(m.authorId, { uid: m.authorId, name: m.authorName, city: null });
+        byUid.set(m.authorId, { uid: m.authorId, name: m.authorName, city: null, photo: m.authorPhoto });
       }
     }
     return [...byUid.values()];

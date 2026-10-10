@@ -111,7 +111,7 @@ function ActivityRow({
     : "followed you.";
   return (
     <li className={`-mx-3 flex items-center gap-3 rounded-2xl px-3 py-3 ${isNew ? "bg-brand-yellow/15" : ""}`}>
-      <Avatar name={item.name} />
+      <Avatar name={item.name} photo={item.photo} />
       <div className="min-w-0 flex-1 text-sm leading-snug text-ink">
         <p>
           {isNew && <span className="sr-only">New: </span>}

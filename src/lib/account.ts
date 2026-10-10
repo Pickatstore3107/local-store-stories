@@ -14,6 +14,8 @@ import { getFirebase } from "./firebase";
 import { deleteMyFollows, refreshPeople } from "./follows";
 import { deleteMyInvites, type OpenInvite } from "./invites";
 import { deleteMyLikes } from "./likes";
+import type { ProfilePhoto } from "./people";
+import { bioField, deleteMyPhotos, deleteMyProfileReports } from "./profiles";
 import { deleteMyReactions } from "./reactions";
 import { deleteMyReports } from "./reports";
 import { deleteMySaved } from "./saved";
@@ -29,6 +31,10 @@ export type Profile = {
    */
   nameLower?: string;
   city: string;
+  /** Up to 150 letters, shown at once; anyone can report it. */
+  bio?: string;
+  /** Links to their photo, added only by a moderator who approved it (src/lib/profiles.ts). */
+  photo?: ProfilePhoto;
   createdAt: Timestamp;
   updatedAt: Timestamp;
   /** Set once, when someone joins through a friend's invite: who invited them. */
@@ -109,12 +115,13 @@ export async function createAccount(
 
 export async function updateProfile(
   uid: string,
-  input: { displayName: string; city: string },
+  input: { displayName: string; city: string; bio: string },
 ) {
   const { db } = getFirebase();
   await updateDoc(doc(db, "users", uid), {
     displayName: input.displayName.trim(),
     city: input.city.trim(),
+    bio: bioField(input.bio),
     updatedAt: serverTimestamp(),
   });
 }
@@ -129,8 +136,8 @@ export function signedInRecently(user: User) {
  * Deletes the person's stories and photos, takes back their likes and loves,
  * forgets their saved places, deletes their comments, reports and invites,
  * ends every follow to and from them and their blocks, deletes their
- * profile, consent record, bell and the record of the invite they joined
- * through, and then the sign-in account.
+ * profile, profile photos, consent record, bell and the record of the
+ * invite they joined through, and then the sign-in account.
  */
 export async function deleteAccount(user: User) {
   await deleteAllMyStories(user);
@@ -140,6 +147,7 @@ export async function deleteAccount(user: User) {
   await deleteMyComments(user);
   await deleteMyReports(user);
   await deleteMyCommentReports(user);
+  await deleteMyProfileReports(user);
   await deleteMyInvites(user);
   await deleteMyFollows(user);
   const { db } = getFirebase();
@@ -149,6 +157,8 @@ export async function deleteAccount(user: User) {
   batch.delete(doc(db, "joins", user.uid));
   batch.delete(doc(db, "bells", user.uid));
   await batch.commit();
+  // With the profile gone, nothing uses any of their photos.
+  await deleteMyPhotos(user);
   // The counts of memories and comments shared, deleted with the consent
   // record gone. Rules from before a count was added refuse this, and then
   // there is none.

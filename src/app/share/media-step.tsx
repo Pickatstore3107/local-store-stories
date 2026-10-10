@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import { CloseIcon, PhotosIcon, PlusIcon, VideoIcon } from "@/components/icons";
+import { PhotoCropper } from "@/components/photo-cropper";
 import { primaryButton } from "@/components/ui";
 import { friendlyError } from "@/lib/auth-errors";
 import {
@@ -17,7 +18,6 @@ import {
   VIDEO_TYPES,
   type Crop,
 } from "@/lib/media";
-import { PhotoCropper } from "./photo-cropper";
 
 /** A photo as picked, how it's cropped, and the JPEG that will be posted. */
 export type PhotoItem = { key: number; file: Blob; crop: Crop; jpeg: Blob; preview: string };

@@ -27,6 +27,12 @@ service cloud.firestore {
         && exists(/databases/$(database)/documents/moderators/$(request.auth.uid));
     }
 
+    // Links are the usual sign of spam, so comments and bios can't have them.
+    // Must match hasLink() in src/lib/comments.ts.
+    function noLinks(text) {
+      return !text.lower().matches('(?s).*(https?://|www[.]).*');
+    }
+
     // Moderators are added by hand in the Firebase console, never by the app.
     // People may check whether they are one; nobody can make themselves one.
     match /moderators/{uid} {
@@ -36,14 +42,56 @@ service cloud.firestore {
     // Public profile. Anyone may read one profile. Members may search them
     // by name, 20 at a time; nobody may list them all at once.
     match /users/{uid} {
+      function photoReview() {
+        return /databases/$(database)/documents/photoReviews/$(uid);
+      }
+
       // nameLower is the name in small letters without accents, for
       // searching by name (searchName() in src/lib/people.ts). The rules
       // can't make it the same way, so the search checks each result's name.
+      // The bio shows at once; anyone can report it. Must match BIO_MAX in
+      // src/lib/profiles.ts.
       function validProfile(data) {
         return isText(data.displayName, 1, 40)
           && isText(data.city, 2, 60)
           && (!('nameLower' in data) || isText(data.nameLower, 1, 80))
+          && (!('bio' in data) || (isText(data.bio, 1, 150) && noLinks(data.bio)))
           && data.updatedAt == request.time;
+      }
+
+      // A signed link to the photo, in a size, as src/lib/server/avatars.ts
+      // makes them.
+      function photoLink(url, id) {
+        return url is string
+          && url.matches('https://res[.]cloudinary[.]com/[A-Za-z0-9_-]+/image/authenticated/s--[A-Za-z0-9_-]{8,32}--/[a-z0-9_,]+/v1/' + id + '[.]jpg');
+      }
+
+      // A moderator puts up the photo waiting in the person's review, and
+      // removes the review in the same batch.
+      function validPhotoApproval(before, after) {
+        let review = get(photoReview()).data;
+        return isModerator()
+          && after.diff(before).affectedKeys().hasOnly(['photo'])
+          && review.status == 'waiting'
+          && !existsAfter(photoReview())
+          && after.photo is map
+          && after.photo.keys().hasOnly(['id', 'small', 'large'])
+          && after.photo.keys().hasAll(['id', 'small', 'large'])
+          && after.photo.id == review.photoId
+          && photoLink(after.photo.small, review.photoId)
+          && photoLink(after.photo.large, review.photoId);
+      }
+
+      // After a report, a moderator may remove the bio or the photo, or
+      // change the name to "Member". Nothing else.
+      function validModeratorChange(before, after) {
+        return isModerator()
+          && after.diff(before).affectedKeys().hasOnly(['bio', 'photo', 'displayName', 'nameLower'])
+          && (!('bio' in after) || after.bio == before.get('bio', null))
+          && (!('photo' in after) || after.photo == before.get('photo', null))
+          && ((after.displayName == before.displayName
+               && after.get('nameLower', null) == before.get('nameLower', null))
+              || (after.displayName == 'Member' && after.get('nameLower', null) == 'member'));
       }
 
       // Joining through a friend's invite link. The profile names who sent it,
@@ -78,12 +126,102 @@ service cloud.firestore {
         && (!request.resource.data.keys().hasAny(['invitedBy', 'invitedVia'])
             || validJoin(request.resource.data));
 
-      allow update: if isOwner(uid)
-        && request.resource.data.diff(resource.data).affectedKeys()
-             .hasOnly(['displayName', 'nameLower', 'city', 'updatedAt'])
-        && validProfile(request.resource.data);
+      // People change their name, city and bio, and may take their photo
+      // down, but only a moderator can put one up.
+      allow update: if (isOwner(uid)
+          && request.resource.data.diff(resource.data).affectedKeys()
+               .hasOnly(['displayName', 'nameLower', 'city', 'bio', 'photo', 'updatedAt'])
+          && !('photo' in request.resource.data && request.resource.data.photo != resource.data.get('photo', null))
+          && validProfile(request.resource.data))
+        || validPhotoApproval(resource.data, request.resource.data)
+        || validModeratorChange(resource.data, request.resource.data);
 
       allow delete: if isOwner(uid);
+    }
+
+    // A profile photo waiting for a moderator. The photo itself stays private
+    // at Cloudinary until a moderator puts it up (users above). Only its
+    // owner and moderators can see this. Must match src/lib/profiles.ts.
+    match /photoReviews/{uid} {
+      function validRequest(data) {
+        return data.keys().hasOnly(['photoId', 'at', 'status'])
+          && data.keys().hasAll(['photoId', 'at', 'status'])
+          && data.photoId is string
+          && data.photoId.matches('lss/avatars/' + uid + '/[A-Za-z0-9]{20}')
+          && data.at == request.time
+          && data.status == 'waiting';
+      }
+
+      // The moderator says why, and the person sees it.
+      function validDecline(before, after) {
+        return isModerator()
+          && after.diff(before).affectedKeys().hasOnly(['status', 'note', 'decidedAt'])
+          && before.status == 'waiting'
+          && after.status == 'declined'
+          && isText(after.note, 5, 300)
+          && after.decidedAt == request.time;
+      }
+
+      allow get: if isOwner(uid) || isModerator();
+      allow list: if isModerator();
+      allow create, update: if (isOwner(uid)
+          && exists(/databases/$(database)/documents/usersPrivate/$(uid))
+          && validRequest(request.resource.data))
+        || (resource != null && validDecline(resource.data, request.resource.data));
+      allow delete: if isOwner(uid) || isModerator();
+    }
+
+    // A report about someone's profile: their name, bio or photo. Each person
+    // can report a profile once. Moderators read reports and close them; the
+    // person never sees who reported them.
+    match /profileReports/{reportId} {
+      function profile(uid) {
+        return /databases/$(database)/documents/users/$(uid);
+      }
+
+      // Must match PROFILE_REPORT_REASONS in src/lib/profiles.ts.
+      function reasons() {
+        return ['unkind', 'pretending', 'private', 'spam', 'other'];
+      }
+
+      function validReport(report) {
+        return report.keys().hasOnly(['uid', 'reason', 'details', 'by', 'at', 'status'])
+          && report.keys().hasAll(['uid', 'reason', 'by', 'at', 'status'])
+          && report.uid is string
+          && report.uid != request.auth.uid
+          && reportId == report.uid + '_' + request.auth.uid
+          && report.reason in reasons()
+          && (report.reason == 'other'
+              ? isText(report.get('details', null), 5, 500)
+              : (!('details' in report) || isText(report.details, 1, 500)))
+          && report.by == request.auth.uid
+          && report.at == request.time
+          && report.status == 'open'
+          && exists(profile(report.uid));
+      }
+
+      // Closed once the profile is changed, kept after a look, or gone with
+      // its account.
+      function validClose(before, after) {
+        return isModerator()
+          && after.diff(before).affectedKeys().hasOnly(['status', 'outcome', 'closedBy', 'closedAt'])
+          && before.status == 'open'
+          && after.status == 'closed'
+          && after.closedBy == request.auth.uid
+          && after.closedAt == request.time
+          && (after.outcome == 'gone'
+              ? !existsAfter(profile(before.uid))
+              : after.outcome in ['kept', 'changed']);
+      }
+
+      allow create: if signedIn()
+        && exists(/databases/$(database)/documents/usersPrivate/$(request.auth.uid))
+        && validReport(request.resource.data);
+
+      allow get: if isModerator();
+      allow list: if isModerator() || (signedIn() && resource.data.by == request.auth.uid);
+      allow update: if validClose(resource.data, request.resource.data);
+      allow delete: if signedIn() && resource.data.by == request.auth.uid;
     }
 
     // Keeps bots and scripts from flooding the moderators: one new story a
@@ -583,11 +721,6 @@ service cloud.firestore {
       function counted(id, change) {
         return count(getAfter(story(id))) == count(get(story(id))) + change
           && getAfter(story(id)).data.commentChange == commentId;
-      }
-
-      // Links are the usual sign of spam, so comments can't have them.
-      function noLinks(text) {
-        return !text.lower().matches('(?s).*(https?://|www[.]).*');
       }
 
       // Must match COMMENT_MAX in src/lib/comments.ts.

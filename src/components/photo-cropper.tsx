@@ -2,25 +2,29 @@
 
 import { useEffect, useRef, type KeyboardEvent, type PointerEvent } from "react";
 import { TurnIcon } from "@/components/icons";
-import { clampCrop, drawCrop, MAX_ZOOM, turnRight, type Crop } from "@/lib/media";
+import { AVATAR_FRAME, clampCrop, drawCrop, MAX_ZOOM, POST_FRAME, turnRight, type Crop } from "@/lib/media";
 
 /**
- * One photo in its four-by-five frame. Drag it to move it, pinch or use
- * the slider to zoom, and turn it a quarter at a time. What you see here
- * is exactly what's posted.
+ * One photo in its frame: four by five for a post, or a circle for a
+ * profile photo. Drag it to move it, pinch or use the slider to zoom, and
+ * turn it a quarter at a time. What you see here is exactly what's saved.
  */
 export function PhotoCropper({
   image,
   crop,
   onChange,
   label,
+  round = false,
 }: {
   image: ImageBitmap;
   crop: Crop;
   onChange: (crop: Crop) => void;
   /** "Photo 2 of 3", for screen readers. */
   label: string;
+  /** A square profile photo, shown in a circle. */
+  round?: boolean;
 }) {
+  const frame = round ? AVATAR_FRAME : POST_FRAME;
   const canvas = useRef<HTMLCanvasElement>(null);
   // Fingers on the photo, by pointer ID, and where each last was.
   const pointers = useRef(new Map<number, { x: number; y: number }>());
@@ -29,7 +33,7 @@ export function PhotoCropper({
     latest.current = crop;
   });
 
-  const set = (next: Crop) => onChange(clampCrop(image.width, image.height, next));
+  const set = (next: Crop) => onChange(clampCrop(image.width, image.height, next, frame));
 
   // Draws at the screen's full sharpness, again whenever the frame changes size.
   useEffect(() => {
@@ -112,7 +116,7 @@ export function PhotoCropper({
         onPointerUp={up}
         onPointerCancel={up}
         onKeyDown={keys}
-        className="mx-auto block aspect-[4/5] w-full max-w-[36dvh] cursor-grab touch-none rounded-2xl bg-sand outline-none focus-visible:ring-2 focus-visible:ring-brand-red/50 active:cursor-grabbing"
+        className={`mx-auto block w-full cursor-grab touch-none bg-sand outline-none focus-visible:ring-2 focus-visible:ring-brand-red/50 active:cursor-grabbing ${round ? "aspect-square max-w-56 rounded-full" : "aspect-[4/5] max-w-[36dvh] rounded-2xl"}`}
       />
       <div className="mt-2.5 flex items-center gap-3">
         <label className="flex min-w-0 flex-1 items-center gap-2.5 text-[0.85rem] font-semibold text-ink-soft">

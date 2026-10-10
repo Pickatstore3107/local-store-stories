@@ -10,17 +10,20 @@ import { setReturnPath } from "@/components/require-account";
 import { useMyFollows } from "@/components/use-my-follows";
 import { friendlyError } from "@/lib/auth-errors";
 import { block } from "@/lib/follows";
+import { ReportProfileForm } from "./report-profile";
 
 const small =
   "inline-flex h-9 items-center justify-center rounded-full px-4 text-[0.85rem] font-bold transition";
 const note = "mt-2.5 text-[0.8rem] text-ink-soft";
+const quietLink = "text-sm font-bold text-ink-soft underline underline-offset-4 hover:text-brand-red";
 
-/** Follow and Block on someone's profile, or Edit, Saved and Share on your own. */
+/** Follow, Block and Report on someone's profile, or Edit, Saved and Share on your own. */
 export function ProfileActions({ uid, name }: { uid: string; name: string }) {
   const { loading, user, consent } = useAuth();
   const { blocked } = useMyFollows();
   const router = useRouter();
   const [confirming, setConfirming] = useState(false);
+  const [reporting, setReporting] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -33,16 +36,16 @@ export function ProfileActions({ uid, name }: { uid: string; name: string }) {
 
   if (user?.uid === uid) {
     return (
-      <div className="flex flex-col items-center sm:items-start">
-        <div className="flex flex-wrap justify-center gap-2">
-          <Link href="/account" className={`${small} bg-white text-ink ring-1 ring-ink/20 hover:bg-paper`}>
+      <div className="flex flex-col items-start">
+        <div className="flex w-full gap-2 sm:w-auto">
+          <Link href="/account" className={`${small} flex-1 bg-white text-ink ring-1 ring-ink/20 hover:bg-paper sm:flex-none`}>
             Edit profile
           </Link>
-          <Link href="/saved" className={`${small} gap-1.5 bg-white text-ink ring-1 ring-ink/20 hover:bg-paper`}>
+          <Link href="/saved" className={`${small} flex-1 gap-1.5 bg-white text-ink ring-1 ring-ink/20 hover:bg-paper sm:flex-none`}>
             <BookmarkIcon filled className="h-4 w-4 text-brand-red" />
             Saved
           </Link>
-          <Link href="/share" className={`${small} bg-brand-red text-white hover:bg-brand-red-deep`}>
+          <Link href="/share" className={`${small} flex-1 bg-brand-red text-white hover:bg-brand-red-deep sm:flex-none`}>
             Share a post
           </Link>
         </div>
@@ -70,7 +73,7 @@ export function ProfileActions({ uid, name }: { uid: string; name: string }) {
   }
 
   return (
-    <div className="flex flex-col items-center sm:items-start">
+    <div className="flex flex-col items-start">
       <FollowButton uid={uid} name={name} />
       <p className={note}>
         {isBlocked
@@ -78,14 +81,20 @@ export function ProfileActions({ uid, name }: { uid: string; name: string }) {
           : "Anyone can see who you follow."}
       </p>
 
-      {member && !isBlocked && !confirming && (
-        <button
-          type="button"
-          onClick={() => setConfirming(true)}
-          className="mt-2 text-sm font-bold text-ink-soft underline underline-offset-4 hover:text-brand-red"
-        >
-          Block
-        </button>
+      {member && !confirming && !reporting && (
+        <div className="mt-2 flex gap-4">
+          {!isBlocked && (
+            <button type="button" onClick={() => setConfirming(true)} className={quietLink}>
+              Block
+            </button>
+          )}
+          <button type="button" onClick={() => setReporting(true)} className={quietLink}>
+            Report
+          </button>
+        </div>
+      )}
+      {member && reporting && (
+        <ReportProfileForm uid={uid} name={name} onClose={() => setReporting(false)} />
       )}
       {member && !isBlocked && confirming && (
         <div className="mt-4 max-w-sm rounded-2xl bg-white p-4 text-left text-sm text-ink shadow-sm ring-1 ring-ink/10">

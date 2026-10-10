@@ -19,7 +19,9 @@ import { friendlyError } from "@/lib/auth-errors";
 import { getFirebase } from "@/lib/firebase";
 import { refreshPeople } from "@/lib/follows";
 import { personPath } from "@/lib/people";
+import { BIO_MAX, bioProblem } from "@/lib/profiles";
 import { BlockedPeople } from "./blocked-people";
+import { ProfilePhoto } from "./profile-photo";
 
 // Set before asking someone to sign in again, so the delete step reopens after.
 const PENDING_DELETE = "lss:pending-delete";
@@ -45,6 +47,7 @@ export function AccountPanel() {
   const [editing, setEditing] = useState(false);
   const [displayName, setDisplayName] = useState(profile?.displayName ?? "");
   const [city, setCity] = useState(profile?.city ?? "");
+  const [bio, setBio] = useState(profile?.bio ?? "");
   const [confirmingDelete, setConfirmingDelete] = useState(hasPendingDelete);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -63,10 +66,15 @@ export function AccountPanel() {
       setError("Please enter a name and a city.");
       return;
     }
+    const problem = bioProblem(bio);
+    if (problem) {
+      setError(problem);
+      return;
+    }
     setError(null);
     setBusy(true);
     try {
-      await updateProfile(user.uid, { displayName: name, city: place });
+      await updateProfile(user.uid, { displayName: name, city: place, bio });
       await refreshPeople(user, [user.uid]);
       await refresh();
       setEditing(false);
@@ -118,6 +126,7 @@ export function AccountPanel() {
       <h1 className={pageTitle}>Profile and settings</h1>
       <section className={card}>
         <h2 className="text-[0.8rem] font-semibold text-ink-soft">Shown publicly</h2>
+        <ProfilePhoto />
         {editing ? (
           <form onSubmit={save} noValidate className="mt-3">
             <label htmlFor="displayName" className="block text-sm font-bold text-ink">
@@ -140,6 +149,30 @@ export function AccountPanel() {
               onChange={(e) => setCity(e.target.value)}
               className={`${input} mt-2`}
             />
+            <div className="mt-4 flex items-baseline justify-between gap-3">
+              <label htmlFor="bio" className="block text-sm font-bold text-ink">
+                Bio <span className="font-normal text-ink-soft">(if you like)</span>
+              </label>
+              <span
+                aria-live="polite"
+                className={`text-[0.8rem] ${bio.trim().length > BIO_MAX ? "font-bold text-brand-red" : "text-ink-soft"}`}
+              >
+                {bio.trim().length}/{BIO_MAX}
+              </span>
+            </div>
+            <textarea
+              id="bio"
+              value={bio}
+              rows={3}
+              maxLength={BIO_MAX + 20}
+              onChange={(e) => setBio(e.target.value)}
+              aria-describedby="bio-hint"
+              placeholder="A line about you, like the shops you grew up with"
+              className={`${input} mt-2 resize-none`}
+            />
+            <p id="bio-hint" className="mt-1.5 text-[0.8rem] text-ink-soft">
+              Anyone can see it. No links, please.
+            </p>
             <div className="mt-4 flex gap-3">
               <button type="submit" disabled={busy} className={primaryButton}>
                 {busy ? "Saving…" : "Save"}
@@ -150,6 +183,7 @@ export function AccountPanel() {
                   setEditing(false);
                   setDisplayName(profile.displayName);
                   setCity(profile.city);
+                  setBio(profile.bio ?? "");
                 }}
                 className={secondaryButton}
               >
@@ -158,12 +192,16 @@ export function AccountPanel() {
             </div>
           </form>
         ) : (
-          <div className="mt-3 flex items-start justify-between gap-4">
-            <dl>
+          <div className="mt-4 flex items-start justify-between gap-4">
+            <dl className="min-w-0">
               <dt className="sr-only">Name</dt>
-              <dd className="text-lg font-bold text-ink">{profile.displayName}</dd>
+              <dd className="break-words text-lg font-bold text-ink">{profile.displayName}</dd>
               <dt className="sr-only">City</dt>
               <dd className="text-ink-soft">{profile.city}</dd>
+              <dt className="sr-only">Bio</dt>
+              <dd className={`mt-1.5 whitespace-pre-line break-words text-[0.9rem] ${profile.bio ? "text-ink" : "text-ink-soft"}`}>
+                {profile.bio ?? "No bio yet."}
+              </dd>
             </dl>
             <button
               type="button"
@@ -190,7 +228,7 @@ export function AccountPanel() {
       <section className={card}>
         <h2 className="text-[1.05rem] font-bold text-ink">Delete my account</h2>
         <p className="mt-2 text-sm text-ink-soft">
-          This permanently removes your profile, your posts and photos, your likes and
+          This permanently removes your profile and profile photo, your posts and photos, your likes and
           comments, your invite links, who you follow and who follows you, the people you
           blocked, the posts you loved, the reports you sent, your consent record and your
           sign-in. It cannot be undone.

@@ -12,7 +12,7 @@ import {
 } from "firebase/firestore";
 import { getFirebase } from "./firebase";
 import { fold, searchWords } from "./memories";
-import { searchName, type ListedPerson } from "./people";
+import { photoOf, searchName, type ListedPerson } from "./people";
 
 // Members can find each other by name. Each profile keeps its name in small
 // letters without accents (nameLower), and a search asks for names that
@@ -44,9 +44,11 @@ export async function searchPeople(typed: string): Promise<ListedPerson[]> {
   );
   const words = searchWords(typed);
   return found.docs.flatMap((d) => {
-    const { displayName, city } = d.data();
+    const data = d.data();
+    const { displayName, city } = data;
     if (typeof displayName !== "string" || !nameMatches(displayName, words)) return [];
-    return [{ uid: d.id, name: displayName, city: typeof city === "string" ? city : null }];
+    const photo = photoOf(data)?.small ?? null;
+    return [{ uid: d.id, name: displayName, city: typeof city === "string" ? city : null, photo }];
   });
 }
 

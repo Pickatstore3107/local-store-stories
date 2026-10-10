@@ -64,7 +64,7 @@ export default function TermsPage() {
 
         <section>
           <h2 className="text-lg font-bold">What is not allowed</h2>
-          <p className="mt-2">In posts, comments, names and anything else you post:</p>
+          <p className="mt-2">In posts, comments, names, bios, profile photos and anything else you post:</p>
           <ul className="mt-2 list-disc space-y-1 pl-6">
             <li>Anything unkind, hateful or threatening about a person, a store or a community.</li>
             <li>Private details such as phone numbers, home addresses or someone else&apos;s photo.</li>
@@ -77,7 +77,7 @@ export default function TermsPage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-bold">How posts are checked</h2>
+          <h2 className="text-lg font-bold">How posts and profiles are checked</h2>
           <p className="mt-2">
             Posts go up straight away. Anyone can report a post, and a moderator reads every
             report. When three people report a post, it comes off the site until a moderator
@@ -85,8 +85,10 @@ export default function TermsPage() {
             reports it with good reason, and you&apos;ll see why on your profile. To keep the site free of spam,
             each person can share one new post a minute and up to {DAILY_MEMORY_LIMIT} a day.
             Comments show at once, without links, a few a minute; a moderator deletes any that
-            break these terms once they are reported. We may close the account of anyone who
-            keeps breaking these terms.
+            break these terms once they are reported. A profile photo shows only once a
+            moderator has approved it. If a profile is reported with good reason, a moderator
+            may remove its bio or photo, or change its name to Member. We may close the account
+            of anyone who keeps breaking these terms.
           </p>
         </section>
 

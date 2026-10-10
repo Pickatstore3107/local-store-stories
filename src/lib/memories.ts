@@ -25,6 +25,8 @@ export type WallMemory = {
   /** Their profile is at personPath(authorId). */
   authorId: string;
   authorName: string | null;
+  /** The small square of their profile photo, if a moderator approved one. */
+  authorPhoto: string | null;
   /**
    * A square photo, and one four wide by five tall for the feed: its first
    * photo, or its video's first frame.
@@ -58,15 +60,16 @@ export type PublicComment = {
   authorId: string;
   /** Null when their account is gone. */
   authorName: string | null;
+  authorPhoto: string | null;
   text: string;
   createdAt: number;
 };
 
 /** Everything shown on a memory's own page. */
-export type Memory = Omit<WallMemory, "authorId" | "authorName" | "comments" | "weekLikes"> & {
+export type Memory = Omit<WallMemory, "authorId" | "authorName" | "authorPhoto" | "comments" | "weekLikes"> & {
   ordered: string | null;
   visibility: Visibility;
-  author: { uid: string; name: string; city: string } | null;
+  author: { uid: string; name: string; city: string; photo: string | null } | null;
   /** Every photo, whole, in order; empty when it's a video. */
   photoUrls: string[];
   /** Its video, at most 30 seconds; photoUrl is then the video's first frame. */

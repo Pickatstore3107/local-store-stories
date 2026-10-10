@@ -21,7 +21,7 @@ export const personTag = (uid: string) => `person-${uid}`;
 const LIST_LIMIT = 1000;
 const PROFILES_PER_READ = 100;
 
-/** Someone's profile page: name, city, how many follow them and whom, and their memories. */
+/** Someone's profile page: name, city, bio and photo, how many follow them and whom, and their posts. */
 export async function loadPerson(uid: string): Promise<PersonResult> {
   "use cache";
   cacheTag(personTag(uid), WALL_TAG);
@@ -31,8 +31,9 @@ export async function loadPerson(uid: string): Promise<PersonResult> {
   }
   try {
     const profile = await getPublicDocument(`users/${uid}`);
-    const { name, city } = profile ? readPerson(profile.data) : { name: null, city: null };
-    if (!name) {
+    const person = profile ? readPerson(profile.data) : null;
+    const name = person?.name;
+    if (!person || !name) {
       cacheLife(WALL_LIFE);
       return { status: "missing" };
     }
@@ -44,15 +45,22 @@ export async function loadPerson(uid: string): Promise<PersonResult> {
     const memories = (wall?.stories ?? [])
       .filter((story) => story.authorId === uid)
       .sort((a, b) => b.approvedAt - a.approvedAt)
-      .map((story) => wallMemory(story, { ...wall?.people, [uid]: { name, city } }));
+      .map((story) => wallMemory(story, { ...wall?.people, [uid]: person }));
     // Without the Wall, the memories are missing: try again soon.
     cacheLife(wall ? WALL_LIFE : RETRY_LIFE);
-    return { status: "found", person: { uid, name, city, followers, following, memories } };
+    const { city, bio, photo } = person;
+    return { status: "found", person: { uid, name, city, bio, photo, followers, following, memories } };
   } catch (error) {
     console.error(`Could not load person ${uid}`, error);
     cacheLife(RETRY_LIFE);
     return { status: "error" };
   }
+}
+
+/** Someone's name, city and small photo for a list, or null when their account is gone. */
+function listed(uid: string, data: Record<string, unknown> | undefined): ListedPerson | null {
+  const { name, city, photo } = data ? readPerson(data) : { name: null, city: null, photo: null };
+  return name ? { uid, name, city, photo: photo?.small ?? null } : null;
 }
 
 /** The names of these people, in the same order. Deleted accounts are left out. */
@@ -62,9 +70,8 @@ async function loadNames(uids: string[]): Promise<ListedPerson[]> {
     const batch = uids.slice(i, i + PROFILES_PER_READ);
     const docs = await getPublicDocuments(batch.map((uid) => `users/${uid}`));
     for (const uid of batch) {
-      const profile = docs.get(`users/${uid}`);
-      const { name, city } = profile ? readPerson(profile.data) : { name: null, city: null };
-      if (name) found.set(uid, { uid, name, city });
+      const person = listed(uid, docs.get(`users/${uid}`)?.data);
+      if (person) found.set(uid, person);
     }
   }
   return uids.flatMap((uid) => found.get(uid) ?? []);
@@ -83,8 +90,8 @@ export async function loadFollowList(uid: string, kind: FollowKind): Promise<Fol
       getPublicDocument(`users/${uid}`),
       queryPublic("follows", kind === "followers" ? { to: uid } : { from: uid }, LIST_LIMIT),
     ]);
-    const { name, city } = profile ? readPerson(profile.data) : { name: null, city: null };
-    if (!name) {
+    const owner = listed(uid, profile?.data);
+    if (!owner) {
       cacheLife(WALL_LIFE);
       return { status: "missing" };
     }
@@ -98,7 +105,7 @@ export async function loadFollowList(uid: string, kind: FollowKind): Promise<Fol
       .map((follow) => follow.uid);
     const people = await loadNames([...new Set(others)]);
     cacheLife(WALL_LIFE);
-    return { status: "found", owner: { uid, name, city }, people };
+    return { status: "found", owner, people };
   } catch (error) {
     console.error(`Could not load the ${kind} of ${uid}`, error);
     cacheLife(RETRY_LIFE);

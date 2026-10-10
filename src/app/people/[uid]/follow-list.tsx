@@ -87,7 +87,7 @@ async function FollowList({ uid, kind }: { uid: string; kind: FollowKind }) {
         <ul className="mt-2 divide-y divide-ink/10">
           {people.map((person) => (
             <li key={person.uid} className="flex items-center gap-3 py-3">
-              <Avatar name={person.name} />
+              <Avatar name={person.name} photo={person.photo} />
               <div className="min-w-0 flex-1">
                 <Link
                   href={personPath(person.uid)}

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSyncExternalStore, type ReactNode } from "react";
-import { personPath } from "@/lib/people";
+import { personPath, photoOf } from "@/lib/people";
 import { useAuth } from "./auth-provider";
 import { Avatar } from "./avatar";
 import { BookmarkIcon, HomeIcon, MapIcon, PersonIcon, PlusIcon } from "./icons";
@@ -74,7 +74,10 @@ export function BottomBar() {
   const { loading, user, profile, consent } = useAuth();
   const pathname = usePathname();
   const typing = useTyping();
-  const me = user && consent && profile ? { uid: user.uid, name: profile.displayName } : null;
+  const me =
+    user && consent && profile
+      ? { uid: user.uid, name: profile.displayName, photo: photoOf(profile)?.small ?? null }
+      : null;
   const mine = me ? personPath(me.uid) : null;
   const icon = "h-[22px] w-[22px]";
 
@@ -108,7 +111,7 @@ export function BottomBar() {
         {me && mine ? (
           <Item href={mine} label="Me" spoken="My profile" current={pathname === mine || pathname === "/account"}>
             <span className={`rounded-full ring-2 ring-offset-1 ${pathname === mine ? "ring-brand-red" : "ring-transparent"}`}>
-              <Avatar name={me.name} size="bar" />
+              <Avatar name={me.name} photo={me.photo} size="bar" />
             </span>
           </Item>
         ) : loading ? (
