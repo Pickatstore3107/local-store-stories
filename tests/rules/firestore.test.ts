@@ -10,9 +10,12 @@ import {
   doc,
   getDoc,
   getDocs,
+  limit,
+  query,
   serverTimestamp,
   setDoc,
   updateDoc,
+  where,
   writeBatch,
   type Firestore,
 } from "firebase/firestore";
@@ -137,6 +140,23 @@ describe("reading", () => {
   it("does not let anyone list every profile", async () => {
     const db = env.authenticatedContext("asha").firestore();
     await assertFails(getDocs(collection(db, "users")));
+    await assertFails(getDocs(query(collection(db, "users"), limit(21))));
+  });
+
+  it("lets members search profiles by name, 20 at a time", async () => {
+    const search = (db: TestDb) =>
+      getDocs(
+        query(
+          collection(db as unknown as Firestore, "users"),
+          where("nameLower", ">=", "as"),
+          where("nameLower", "<", "as\uf8ff"),
+          limit(20),
+        ),
+      );
+    await assertSucceeds(search(env.authenticatedContext("asha").firestore()));
+    // Visitors and people who haven't given consent can't.
+    await assertFails(search(env.unauthenticatedContext().firestore()));
+    await assertFails(search(env.authenticatedContext("newcomer").firestore()));
   });
 
   it("lets only the owner read their consent record", async () => {
@@ -183,6 +203,33 @@ describe("editing a profile", () => {
     );
     await assertFails(
       updateDoc(doc(db, "users/asha"), { storyCount: 5, updatedAt: serverTimestamp() }),
+    );
+  });
+
+  it("keeps the name in small letters, for searching", async () => {
+    const db = env.authenticatedContext("asha").firestore();
+    await assertSucceeds(
+      updateDoc(doc(db, "users/asha"), { nameLower: "asha", updatedAt: serverTimestamp() }),
+    );
+    await assertSucceeds(
+      updateDoc(doc(db, "users/asha"), {
+        displayName: "Émile Ōtsuka",
+        nameLower: "emile otsuka",
+        updatedAt: serverTimestamp(),
+      }),
+    );
+    await assertFails(
+      updateDoc(doc(db, "users/asha"), { nameLower: "", updatedAt: serverTimestamp() }),
+    );
+    await assertFails(
+      updateDoc(doc(db, "users/asha"), { nameLower: 42, updatedAt: serverTimestamp() }),
+    );
+    await assertFails(updateDoc(doc(db, "users/asha"), { nameLower: "asha" }));
+  });
+
+  it("accepts the name in small letters when the account is made", async () => {
+    await assertSucceeds(
+      createAccount(env.authenticatedContext("ravi").firestore(), "ravi", profile({ displayName: "Ravi Teja", nameLower: "ravi teja" })),
     );
   });
 

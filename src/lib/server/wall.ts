@@ -1,5 +1,5 @@
 import { cacheLife, cacheTag } from "next/cache";
-import { excerpt, type MemoryResult, type Wall, type WallMemory } from "@/lib/memories";
+import type { Likes, MemoryResult, PublicComment, Wall, WallMemory } from "@/lib/memories";
 import { isUserId } from "@/lib/people";
 import { isPin, pinCenter } from "@/lib/pins";
 import type { Category, Visibility } from "@/lib/stories";
@@ -8,10 +8,11 @@ import {
   getPublicDocuments,
   hasDatabase,
   queryPublic,
+  queryPublicSince,
   type Fields,
   type PublicDocument,
 } from "./firestore";
-import { cardPhotoUrl, fullPhotoUrl, isStoryId, sharePhotoUrl } from "./photos";
+import { cardPhotoUrl, fullPhotoUrl, isStoryId, postPhotoUrl, sharePhotoUrl } from "./photos";
 
 // The Wall and each memory's page are built from Firestore as an anonymous
 // visitor sees it, then cached: visitors get a stored copy and Firestore is
@@ -22,6 +23,9 @@ export const memoryTag = (id: string) => `memory-${id}`;
 
 // Refreshed every 15 minutes, and straight away when a moderator approves,
 // hides or features a memory, or an author deletes one (/api/wall/refresh).
+// A memory's page is also refreshed when someone comments. Likes don't
+// refresh anything, to keep within the free plan's reads: the person who
+// liked sees it at once, and everyone else within 15 minutes.
 export const WALL_LIFE = { stale: 300, revalidate: 900, expire: 86400 };
 export const MEMORY_LIFE = { stale: 300, revalidate: 3600, expire: 86400 };
 // After an error, try again a minute later.
@@ -31,7 +35,11 @@ export const RETRY_LIFE = { stale: 300, revalidate: 60, expire: 3600 };
 // fetch the newest first, and pages.
 const WALL_LIMIT = 500;
 const FEATURED_LIMIT = 6;
-const CARD_CAPTION_MAX = 240;
+const COMMENTS_LIMIT = 300;
+// The likes of the last week, for what's trending on Home. Enough for the
+// pilot; beyond it the busiest memories still come out on top.
+const WEEK_MS = 7 * 86_400_000;
+const WEEK_LIKES_LIMIT = 500;
 
 export const text = (value: unknown) => (typeof value === "string" && value ? value : null);
 const number = (value: unknown) => (typeof value === "number" ? value : null);
@@ -62,6 +70,10 @@ export function readStory({ id, data }: PublicDocument) {
     approvedAt: number(data.reviewedAt) ?? number(data.createdAt) ?? 0,
     featuredAt: number(data.featuredAt),
     pin: isPin(data.pin) ? pinCenter(data.pin) : null,
+    likeCount: Math.max(0, number(data.likeCount) ?? 0),
+    privateLoves: Math.max(0, number(data.reactionCount) ?? 0),
+    lastLikerId: text(data.lastLikerId),
+    commentCount: Math.max(0, number(data.commentCount) ?? 0),
   };
   const { authorId, storeName, category, city, caption, visibility, photoId } = story;
   if (
@@ -94,7 +106,7 @@ export type PublicMemories = {
 const PROFILES_PER_READ = 100;
 
 /** The public profiles of these people. Deleted accounts are left out. */
-async function loadPeople(uids: string[]) {
+export async function loadPeople(uids: string[]) {
   const people: Record<string, Person> = {};
   const unique = [...new Set(uids)].filter(isUserId);
   for (let i = 0; i < unique.length; i += PROFILES_PER_READ) {
@@ -130,7 +142,9 @@ export async function loadPublicMemories(): Promise<PublicMemories | null> {
       return story?.visibility === "public" ? [story] : [];
     });
     try {
-      const people = await loadPeople(stories.map((story) => story.authorId));
+      const people = await loadPeople(
+        stories.flatMap((story) => (story.lastLikerId ? [story.authorId, story.lastLikerId] : [story.authorId])),
+      );
       cacheLife(WALL_LIFE);
       return { stories, people, complete: true };
     } catch (error) {
@@ -146,43 +160,92 @@ export async function loadPublicMemories(): Promise<PublicMemories | null> {
   }
 }
 
-/** An approved memory as a card on the Wall, the map or a profile. */
-export function wallMemory(story: PublicStory, authorName: string | null): WallMemory {
+/** Who liked a memory, as many as it says, with the latest liker's name if they still have an account. */
+function likesOf(story: PublicStory, people: Record<string, Person>): Likes {
+  const name = story.lastLikerId ? people[story.lastLikerId]?.name : null;
+  return {
+    count: story.likeCount + story.privateLoves,
+    privateLoves: story.privateLoves,
+    lastLiker: story.lastLikerId && name ? { uid: story.lastLikerId, name } : null,
+  };
+}
+
+/** An approved memory as a post on Home, a square in Explore, or a card on the map or a profile. */
+export function wallMemory(story: PublicStory, people: Record<string, Person>, weekLikes = 0): WallMemory {
   return {
     id: story.id,
     storeName: story.storeName,
     category: story.category,
     city: story.city,
     neighbourhood: story.neighbourhood,
-    caption: excerpt(story.caption, CARD_CAPTION_MAX),
+    caption: story.caption,
     year: story.year,
     authorId: story.authorId,
-    authorName,
+    authorName: people[story.authorId]?.name ?? null,
     photoUrl: safely(() => cardPhotoUrl(story.photoId)),
+    postPhotoUrl: safely(() => postPhotoUrl(story.photoId)),
+    sharedAt: story.sharedAt,
     approvedAt: story.approvedAt,
     featuredAt: story.featuredAt,
     pin: story.pin,
+    likes: likesOf(story, people),
+    weekLikes,
+    comments: story.commentCount,
   };
+}
+
+/**
+ * How many likes each memory got in the last seven days, by memory ID.
+ * Empty on error: Home then ranks by all likes instead.
+ */
+async function loadWeekLikes(): Promise<Record<string, number>> {
+  const counts: Record<string, number> = {};
+  if (!hasDatabase()) return counts;
+  try {
+    const likes = await queryPublicSince("likes", "at", Date.now() - WEEK_MS, WEEK_LIKES_LIMIT);
+    for (const { data } of likes) {
+      const storyId = text(data.storyId);
+      if (storyId) counts[storyId] = (counts[storyId] ?? 0) + 1;
+    }
+  } catch (error) {
+    console.error("Could not load the likes of the last week", error);
+  }
+  return counts;
 }
 
 /** Every approved memory shared with everyone, newest first. Null on error. */
 export async function loadWall(): Promise<Wall | null> {
   "use cache";
   cacheTag(WALL_TAG);
-  const data = await loadPublicMemories();
+  const [data, weekLikes] = await Promise.all([loadPublicMemories(), loadWeekLikes()]);
   if (!data) {
     cacheLife(RETRY_LIFE);
     return null;
   }
   const memories = data.stories
-    .map((story) => wallMemory(story, data.people[story.authorId]?.name ?? null))
+    .map((story) => wallMemory(story, data.people, weekLikes[story.id] ?? 0))
     .sort((a, b) => b.approvedAt - a.approvedAt);
   const featured = memories
     .filter((memory) => memory.featuredAt)
     .sort((a, b) => b.featuredAt! - a.featuredAt!)
     .slice(0, FEATURED_LIMIT);
   cacheLife(data.complete ? WALL_LIFE : RETRY_LIFE);
-  return { memories, featured };
+  return { memories, featured, builtAt: Date.now() };
+}
+
+/** A memory's comments, the oldest first, with their authors' names. */
+async function loadComments(storyId: string): Promise<PublicComment[]> {
+  const docs = await queryPublic("comments", { storyId }, COMMENTS_LIMIT);
+  const comments = docs.flatMap(({ id, data }) => {
+    const authorId = text(data.authorId);
+    const body = text(data.text);
+    const createdAt = number(data.createdAt);
+    return authorId && body && createdAt !== null ? [{ id, authorId, text: body, createdAt }] : [];
+  });
+  const people = await loadPeople(comments.map((comment) => comment.authorId));
+  return comments
+    .map((comment) => ({ ...comment, authorName: people[comment.authorId]?.name ?? null }))
+    .sort((a, b) => a.createdAt - b.createdAt);
 }
 
 /** One approved memory, whether it's on the Wall or shared by link. */
@@ -199,9 +262,19 @@ export async function loadMemory(id: string): Promise<MemoryResult> {
     cacheLife(MEMORY_LIFE);
     if (!story) return { status: "missing" };
 
-    const profile = await getPublicDocument(`users/${story.authorId}`).catch(() => null);
-    const author = profile ? readPerson(profile.data) : null;
+    const [people, comments] = await Promise.all([
+      loadPeople(story.lastLikerId ? [story.authorId, story.lastLikerId] : [story.authorId]).catch(
+        () => ({}) as Record<string, Person>,
+      ),
+      loadComments(id).catch((error) => {
+        console.error(`Could not load the comments of memory ${id}`, error);
+        return null;
+      }),
+    ]);
+    const author = people[story.authorId];
     const name = author?.name;
+    // Without the comments, try again soon.
+    if (comments === null) cacheLife(RETRY_LIFE);
     return {
       status: "found",
       memory: {
@@ -220,7 +293,11 @@ export async function loadMemory(id: string): Promise<MemoryResult> {
         featuredAt: story.featuredAt,
         pin: story.pin,
         photoUrl: safely(() => fullPhotoUrl(story.photoId)),
+        postPhotoUrl: safely(() => postPhotoUrl(story.photoId)),
         shareImageUrl: safely(() => sharePhotoUrl(story.photoId)),
+        likes: likesOf(story, people),
+        comments: comments ?? [],
+        builtAt: Date.now(),
       },
     };
   } catch (error) {

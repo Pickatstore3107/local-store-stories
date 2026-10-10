@@ -27,14 +27,14 @@ export function checkPostLimit(
   if (now < before.lastAt + MEMORY_GAP_MS) {
     return {
       ok: false,
-      message: "You shared a memory a moment ago. Please wait a minute before sharing the next one.",
+      message: "You shared a post a moment ago. Please wait a minute before sharing the next one.",
     };
   }
   if (now >= before.windowStart + DAY_MS) return { ok: true, newWindow: true, count: 1 };
   if (before.count >= DAILY_MEMORY_LIMIT) {
     return {
       ok: false,
-      message: `You've shared ${DAILY_MEMORY_LIMIT} memories in the last day, the most for one day. Please share the next one a little later.`,
+      message: `You've shared ${DAILY_MEMORY_LIMIT} posts in the last day, the most for one day. Please share the next one a little later.`,
     };
   }
   return { ok: true, newWindow: false, count: before.count + 1 };

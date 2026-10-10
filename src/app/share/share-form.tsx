@@ -6,7 +6,7 @@ import { useLayoutEffect, useRef, useState, type FormEvent } from "react";
 import { useAuth } from "@/components/auth-provider";
 import { PinPicker } from "@/components/map/pin-picker";
 import { PassTheMemory } from "@/components/pass-the-memory";
-import { card, input, primaryButton } from "@/components/ui";
+import { card, input, pageLead, pageTitle, primaryButton } from "@/components/ui";
 import { friendlyError } from "@/lib/auth-errors";
 import { personPath } from "@/lib/people";
 import { pinAt, type Pin } from "@/lib/pins";
@@ -119,7 +119,7 @@ function StoryForm({
     !category && "Choose a category.",
     city.trim().length < PLACE_MIN && "Add the city.",
     neighbourhood.trim().length === 1 && "Write the neighbourhood in full, or leave it empty.",
-    caption.trim().length < CAPTION_MIN && `Write your memory (at least ${CAPTION_MIN} letters).`,
+    caption.trim().length < CAPTION_MIN && `Write your post (at least ${CAPTION_MIN} letters).`,
     yearNumber !== null &&
       !(Number.isInteger(yearNumber) && yearNumber >= YEAR_MIN && yearNumber <= thisYear) &&
       `The year should be between ${YEAR_MIN} and ${thisYear}.`,
@@ -172,9 +172,9 @@ function StoryForm({
   if (shared) {
     return (
       <div className={card}>
-        <h1 className="text-xl font-extrabold text-brand-red sm:text-2xl">Thank you for sharing</h1>
+        <h1 className={pageTitle}>Thank you for sharing</h1>
         <p className="mt-3 text-ink">
-          Your memory of <strong>{storeName.trim()}</strong> is saved and waiting for review.
+          Your post about <strong>{storeName.trim()}</strong> is saved and waiting for review.
           Nobody else can see it until a moderator approves it.
           {pin && visibility === "public" && " Then it goes on the Hyderabad map too."}
         </p>
@@ -188,7 +188,7 @@ function StoryForm({
         </div>
         <p className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-sm">
           <Link href={`${personPath(user.uid)}#memories`} className="font-bold text-brand-red underline underline-offset-4">
-            See my memories
+            See my posts
           </Link>
           <button
             type="button"
@@ -203,9 +203,9 @@ function StoryForm({
   }
 
   return (
-    <form onSubmit={submit} noValidate className={card}>
-      <h1 className="text-xl font-extrabold text-brand-red sm:text-2xl">Share a memory</h1>
-      <p className="mt-2 text-ink-soft">
+    <form onSubmit={submit} noValidate className="w-full">
+      <h1 className={pageTitle}>Share a post</h1>
+      <p className={pageLead}>
         The store you never forgot, in a photo and a few lines.
       </p>
 
@@ -320,12 +320,12 @@ function StoryForm({
         )}
         <p className="mt-2 text-xs text-ink-soft">
           For stores in Hyderabad. The map shows the area, never the exact spot, and only
-          memories shared with everyone.
+          posts shared with everyone.
         </p>
       </div>
 
       <label htmlFor="caption" className={label}>
-        Your memory
+        Your post
       </label>
       <textarea
         id="caption"
@@ -412,10 +412,10 @@ function StoryForm({
       </label>
 
       <button type="submit" disabled={busy || preparing} className={`${primaryButton} mt-6 w-full`}>
-        {busy ? "Sharing…" : "Share my memory"}
+        {busy ? "Sharing…" : "Share my post"}
       </button>
       <p className="mt-3 text-center text-xs text-ink-soft">
-        A moderator reviews every story before anyone else can see it.
+        A moderator reviews every post before anyone else can see it.
       </p>
 
       {error && (

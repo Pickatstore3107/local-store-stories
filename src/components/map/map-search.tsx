@@ -101,9 +101,9 @@ export function MapSearch({
           event.preventDefault();
           pick(options[current]);
         }}
-        className="flex h-12 items-center gap-2 rounded-full bg-white pl-4 pr-1.5 shadow-[0_8px_24px_-12px_rgba(43,29,26,0.55)] ring-1 ring-ink/10 focus-within:ring-2 focus-within:ring-brand-red/40"
+        className="flex h-11 items-center gap-2 rounded-full bg-white pl-3.5 pr-1 shadow-[0_4px_16px_-6px_rgba(43,29,26,0.45)] focus-within:ring-2 focus-within:ring-brand-red/40"
       >
-        <SearchIcon className="h-5 w-5 shrink-0 text-ink-soft" />
+        <SearchIcon className="h-[1.1rem] w-[1.1rem] shrink-0 text-ink-soft" />
         <label htmlFor={`${id}-input`} className="sr-only">
           Search stores and places in Hyderabad
         </label>
@@ -127,7 +127,7 @@ export function MapSearch({
           onFocus={() => setOpen(true)}
           onBlur={() => setOpen(false)}
           onKeyDown={keys}
-          placeholder="Search stores and places"
+          placeholder="Search Hyderabad"
           className="min-w-0 flex-1 bg-transparent py-2 text-ink outline-none placeholder:text-ink-soft [&::-webkit-search-cancel-button]:hidden"
         />
         {query && (
@@ -137,9 +137,9 @@ export function MapSearch({
               setQuery("");
               input.current?.focus();
             }}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-ink-soft hover:bg-paper hover:text-ink"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-ink-soft hover:bg-paper hover:text-ink"
           >
-            <CloseIcon className="h-5 w-5" />
+            <CloseIcon className="h-4 w-4" />
             <span className="sr-only">Clear the search</span>
           </button>
         )}
@@ -149,7 +149,7 @@ export function MapSearch({
         <div
           // Keeps the box focused while a result is tapped.
           onPointerDown={(event) => event.preventDefault()}
-          className="absolute inset-x-0 top-14 z-30 max-h-[min(26rem,60dvh)] overflow-y-auto rounded-2xl bg-white py-2 shadow-[0_16px_40px_-16px_rgba(43,29,26,0.6)] ring-1 ring-ink/10"
+          className="absolute inset-x-0 top-[3.25rem] z-30 max-h-[min(26rem,60dvh)] overflow-y-auto rounded-2xl bg-white py-2 shadow-[0_16px_40px_-16px_rgba(43,29,26,0.6)] ring-1 ring-ink/10"
         >
           <ul id={`${id}-list`} role="listbox" aria-label="Search results">
             {options.map((found, i) => (
@@ -159,13 +159,13 @@ export function MapSearch({
                 role="option"
                 aria-selected={i === current}
                 onClick={() => pick(found)}
-                className={`flex cursor-pointer items-center gap-3 px-4 py-2.5 ${i === current ? "bg-paper" : "hover:bg-paper/60"}`}
+                className={`flex cursor-pointer items-center gap-2.5 px-3.5 py-2 ${i === current ? "bg-paper" : "hover:bg-paper/60"}`}
               >
                 {found.type === "memory" ? <MemoryOption memory={found.memory} /> : <PlaceOption place={found.place} />}
               </li>
             ))}
           </ul>
-          <p role="status" className="px-4 py-2 text-sm text-ink-soft empty:hidden">
+          <p role="status" className="px-3.5 py-2 text-[0.85rem] text-ink-soft empty:hidden">
             {asked.length < 2
               ? memoryHits.length
                 ? ""
@@ -173,7 +173,7 @@ export function MapSearch({
               : searching
                 ? "Searching places…"
                 : results.failed && fresh
-                  ? "Places can't be searched just now. Memories still can."
+                  ? "Places can't be searched just now. Posts still can."
                   : options.length === 0
                     ? "Nothing in Hyderabad matches that."
                     : ""}
@@ -189,10 +189,10 @@ function MemoryOption({ memory }: { memory: PinnedMemory }) {
     <>
       <MemoryThumb memory={memory} className="w-9" />
       <span className="min-w-0">
-        <span lang={textLang(memory.storeName)} className="block truncate font-bold text-ink">
+        <span lang={textLang(memory.storeName)} className="block truncate text-[0.95rem] font-semibold text-ink">
           {memory.storeName}
         </span>
-        <span className="block truncate text-sm text-ink-soft">Memory · {placeLine(memory)}</span>
+        <span className="block truncate text-[0.8rem] text-ink-soft">Post · {placeLine(memory)}</span>
       </span>
     </>
   );
@@ -202,12 +202,12 @@ function PlaceOption({ place }: { place: Place }) {
   const Icon = place.store ? StoreIcon : PlaceIcon;
   return (
     <>
-      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-paper text-ink-soft">
-        <Icon className="h-5 w-5" />
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-paper text-ink-soft">
+        <Icon className="h-[1.1rem] w-[1.1rem]" />
       </span>
       <span className="min-w-0">
-        <span className="block truncate font-bold text-ink">{place.name}</span>
-        {place.detail && <span className="block truncate text-sm text-ink-soft">{place.detail}</span>}
+        <span className="block truncate text-[0.95rem] font-semibold text-ink">{place.name}</span>
+        {place.detail && <span className="block truncate text-[0.8rem] text-ink-soft">{place.detail}</span>}
       </span>
     </>
   );

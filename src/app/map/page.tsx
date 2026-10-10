@@ -4,11 +4,11 @@ import type { PinnedMemory } from "@/components/map/memory-map";
 import { loadWall } from "@/lib/server/wall";
 
 export const metadata: Metadata = {
-  title: "Hyderabad Memory Map · Local Stores & Their Stories",
+  title: "Hyderabad map · Local Stores & Their Stories",
   description: "Every pin is a Hyderabad store someone still remembers.",
   alternates: { canonical: "/map" },
   openGraph: {
-    title: "Hyderabad Memory Map",
+    title: "Hyderabad map",
     description: "Every pin is a Hyderabad store someone still remembers.",
   },
 };
@@ -20,7 +20,7 @@ export default async function MapPage() {
 
   return (
     <main className="h-screen-app relative w-full">
-      <h1 className="sr-only">Hyderabad Memory Map</h1>
+      <h1 className="sr-only">Hyderabad map</h1>
       <MapScreen memories={pinned} failed={wall === null} />
     </main>
   );

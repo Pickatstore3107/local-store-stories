@@ -88,7 +88,7 @@ export function InviteActions({ code, inviterName }: { code: string; inviterName
 
   const shareLink = (
     <Link href="/share" className={`${primaryButton} mt-4`}>
-      Share a memory
+      Share a post
     </Link>
   );
 
@@ -98,7 +98,7 @@ export function InviteActions({ code, inviterName }: { code: string; inviterName
         <p>You joined through this invite. Which store do you still think about?</p>
         <div className="mt-4 flex flex-wrap items-start gap-3">
           <Link href="/share" className={primaryButton}>
-            Share a memory
+            Share a post
           </Link>
           {inviterName && <FollowButton uid={check.from} name={inviterName} />}
         </div>
@@ -122,7 +122,7 @@ export function InviteActions({ code, inviterName }: { code: string; inviterName
     return (
       <div className={note}>
         <p>
-          You&apos;ve already joined, so you can follow {from} instead. Their memories will
+          You&apos;ve already joined, so you can follow {from} instead. Their posts will
           show in the Following tab on Home.
         </p>
         <div className="mt-4 flex flex-wrap items-start gap-3">
@@ -131,7 +131,7 @@ export function InviteActions({ code, inviterName }: { code: string; inviterName
             href="/share"
             className="inline-flex items-center px-2 py-2.5 font-bold text-brand-red underline underline-offset-4"
           >
-            Share a memory
+            Share a post
           </Link>
         </div>
         <p className="mt-3 text-sm text-ink-soft">Anyone can see who you follow.</p>

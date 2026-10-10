@@ -125,15 +125,14 @@ describe("featuring a memory", () => {
   });
 });
 
-describe("loving a memory", () => {
+describe("private loves from before likes were public", () => {
   beforeEach(() =>
     seed({
-      a1: story("a1", "approved"),
-      l1: story("l1", "approved", { visibility: "link" }),
-      p1: story("p1", "pending"),
+      a1: story("a1", "approved", { reactionCount: 1 }),
       h1: story("h1", "hidden", { reactionCount: 1 }),
     }, {
-      // Ravi loved h1 before it was hidden.
+      // Ravi loved a1, and h1 before it was hidden.
+      "usersPrivate/ravi/reactions/a1": { at: new Date(2026, 9, 2) },
       "usersPrivate/ravi/reactions/h1": { at: new Date(2026, 9, 2) },
     }),
   );
@@ -141,7 +140,7 @@ describe("loving a memory", () => {
   const mine = (db: Firestore, uid: string, storyId: string) =>
     doc(db, "usersPrivate", uid, "reactions", storyId);
 
-  /** The same batch the memory page writes. */
+  /** The batch the memory page used to write. */
   function love(db: Firestore, uid: string, storyId: string, by = 1, record = true) {
     const batch = writeBatch(db);
     if (record) batch.set(mine(db, uid, storyId), { at: serverTimestamp() });
@@ -156,23 +155,14 @@ describe("loving a memory", () => {
     return batch.commit();
   }
 
-  it("counts each person's love once", async () => {
-    await assertSucceeds(love(as("ravi"), "ravi", "a1"));
+  it("takes no new private loves", async () => {
+    await assertFails(love(as("mallory"), "mallory", "a1"));
+    await assertFails(love(as("mallory"), "mallory", "a1", 1, false));
     await assertFails(love(as("ravi"), "ravi", "a1"));
-    await assertFails(love(as("ravi"), "ravi", "a1", 1, false));
-    await assertSucceeds(love(as("mallory"), "mallory", "a1"));
-    expect((await read("stories/a1"))?.reactionCount).toBe(2);
+    expect((await read("stories/a1"))?.reactionCount).toBe(1);
   });
 
-  it("lets people love a memory shared by link, but not one that isn't approved", async () => {
-    await assertSucceeds(love(as("ravi"), "ravi", "l1"));
-    await assertFails(love(as("ravi"), "ravi", "p1"));
-    await assertFails(love(as("mallory"), "mallory", "h1"));
-    await assertFails(love(as("ravi"), "ravi", "missing"));
-  });
-
-  it("lets people take their love back", async () => {
-    await assertSucceeds(love(as("ravi"), "ravi", "a1"));
+  it("lets people take their love back, once", async () => {
     await assertSucceeds(unlove(as("ravi"), "ravi", "a1"));
     expect((await read("stories/a1"))?.reactionCount).toBe(0);
     expect(await read("usersPrivate/ravi/reactions/a1")).toBeUndefined();
@@ -181,73 +171,80 @@ describe("loving a memory", () => {
 
   it("keeps the count and the private record in step", async () => {
     const db = as("ravi");
-    await assertFails(love(db, "ravi", "a1", 1, false));
-    await assertFails(love(db, "ravi", "a1", 0));
-    await assertFails(love(db, "ravi", "a1", 2));
-    await assertFails(love(db, "ravi", "a1", -1));
     await assertFails(updateDoc(doc(db, "stories/a1"), { reactionCount: 100 }));
-    await assertSucceeds(love(db, "ravi", "a1"));
     await assertFails(unlove(db, "ravi", "a1", -1, false));
     await assertFails(unlove(db, "ravi", "a1", 0));
     await assertFails(unlove(db, "ravi", "a1", -2));
+    await assertFails(unlove(as("mallory"), "mallory", "a1"));
   });
 
-  it("doesn't let a love change anything else about the memory", async () => {
+  it("doesn't let taking a love back change anything else about the memory", async () => {
     const db = as("ravi");
-    const loveAnd = (changes: Record<string, unknown>) => {
+    const unloveAnd = (changes: Record<string, unknown>) => {
       const batch = writeBatch(db);
-      batch.set(mine(db, "ravi", "a1"), { at: serverTimestamp() });
-      batch.update(doc(db, "stories/a1"), { reactionCount: increment(1), ...changes });
+      batch.delete(mine(db, "ravi", "a1"));
+      batch.update(doc(db, "stories/a1"), { reactionCount: increment(-1), ...changes });
       return batch.commit();
     };
-    await assertFails(loveAnd({ caption: "Changed by someone else." }));
-    await assertFails(loveAnd({ featuredAt: serverTimestamp() }));
-    await assertFails(loveAnd({ status: "hidden" }));
-    await assertSucceeds(loveAnd({}));
-  });
-
-  it("refuses records for someone else, extra fields and back-dating", async () => {
-    const db = as("mallory");
-    await assertFails(love(db, "ravi", "a1"));
-    const batch = (data: Record<string, unknown>) => {
-      const b = writeBatch(db);
-      b.set(mine(db, "mallory", "a1"), data);
-      b.update(doc(db, "stories/a1"), { reactionCount: increment(1) });
-      return b.commit();
-    };
-    await assertFails(batch({ at: serverTimestamp(), name: "Mallory" }));
-    await assertFails(batch({ at: new Date(2020, 0, 1) }));
-    await assertFails(batch({}));
-  });
-
-  it("needs consent and a sign-in", async () => {
-    await assertFails(love(as("newcomer"), "newcomer", "a1"));
-    const db = visitor();
-    await assertFails(updateDoc(doc(db, "stories/a1"), { reactionCount: increment(1) }));
+    await assertFails(unloveAnd({ caption: "Changed by someone else." }));
+    await assertFails(unloveAnd({ featuredAt: serverTimestamp() }));
+    await assertFails(unloveAnd({ status: "hidden" }));
+    await assertSucceeds(unloveAnd({}));
   });
 
   it("still lets people take back a love after the memory is hidden or deleted", async () => {
     await assertSucceeds(unlove(as("ravi"), "ravi", "h1"));
     expect((await read("stories/h1"))?.reactionCount).toBe(0);
 
-    await assertSucceeds(love(as("ravi"), "ravi", "a1"));
     await assertSucceeds(deleteDoc(doc(as("asha"), "stories/a1")));
     await assertSucceeds(deleteDoc(mine(as("ravi"), "ravi", "a1")));
   });
 
   it("doesn't let anyone delete a record without its count while the memory exists", async () => {
-    await assertSucceeds(love(as("ravi"), "ravi", "a1"));
     await assertFails(deleteDoc(mine(as("ravi"), "ravi", "a1")));
   });
 
   it("keeps who loved a memory private, even from its author and moderators", async () => {
-    await assertSucceeds(love(as("ravi"), "ravi", "a1"));
     await assertSucceeds(getDoc(mine(as("ravi"), "ravi", "a1")));
     await assertSucceeds(getDocs(collection(as("ravi"), "usersPrivate/ravi/reactions")));
     for (const db of [as("asha"), as("mod"), as("mallory"), visitor()]) {
       await assertFails(getDoc(mine(db, "ravi", "a1")));
       await assertFails(getDocs(collection(db, "usersPrivate/ravi/reactions")));
     }
+  });
+});
+
+describe("saving a place", () => {
+  beforeEach(() => seed({ a1: story("a1", "approved") }));
+
+  const saved = (db: Firestore, uid: string, storyId: string) => doc(db, "usersPrivate", uid, "saved", storyId);
+
+  it("lets a member save and unsave a memory", async () => {
+    const db = as("ravi");
+    await assertSucceeds(setDoc(saved(db, "ravi", "a1"), { at: serverTimestamp() }));
+    await assertSucceeds(getDocs(collection(db, "usersPrivate/ravi/saved")));
+    await assertSucceeds(deleteDoc(saved(db, "ravi", "a1")));
+  });
+
+  it("keeps who saved a memory private, even from its author and moderators", async () => {
+    await assertSucceeds(setDoc(saved(as("ravi"), "ravi", "a1"), { at: serverTimestamp() }));
+    for (const db of [as("asha"), as("mod"), as("mallory"), visitor()]) {
+      await assertFails(getDoc(saved(db, "ravi", "a1")));
+      await assertFails(getDocs(collection(db, "usersPrivate/ravi/saved")));
+      await assertFails(deleteDoc(saved(db, "ravi", "a1")));
+    }
+  });
+
+  it("only saves for yourself, with the time it was saved and nothing else", async () => {
+    await assertFails(setDoc(saved(as("mallory"), "ravi", "a1"), { at: serverTimestamp() }));
+    await assertFails(setDoc(saved(visitor(), "ravi", "a1"), { at: serverTimestamp() }));
+    await assertFails(setDoc(saved(as("ravi"), "ravi", "a1"), { at: new Date(2020, 0, 1) }));
+    await assertFails(setDoc(saved(as("ravi"), "ravi", "a1"), { at: serverTimestamp(), note: "hi" }));
+    await assertFails(setDoc(saved(as("ravi"), "ravi", "x".repeat(41)), { at: serverTimestamp() }));
+  });
+
+  it("needs consent first", async () => {
+    await assertFails(setDoc(saved(as("newcomer"), "newcomer", "a1"), { at: serverTimestamp() }));
   });
 });
 

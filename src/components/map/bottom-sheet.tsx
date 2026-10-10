@@ -129,11 +129,11 @@ export function BottomSheet({
     <section
       aria-label={label}
       style={style}
-      className={`absolute inset-x-0 bottom-0 z-20 flex h-(--sheet-h) translate-y-(--sheet-y) flex-col rounded-t-3xl bg-white shadow-[0_-12px_32px_-20px_rgba(43,29,26,0.7)] ring-1 ring-ink/5 sm:inset-x-auto sm:bottom-4 sm:left-4 sm:top-(--panel-top) sm:h-auto sm:w-[23rem] sm:translate-y-0 sm:rounded-3xl ${heights ? "" : "max-sm:invisible"}`}
+      className={`absolute inset-x-0 bottom-0 z-20 flex h-(--sheet-h) translate-y-(--sheet-y) flex-col rounded-t-[1.25rem] bg-white shadow-[0_-8px_24px_-16px_rgba(43,29,26,0.6)] sm:inset-x-auto sm:bottom-4 sm:left-4 sm:top-(--panel-top) sm:h-auto sm:w-[23rem] sm:translate-y-0 sm:rounded-3xl ${heights ? "" : "max-sm:invisible"}`}
     >
       <div
         onPointerDown={down}
-        className="shrink-0 touch-none select-none px-4 pb-2 pt-1.5 sm:touch-auto sm:select-auto sm:pt-4"
+        className="shrink-0 touch-none select-none px-4 pb-1.5 pt-1 sm:touch-auto sm:select-auto sm:pt-4"
       >
         <button
           type="button"
@@ -143,7 +143,7 @@ export function BottomSheet({
           }
           className="mx-auto flex h-5 w-16 cursor-grab items-center justify-center sm:hidden"
         >
-          <span className="block h-1.5 w-10 rounded-full bg-ink/20" />
+          <span className="block h-1 w-9 rounded-full bg-ink/20" />
         </button>
         {header}
       </div>

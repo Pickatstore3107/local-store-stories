@@ -15,7 +15,8 @@ import {
   type CSSProperties,
 } from "react";
 import { useAuth } from "@/components/auth-provider";
-import { LocateIcon } from "@/components/icons";
+import { CategoryIcon } from "@/components/category-icon";
+import { GridIcon, LocateIcon, PeopleIcon } from "@/components/icons";
 import { setReturnPath } from "@/components/require-account";
 import { useMyFollows } from "@/components/use-my-follows";
 import { fold } from "@/lib/memories";
@@ -29,7 +30,6 @@ import {
   PlaceDetail,
   ShopDetail,
   ShopRow,
-  outlineButton,
   redButton,
 } from "./map-details";
 import { MapSearch, type Found } from "./map-search";
@@ -46,9 +46,10 @@ type Open =
   | null;
 
 const chip =
-  "shrink-0 rounded-full px-3.5 py-1.5 text-sm font-bold shadow-sm transition";
-const chipOff = "bg-white text-ink ring-1 ring-ink/10 hover:bg-paper";
-const chipOn = "bg-brand-red text-white ring-1 ring-brand-red";
+  "flex h-8 shrink-0 items-center gap-1.5 rounded-full pl-2.5 pr-3 text-[0.8rem] font-semibold leading-none shadow-[0_2px_8px_-3px_rgb(43_29_26/0.4)] transition";
+const chipOff = "bg-white text-ink hover:text-brand-red";
+const chipOn = "bg-brand-red text-white";
+const chipIcon = (on: boolean) => `h-4 w-4 ${on ? "text-white" : "text-brand-red"}`;
 
 const WIDE = "(min-width: 640px)";
 
@@ -354,7 +355,7 @@ export function MapScreen({
         : null;
 
   const counts = [
-    listed.length ? plural(listed.length, "memory", "memories") : null,
+    listed.length ? plural(listed.length, "post", "posts") : null,
     shopList.length ? plural(shopList.length, "shop", "shops") : null,
   ]
     .filter(Boolean)
@@ -381,7 +382,7 @@ export function MapScreen({
         onEmptyClick={tapMap}
         focusPadding={padding}
         fitKey={`${following}-${category}`}
-        label="Map of Hyderabad with memory pins"
+        label="Map of Hyderabad with post pins"
         framed={false}
         className="absolute inset-0"
       />
@@ -394,14 +395,27 @@ export function MapScreen({
         <div
           role="group"
           aria-label="Which pins"
-          className="pointer-events-auto -mx-3 flex gap-2 overflow-x-auto px-3 pb-1 [scrollbar-width:none] sm:mx-0 sm:px-0"
+          className="pointer-events-auto -mx-3 flex gap-1.5 overflow-x-auto px-3 pb-2 [scrollbar-width:none] sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden"
         >
+          <button
+            type="button"
+            aria-pressed={!following && !category}
+            onClick={() => {
+              setFollowing(false);
+              setCategory(null);
+            }}
+            className={`${chip} ${!following && !category ? chipOn : chipOff}`}
+          >
+            <GridIcon className={chipIcon(!following && !category)} />
+            All
+          </button>
           <button
             type="button"
             aria-pressed={following}
             onClick={() => setFollowing(!following)}
             className={`${chip} ${following ? chipOn : chipOff}`}
           >
+            <PeopleIcon className={chipIcon(following)} />
             Following
           </button>
           {categories.map((c) => (
@@ -412,7 +426,8 @@ export function MapScreen({
               onClick={() => setCategory(category === c ? null : c)}
               className={`${chip} ${category === c ? chipOn : chipOff}`}
             >
-              {c}
+              <CategoryIcon category={c} className={chipIcon(category === c)} />
+              <span className="whitespace-nowrap">{c}</span>
             </button>
           ))}
         </div>
@@ -423,15 +438,15 @@ export function MapScreen({
         onClick={findMe}
         aria-pressed={!!me}
         title="Show where I am"
-        className={`absolute right-3 z-20 flex h-12 w-12 items-center justify-center rounded-full bg-white shadow-[0_8px_20px_-8px_rgba(43,29,26,0.6)] ring-1 ring-ink/10 transition-[bottom] duration-300 hover:bg-paper max-sm:bottom-[calc(var(--sheet-px)+2.25rem)] sm:bottom-10 ${me ? "text-[#1a73e8]" : "text-ink"} ${!wide && sheetAt === "full" ? "max-sm:hidden" : ""}`}
+        className={`absolute right-3 z-20 flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-[0_4px_14px_-4px_rgba(43,29,26,0.45)] transition-[bottom] duration-300 hover:bg-paper max-sm:bottom-[calc(var(--sheet-px)+1.75rem)] sm:bottom-10 ${me ? "text-[#1a73e8]" : "text-ink"} ${!wide && sheetAt === "full" ? "max-sm:hidden" : ""}`}
       >
         {location.status === "finding" ? (
           <span
             aria-hidden="true"
-            className="h-5 w-5 animate-spin rounded-full border-2 border-ink/20 border-t-[#1a73e8]"
+            className="h-4 w-4 animate-spin rounded-full border-2 border-ink/20 border-t-[#1a73e8]"
           />
         ) : (
-          <LocateIcon className="h-6 w-6" />
+          <LocateIcon className="h-5 w-5" />
         )}
         <span className="sr-only">Show where I am</span>
       </button>
@@ -444,13 +459,25 @@ export function MapScreen({
         label={opened ? "Details" : here ? "Near you" : "In this area"}
         header={
           !opened && (
-            <div className="flex items-baseline justify-between gap-3">
-              <h2 className="text-lg font-extrabold text-ink">
-                {here ? "Near you" : "In this area"}
-              </h2>
-              <p role="status" className="truncate text-sm text-ink-soft">
-                {counts}
-              </p>
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <h2 className="text-[1.05rem] font-bold leading-tight text-ink">
+                  {here ? "Near you" : "In this area"}
+                </h2>
+                <p role="status" className="truncate text-[0.8rem] text-ink-soft">
+                  {counts || "Nothing pinned here yet"}
+                </p>
+              </div>
+              {location.status === "off" && (
+                <button
+                  type="button"
+                  onClick={findMe}
+                  className="flex h-8 shrink-0 items-center gap-1.5 rounded-full bg-paper pl-2.5 pr-3 text-[0.8rem] font-semibold text-ink transition hover:text-brand-red"
+                >
+                  <LocateIcon className="h-4 w-4 text-[#1a73e8]" />
+                  Near me
+                </button>
+              )}
             </div>
           )
         }
@@ -483,9 +510,9 @@ export function MapScreen({
             {failed && (
               <p
                 role="alert"
-                className="mb-3 rounded-2xl bg-brand-red/10 px-4 py-3 text-ink"
+                className="mb-2 rounded-xl bg-brand-red/10 px-3 py-2 text-[0.85rem] text-ink"
               >
-                The memories couldn&apos;t be loaded just now. Please try again
+                The posts couldn&apos;t be loaded just now. Please try again
                 in a minute.
               </p>
             )}
@@ -493,11 +520,13 @@ export function MapScreen({
             <LocationNote location={location} onLocate={findMe} />
 
             {listed.length > 0 && (
-              <section aria-label="Memories" className="mt-2">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-ink-soft">
-                  Memories
-                </h3>
-                <ul className="-mx-2 mt-1">
+              <section aria-label="Posts" className="mt-1">
+                {shopList.length > 0 && (
+                  <h3 className="text-[0.8rem] font-semibold text-ink-soft">
+                    Posts
+                  </h3>
+                )}
+                <ul className="-mx-2 mt-0.5">
                   {listed.map(({ memory, metres }) => (
                     <MemoryRow
                       key={memory.id}
@@ -511,11 +540,13 @@ export function MapScreen({
             )}
 
             {shopList.length > 0 && (
-              <section aria-label="Shops" className="mt-4">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-ink-soft">
-                  {here ? "Shops within 2 km" : "Shops here"}
-                </h3>
-                <ul className="-mx-2 mt-1">
+              <section aria-label="Shops" className="mt-3">
+                {listed.length > 0 && (
+                  <h3 className="text-[0.8rem] font-semibold text-ink-soft">
+                    {here ? "Shops within 2 km" : "Shops here"}
+                  </h3>
+                )}
+                <ul className="-mx-2 mt-0.5">
                   {shopList.map((shop) => (
                     <ShopRow
                       key={shop.key}
@@ -525,33 +556,24 @@ export function MapScreen({
                     />
                   ))}
                 </ul>
-                <p className="mt-2 text-xs text-ink-soft">
-                  Shop names come from OpenStreetMap, so some small shops are
-                  missing.
+                <p className="mt-1 text-[0.75rem] text-ink-soft">
+                  Shop names from OpenStreetMap. Some small shops are missing.
                 </p>
               </section>
             )}
 
             {listed.length === 0 && shopList.length === 0 && (
-              <p className="py-4 text-ink-soft">
+              <p className="py-3 text-[0.9rem] text-ink-soft">
                 {here
-                  ? "No memories or shops found within 2 km of you yet."
+                  ? "No posts or shops found within 2 km of you yet."
                   : shops.zoomedOut
                     ? "No pins in view. Zoom in to see the shops here, or drag the map."
-                    : "No memories or shops in view. Drag the map to look around."}
+                    : "No posts or shops in view. Drag the map to look around."}
               </p>
             )}
 
-            <p className="mt-6 text-xs text-ink-soft">
-              Memory pins show the area, within about 500 m, never the exact
-              spot.{" "}
-              <Link
-                href="/share"
-                className="font-bold text-brand-red underline underline-offset-4"
-              >
-                Share a memory
-              </Link>{" "}
-              and put its store on the map. ·{" "}
+            <p className="mt-5 text-[0.75rem] text-ink-soft">
+              Pins show the area, never the exact spot. ·{" "}
               <Link href="/privacy" className="underline underline-offset-4">
                 Privacy
               </Link>{" "}
@@ -574,19 +596,15 @@ function LocationNote({
   location: MyLocation;
   onLocate: () => void;
 }) {
-  if (location.status === "on") return null;
+  if (location.status === "on" || location.status === "off") return null;
   if (location.status === "finding") {
     return (
-      <p
-        role="status"
-        className="mb-2 rounded-2xl bg-paper px-4 py-3 text-ink-soft"
-      >
+      <p role="status" className="mb-2 text-[0.85rem] text-ink-soft">
         Finding where you are…
       </p>
     );
   }
   const text = {
-    off: "See the memories and shops near you.",
     outside: "You're outside Hyderabad. The map covers Hyderabad only for now.",
     denied:
       "Location is blocked for this site. Tap the lock or ⓘ beside the web address, allow Location, then try again.",
@@ -594,18 +612,15 @@ function LocationNote({
       "We couldn't find where you are. Check that location is on in your phone's settings, then try again.",
   }[location.status];
   return (
-    <div
-      role={location.status === "off" ? undefined : "alert"}
-      className="mb-2 flex items-center gap-3 rounded-2xl bg-[#fff1c7] px-4 py-3"
-    >
-      <p className="min-w-0 flex-1 text-sm text-ink">{text}</p>
+    <div role="alert" className="mb-2 rounded-xl bg-paper px-3 py-2 text-[0.85rem] text-ink">
+      <p>{text}</p>
       {location.status !== "outside" && (
         <button
           type="button"
           onClick={onLocate}
-          className={location.status === "off" ? redButton : outlineButton}
+          className="mt-1 font-semibold text-brand-red underline underline-offset-4"
         >
-          {location.status === "off" ? "Use my location" : "Try again"}
+          Try again
         </button>
       )}
     </div>
@@ -615,16 +630,16 @@ function LocationNote({
 function MapNote({ note }: { note: "empty" | "signIn" | "nobody" }) {
   const { user } = useAuth();
   return (
-    <div className="mb-2 rounded-2xl bg-brand-yellow/15 px-4 py-3 text-sm text-ink">
+    <div className="mb-2 rounded-xl bg-paper px-3 py-2 text-[0.85rem] text-ink">
       {note === "empty" && (
         <p>
-          No pins yet. When you share a memory of a Hyderabad store, tap where
+          No pins yet. When you share a post about a Hyderabad store, tap where
           it was and it shows up here.
         </p>
       )}
       {note === "nobody" && (
         <p>
-          You&apos;re not following anyone yet. Tap a name on any memory, then
+          You&apos;re not following anyone yet. Tap a name on any post, then
           tap Follow, and their pins show here.
         </p>
       )}

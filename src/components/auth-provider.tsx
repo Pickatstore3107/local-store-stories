@@ -11,6 +11,7 @@ import {
 } from "react";
 import { loadAccount, type ConsentRecord, type Profile } from "@/lib/account";
 import { getFirebase } from "@/lib/firebase";
+import { keepSearchable } from "@/lib/people-search";
 
 type AuthState = {
   /** True until Firebase has told us whether someone is signed in. */
@@ -39,6 +40,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const account = await loadAccount(next.uid);
     setProfile(account.profile);
     setConsent(account.consent);
+    // Profiles made before people could be found by name become findable.
+    if (account.profile && account.consent) void keepSearchable(next, account.profile);
   }, []);
 
   useEffect(() => {

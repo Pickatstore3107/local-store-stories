@@ -7,16 +7,17 @@ import { personPath } from "@/lib/people";
 import { useAuth } from "./auth-provider";
 import { Avatar } from "./avatar";
 import { BellLink } from "./bell";
-import { PersonIcon, SearchIcon } from "./icons";
+import { CityPicker } from "./city-picker";
+import { PersonIcon } from "./icons";
 
 const navLink =
   "rounded-full px-3.5 py-2 text-sm font-bold text-ink-soft transition hover:text-ink aria-[current=page]:bg-white aria-[current=page]:text-brand-red aria-[current=page]:lift-sm";
 
 /**
- * The logo, and on a computer Home, the map, Share, the bell and your
- * profile. Phones get those in the bar at the bottom instead, and a search
- * button here. Visitors get Sign in, and people who signed in but haven't
- * finished joining are sent to finish.
+ * The logo, and on a computer Home, Explore, the map, Share, the bell and
+ * your profile. Phones get the main ones in the bar at the bottom instead,
+ * and the city and the bell here. Visitors get Sign in, and people who
+ * signed in but haven't finished joining are sent to finish.
  */
 export function SiteHeader() {
   const { loading, user, profile, consent } = useAuth();
@@ -32,22 +33,20 @@ export function SiteHeader() {
           width={900}
           height={419}
           priority
-          className="h-8 w-auto sm:h-11"
+          className="h-7 w-auto sm:h-11"
         />
       </Link>
-      {pathname !== "/map" && (
-        <Link
-          href="/map?search=1"
-          title="Search stores"
-          className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-ink lift-sm sm:hidden"
-        >
-          <SearchIcon className="h-5 w-5" />
-          <span className="sr-only">Search stores</span>
-        </Link>
-      )}
+      {/* On a phone, the city and the bell sit here; the rest is in the bar at the bottom. */}
+      <div className="flex items-center gap-0.5 sm:hidden">
+        <CityPicker />
+        {!loading && me && <BellLink />}
+      </div>
       <nav aria-label="Main" className="hidden items-center gap-2 sm:flex">
         <Link href="/" aria-current={pathname === "/" ? "page" : undefined} className={navLink}>
           Home
+        </Link>
+        <Link href="/explore" aria-current={pathname === "/explore" ? "page" : undefined} className={navLink}>
+          Explore
         </Link>
         <Link href="/map" aria-current={pathname === "/map" ? "page" : undefined} className={navLink}>
           Map
@@ -57,7 +56,7 @@ export function SiteHeader() {
           aria-current={pathname === "/share" ? "page" : undefined}
           className="ml-1 rounded-full bg-brand-red px-4 py-2 text-sm font-bold text-white shadow-[0_6px_16px_rgb(163_23_27/0.25)] transition hover:bg-brand-red-deep"
         >
-          Share a memory
+          Share a post
         </Link>
         {!loading && me && <BellLink />}
         {!loading && me && (

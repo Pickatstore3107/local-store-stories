@@ -7,7 +7,7 @@ import type { User } from "firebase/auth";
 import { useEffect, useState, type FormEvent } from "react";
 import { useAuth } from "@/components/auth-provider";
 import { Loading, returnPath } from "@/components/require-account";
-import { card, input, primaryButton } from "@/components/ui";
+import { card, input, pageTitle, primaryButton } from "@/components/ui";
 import { CITY_MAX, CITY_MIN, NAME_MAX, createAccount } from "@/lib/account";
 import { friendlyError } from "@/lib/auth-errors";
 import { MIN_AGE } from "@/lib/consent";
@@ -98,11 +98,11 @@ function ConsentForm({ user, refresh }: { user: User; refresh: () => Promise<voi
 
   return (
     <form onSubmit={submit} className={card} noValidate>
-      <h1 className="text-xl font-extrabold text-brand-red sm:text-2xl">Welcome! Before you begin</h1>
+      <h1 className={pageTitle}>Welcome! Before you begin</h1>
       {invite && (
         <p className="mt-4 rounded-2xl bg-brand-yellow/20 px-4 py-3 text-sm leading-relaxed text-ink">
           You&apos;re joining through {invite.name ? <strong>{invite.name}</strong> : "a friend"}
-          &apos;s invite. You&apos;ll follow {invite.name ?? "them"}, so their memories show in
+          &apos;s invite. You&apos;ll follow {invite.name ?? "them"}, so their posts show in
           your Following tab, and they&apos;ll see that you joined. You can unfollow at any
           time.
         </p>
@@ -113,7 +113,7 @@ function ConsentForm({ user, refresh }: { user: User; refresh: () => Promise<voi
         </p>
       )}
       <p className="mt-2 text-ink-soft">
-        Your memories are yours. Here is exactly what we show and what we keep private.
+        Your posts are yours. Here is exactly what we show and what we keep private.
       </p>
 
       <div className="mt-6 grid gap-3 sm:grid-cols-2">
@@ -124,6 +124,7 @@ function ConsentForm({ user, refresh }: { user: User; refresh: () => Promise<voi
             <li>Your city</li>
             <li>Stories you choose to publish, after review</li>
             <li>Who you follow, and who follows you</li>
+            <li>Posts you like, and comments you write</li>
             <li>Who invited you, if you join through a friend&apos;s invite</li>
           </ul>
         </section>

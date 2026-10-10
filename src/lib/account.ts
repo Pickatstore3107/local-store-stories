@@ -8,17 +8,26 @@ import {
   writeBatch,
   type Timestamp,
 } from "firebase/firestore";
+import { deleteMyCommentReports, deleteMyComments } from "./comments";
 import { CONSENT_VERSION } from "./consent";
 import { getFirebase } from "./firebase";
 import { deleteMyFollows, refreshPeople } from "./follows";
 import { deleteMyInvites, type OpenInvite } from "./invites";
+import { deleteMyLikes } from "./likes";
 import { deleteMyReactions } from "./reactions";
 import { deleteMyReports } from "./reports";
+import { deleteMySaved } from "./saved";
 import { deleteAllMyStories } from "./stories";
 
 /** Public profile, readable by anyone: users/{uid}. */
 export type Profile = {
   displayName: string;
+  /**
+   * The name in small letters without accents, for searching. Kept in step
+   * with the name on each visit (keepSearchable in src/lib/people-search.ts),
+   * so joining and renaming work the same with older security rules.
+   */
+  nameLower?: string;
   city: string;
   createdAt: Timestamp;
   updatedAt: Timestamp;
@@ -117,15 +126,20 @@ export function signedInRecently(user: User) {
 }
 
 /**
- * Deletes the person's stories and photos, takes back their loves, deletes their
- * reports and invites, ends every follow to and from them and their blocks,
- * deletes their profile, consent record, bell and the record of the invite
- * they joined through, and then the sign-in account.
+ * Deletes the person's stories and photos, takes back their likes and loves,
+ * forgets their saved places, deletes their comments, reports and invites,
+ * ends every follow to and from them and their blocks, deletes their
+ * profile, consent record, bell and the record of the invite they joined
+ * through, and then the sign-in account.
  */
 export async function deleteAccount(user: User) {
   await deleteAllMyStories(user);
+  await deleteMyLikes(user);
   await deleteMyReactions(user);
+  await deleteMySaved(user);
+  await deleteMyComments(user);
   await deleteMyReports(user);
+  await deleteMyCommentReports(user);
   await deleteMyInvites(user);
   await deleteMyFollows(user);
   const { db } = getFirebase();
@@ -135,9 +149,11 @@ export async function deleteAccount(user: User) {
   batch.delete(doc(db, "joins", user.uid));
   batch.delete(doc(db, "bells", user.uid));
   await batch.commit();
-  // The count of memories shared, deleted with the consent record gone. Rules
-  // from before the count was added refuse this, and then there is none.
+  // The counts of memories and comments shared, deleted with the consent
+  // record gone. Rules from before a count was added refuse this, and then
+  // there is none.
   await deleteDoc(doc(db, "postLimits", user.uid)).catch(() => {});
+  await deleteDoc(doc(db, "commentLimits", user.uid)).catch(() => {});
   // Their profile page goes straight away too.
   await refreshPeople(user, [user.uid]);
   await deleteUser(user);

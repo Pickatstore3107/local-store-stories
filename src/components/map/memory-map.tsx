@@ -24,12 +24,15 @@ import {
 
 export type PinnedMemory = WallMemory & { pin: LatLng };
 
+/** All the map needs to place a memory. */
+type Pin = Pick<PinnedMemory, "id" | "pin">;
+
 /**
  * Memories in the same square sit a little apart, inside it, so each can be
  * tapped once the map is zoomed in.
  */
-function spread(memories: PinnedMemory[]) {
-  const bySpot = new Map<string, PinnedMemory[]>();
+function spread(memories: Pin[]) {
+  const bySpot = new Map<string, Pin[]>();
   for (const m of memories) {
     const key = `${m.pin.lat},${m.pin.lng}`;
     bySpot.set(key, [...(bySpot.get(key) ?? []), m]);
@@ -64,7 +67,7 @@ export function fitTo(
 }
 
 /** Puts memories on a map that has the memory layers, and returns where each one sits. */
-export function setMemories(map: MapLibreMap, memories: PinnedMemory[]) {
+export function setMemories(map: MapLibreMap, memories: Pin[]) {
   const spots = spread(memories);
   (map.getSource("lss-memories") as GeoJSONSource).setData(
     collection(memories.map((m) => point(spots.get(m.id)!, { id: m.id }))),

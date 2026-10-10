@@ -22,8 +22,8 @@ export class FriendlyError extends Error {}
  * a screenshot is enough to diagnose them.
  */
 export function friendlyError(error: unknown) {
-  console.error(error);
   if (error instanceof FriendlyError) return error.message;
+  console.error(error);
   const code = error instanceof FirebaseError ? error.code : null;
   const message = code && messages[code];
   if (message) return `${message} (${code})`;

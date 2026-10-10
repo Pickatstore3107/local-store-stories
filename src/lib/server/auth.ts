@@ -111,8 +111,8 @@ export async function requireUnsavedStory(storyId: string, token: string) {
   // Missing, or someone else's memory that isn't public: either way, not one
   // of the person's own saved memories.
   if (response.status === 404 || response.status === 403) return;
-  if (!response.ok) throw new HttpError(502, "We couldn't check the memory. Please try again.");
-  throw new HttpError(409, "This memory already has its photo. To change it, share the memory again.");
+  if (!response.ok) throw new HttpError(502, "We couldn't check the post. Please try again.");
+  throw new HttpError(409, "This post already has its photo. To change it, share the post again.");
 }
 
 /** Only moderators, listed in moderators/{uid}, may see photos waiting for review. */

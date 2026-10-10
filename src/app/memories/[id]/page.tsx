@@ -3,12 +3,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { BackIcon, StarIcon } from "@/components/icons";
-import { PolaroidPhoto } from "@/components/polaroid";
 import { excerpt, placeLine, shortDate, textLang } from "@/lib/memories";
-import { personPath } from "@/lib/people";
 import { mapPath } from "@/lib/pins";
 import { loadMemory } from "@/lib/server/wall";
+import { Comments } from "./comments";
 import { MemoryActions } from "./memory-actions";
+import { MemoryPost } from "./memory-post";
 
 const SITE = "Local Stores & Their Stories";
 
@@ -23,7 +23,7 @@ export async function generateMetadata({ params }: PageProps<"/memories/[id]">):
   const { id } = await params;
   const result = await loadMemory(id);
   if (result.status !== "found") {
-    return { title: `A memory · ${SITE}`, robots: { index: false } };
+    return { title: `A post · ${SITE}`, robots: { index: false } };
   }
   const { memory } = result;
   const title = `${memory.storeName}, ${memory.city}`;
@@ -42,7 +42,7 @@ export async function generateMetadata({ params }: PageProps<"/memories/[id]">):
       description,
       // Without a photo, the site's own picture.
       images: memory.shareImageUrl
-        ? [{ url: memory.shareImageUrl, width: 1200, height: 630, alt: `A memory of ${title}` }]
+        ? [{ url: memory.shareImageUrl, width: 1200, height: 630, alt: `A post about ${title}` }]
         : ["/opengraph-image.png"],
     },
     twitter: { card: "summary_large_image" },
@@ -51,8 +51,8 @@ export async function generateMetadata({ params }: PageProps<"/memories/[id]">):
 
 export default function MemoryPage({ params }: PageProps<"/memories/[id]">) {
   return (
-    <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-6 sm:px-5 sm:py-10">
-      <Link href="/" className="inline-flex items-center gap-0.5 text-sm font-bold text-brand-red underline-offset-4 hover:underline">
+    <main className="mx-auto w-full max-w-xl flex-1 px-4 py-3 sm:px-5 sm:py-8">
+      <Link href="/" className="inline-flex items-center gap-0.5 text-[0.85rem] font-bold text-brand-red underline-offset-4 hover:underline">
         <BackIcon className="h-4 w-4" />
         Home
       </Link>
@@ -71,116 +71,96 @@ async function MemoryContent({ id }: { id: string }) {
   if (result.status === "error") {
     return (
       <p role="alert" className="py-24 text-center text-ink-soft">
-        This memory couldn&apos;t be loaded just now. Please try again in a minute.
+        This post couldn&apos;t be loaded just now. Please try again in a minute.
       </p>
     );
   }
   const { memory } = result;
 
   return (
-    <article className="mt-8">
-      <figure className="relative mx-auto max-w-lg rounded-[1.75rem] bg-white p-2 lift">
-        <div className="relative overflow-hidden rounded-[1.35rem]">
-          <PolaroidPhoto url={memory.photoUrl} storeName={memory.storeName} whole eager />
-          <span className="absolute left-3 top-3 rounded-full bg-brand-yellow px-2.5 py-1 text-xs font-bold text-ink">
-            {memory.category}
-          </span>
-        </div>
-        <figcaption className="px-3 pb-3 pt-4">
-          <h1 lang={textLang(memory.storeName)} className="text-2xl font-extrabold leading-tight tracking-tight text-ink sm:text-3xl">
-            {memory.storeName}
-          </h1>
-          <p className="mt-1 text-ink-soft">{placeLine(memory)}</p>
-        </figcaption>
-      </figure>
-
-      <div className="mt-10">
+    <article className="mt-3">
+      <MemoryPost memory={memory}>
+        <h1 lang={textLang(memory.storeName)} className="text-[1.3rem] font-extrabold leading-tight tracking-tight text-ink sm:text-2xl">
+          {memory.storeName}
+        </h1>
+        <p className="mt-0.5 text-[0.85rem] text-ink-soft">{placeLine(memory)}</p>
         <p
           lang={textLang(memory.caption)}
-          className="whitespace-pre-line font-hand text-2xl leading-relaxed text-ink sm:text-3xl"
+          className="mt-2.5 whitespace-pre-line font-hand text-[1.4rem] leading-snug text-ink sm:text-[1.6rem]"
         >
           {memory.caption}
         </p>
         {memory.ordered && (
-          <p className="mt-6 text-ink">
+          <p className="mt-2.5 text-[0.9rem] text-ink">
             <span className="font-bold">What I always ordered:</span>{" "}
             <span lang={textLang(memory.ordered)}>{memory.ordered}</span>
           </p>
         )}
-        {memory.author && (
-          <p className="mt-6 flex items-center justify-end gap-2 text-ink">
-            <span
-              aria-hidden="true"
-              className="flex h-7 w-7 items-center justify-center rounded-full bg-brand-red text-xs font-bold text-white"
-            >
-              {memory.author.name.charAt(0).toUpperCase()}
-            </span>
-            <span>
-              by{" "}
-              <Link
-                href={personPath(memory.author.uid)}
-                lang={textLang(memory.author.name)}
-                className="font-bold hover:text-brand-red"
-              >
-                {memory.author.name}
-              </Link>
-              {memory.author.city && <span className="text-ink-soft">, {memory.author.city}</span>}
-            </span>
-          </p>
-        )}
-        <p className="mt-6 flex flex-wrap gap-x-3 gap-y-1 text-sm text-ink-soft">
+        <p className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[0.8rem] text-ink-soft">
           <span>Shared on {shortDate(memory.sharedAt)}</span>
-        </p>
-        {memory.featuredAt && (
-          <p className="mt-1 flex items-center gap-1 text-sm font-bold text-brand-red-deep">
-            <StarIcon className="h-4 w-4" />
-            Featured on Home
-          </p>
-        )}
-        {memory.pin && memory.visibility === "public" && (
-          <p className="mt-3 text-sm">
+          {memory.featuredAt && (
+            <span className="flex items-center gap-1 font-bold text-brand-red-deep">
+              <StarIcon className="h-4 w-4" />
+              Featured
+            </span>
+          )}
+          {memory.pin && memory.visibility === "public" && (
             <Link
               href={mapPath(memory.id)}
               className="font-bold text-brand-red underline underline-offset-4"
             >
-              See it on the Hyderabad map
+              See it on the map
             </Link>
-          </p>
-        )}
+          )}
+        </p>
+      </MemoryPost>
+
+      <div className="mt-5 px-1">
         {memory.visibility === "link" && (
-          <p className="mt-6 rounded-2xl bg-brand-yellow/20 px-4 py-3 text-sm text-ink">
-            Its author shared this memory only with people who have the link. It isn&apos;t on
+          <p className="mb-5 rounded-xl bg-brand-yellow/20 px-3 py-2 text-[0.85rem] text-ink">
+            Its author shared this post only with people who have the link. It isn&apos;t on
             Home or their profile.
           </p>
         )}
+
+        <Comments
+          storyId={memory.id}
+          storyAuthorId={memory.author?.uid ?? null}
+          comments={memory.comments}
+          builtAt={memory.builtAt}
+        />
+
+        <Suspense fallback={<div className="mt-8 h-12 border-t border-ink/10" />}>
+          <MemoryActions id={memory.id} />
+        </Suspense>
+
+        {memory.visibility === "public" && (
+          <p className="mt-8 text-center text-[0.9rem]">
+            <Link
+              href={`/explore?category=${encodeURIComponent(memory.category)}`}
+              className="font-bold text-brand-red underline underline-offset-4"
+            >
+              More {memory.category} posts
+            </Link>
+          </p>
+        )}
       </div>
-
-      <Suspense fallback={<div className="mt-10 h-28 border-t border-ink/10" />}>
-        <MemoryActions id={memory.id} storeName={memory.storeName} city={memory.city} />
-      </Suspense>
-
-      {memory.visibility === "public" && (
-        <p className="mt-10 text-center">
-          <Link
-            href={`/?category=${encodeURIComponent(memory.category)}`}
-            className="font-bold text-brand-red underline underline-offset-4"
-          >
-            More {memory.category} memories
-          </Link>
-        </p>
-      )}
     </article>
   );
 }
 
 function MemorySkeleton() {
   return (
-    <div className="mt-8" role="status">
-      <span className="sr-only">Loading the memory…</span>
-      <div className="mx-auto max-w-lg animate-pulse rounded-[1.75rem] bg-white p-2 pb-5 lift">
-        <div className="aspect-square w-full rounded-[1.35rem] bg-sand" />
-        <div className="mx-3 mt-4 h-7 w-2/3 rounded bg-sand" />
-        <div className="mx-3 mt-2 h-4 w-1/2 rounded bg-sand" />
+    <div className="mt-3" role="status">
+      <span className="sr-only">Loading the post…</span>
+      <div className="animate-pulse overflow-hidden rounded-[1.25rem] bg-white pb-4 ring-1 ring-ink/[0.06]">
+        <div className="flex items-center gap-2.5 px-3.5 py-2.5">
+          <div className="h-8 w-8 rounded-full bg-sand" />
+          <div className="h-4 w-1/3 rounded bg-sand" />
+        </div>
+        <div className="aspect-square w-full bg-sand" />
+        <div className="mx-3.5 mt-3 h-5 w-1/4 rounded bg-sand" />
+        <div className="mx-3.5 mt-3 h-6 w-2/3 rounded bg-sand" />
       </div>
     </div>
   );

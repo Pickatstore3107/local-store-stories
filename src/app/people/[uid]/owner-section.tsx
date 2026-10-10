@@ -12,7 +12,7 @@ export function OwnerSection({ uid }: { uid: string }) {
   const { user, consent } = useAuth();
   if (!user || !consent || user.uid !== uid) return null;
   return (
-    <div className="mt-10 flex flex-col gap-6">
+    <div className="mt-8 flex flex-col gap-4">
       <ModeratorCard user={user} />
       <MyStories user={user} />
     </div>

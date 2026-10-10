@@ -33,7 +33,7 @@ export async function generateMetadata({ params }: PageProps<"/people/[uid]">): 
 
 export default function PersonPage({ params }: PageProps<"/people/[uid]">) {
   return (
-    <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-6 sm:px-5 sm:py-10">
+    <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-5 sm:px-5 sm:py-10">
       <Suspense fallback={<ProfileSkeleton />}>
         {params.then(({ uid }) => (
           <Profile uid={uid} />
@@ -59,16 +59,16 @@ async function Profile({ uid }: { uid: string }) {
 
   return (
     <article>
-      <header className="flex flex-col items-center gap-5 text-center sm:flex-row sm:items-start sm:gap-8 sm:text-left">
+      <header className="flex flex-col items-center gap-3 text-center sm:flex-row sm:items-start sm:gap-8 sm:text-left">
         <Avatar name={person.name} size="lg" />
         <div className="min-w-0 flex-1">
-          <h1 lang={textLang(person.name)} className="break-words text-2xl font-extrabold text-ink sm:text-3xl">
+          <h1 lang={textLang(person.name)} className="break-words text-[1.4rem] font-extrabold leading-tight text-ink sm:text-3xl">
             {person.name}
           </h1>
-          {person.city && <p className="mt-1 text-ink-soft">{person.city}</p>}
-          <ul className="mt-4 flex flex-wrap justify-center gap-x-6 gap-y-2 sm:justify-start">
+          {person.city && <p className="mt-0.5 text-[0.9rem] text-ink-soft">{person.city}</p>}
+          <ul className="mt-3 flex flex-wrap justify-center gap-x-5 gap-y-1 text-[0.9rem] sm:justify-start">
             <li className="text-ink">
-              <Stat count={person.memories.length} one="memory" many="memories" />
+              <Stat count={person.memories.length} one="post" many="posts" />
             </li>
             <li>
               <Link href={followListPath(uid, "followers")} className={statLink}>
@@ -81,7 +81,7 @@ async function Profile({ uid }: { uid: string }) {
               </Link>
             </li>
           </ul>
-          <div className="mt-6">
+          <div className="mt-4">
             <ProfileActions uid={uid} name={person.name} />
           </div>
         </div>
@@ -113,22 +113,22 @@ function MemoryGrid({ person }: { person: PublicPerson }) {
     <>
       {person.memories.length === 0 ? (
         <p className="py-12 text-center font-hand text-xl text-ink-soft">
-          No memories shared with everyone yet.
+          No posts shared with everyone yet.
         </p>
       ) : (
-        <ul className="mt-4 grid grid-cols-3 gap-2 sm:gap-3">
+        <ul className="mt-3 grid grid-cols-3 gap-1.5 sm:gap-3">
           {person.memories.map((memory, i) => (
             <li key={memory.id}>
               <Link
                 href={memoryPath(memory.id)}
                 title={memory.storeName}
-                className="block aspect-square overflow-hidden rounded-2xl bg-white lift transition hover:opacity-90 focus-visible:outline-4 focus-visible:outline-brand-red/40"
+                className="block aspect-square overflow-hidden rounded-xl bg-white transition hover:opacity-90 focus-visible:outline-4 focus-visible:outline-brand-red/40"
               >
                 {memory.photoUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element -- a signed link from our image host, already sized
                   <img
                     src={memory.photoUrl}
-                    alt={`Photo shared with the memory of ${memory.storeName}`}
+                    alt={`Photo shared with the post about ${memory.storeName}`}
                     width={600}
                     height={600}
                     loading={i < 6 ? "eager" : "lazy"}
@@ -155,13 +155,13 @@ function MemoryGrid({ person }: { person: PublicPerson }) {
     </>
   );
   return (
-    <section aria-labelledby="memories-heading" className="mt-10 border-t border-ink/10 pt-6">
+    <section aria-labelledby="memories-heading" className="mt-6 sm:mt-10">
       {pinned.length > 0 ? (
         <ProfileTabs name={person.name} pinned={pinned} grid={grid} />
       ) : (
         <>
           <h2 id="memories-heading" className="text-sm font-bold uppercase tracking-wider text-ink-soft">
-            Memories
+            Posts
           </h2>
           {grid}
         </>

@@ -44,7 +44,7 @@ export async function loadPerson(uid: string): Promise<PersonResult> {
     const memories = (wall?.stories ?? [])
       .filter((story) => story.authorId === uid)
       .sort((a, b) => b.approvedAt - a.approvedAt)
-      .map((story) => wallMemory(story, name));
+      .map((story) => wallMemory(story, { ...wall?.people, [uid]: { name, city } }));
     // Without the Wall, the memories are missing: try again soon.
     cacheLife(wall ? WALL_LIFE : RETRY_LIFE);
     return { status: "found", person: { uid, name, city, followers, following, memories } };

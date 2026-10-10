@@ -4,7 +4,7 @@ import type { User } from "firebase/auth";
 import { useEffect, useLayoutEffect, useState } from "react";
 import { useAuth } from "@/components/auth-provider";
 import { Loading } from "@/components/require-account";
-import { card, secondaryButton } from "@/components/ui";
+import { card, pageTitle, secondaryButton } from "@/components/ui";
 import { friendlyError } from "@/lib/auth-errors";
 import {
   countOpenReports,
@@ -18,18 +18,21 @@ import {
   type ReviewStory,
 } from "@/lib/moderation";
 import type { StoryStatus } from "@/lib/stories";
+import { countOpenCommentReports } from "@/lib/comments";
+import { CommentReports } from "./comment-reports";
 import { ModerationLog } from "./moderation-log";
 import { ReportCard, type ReportOutcome } from "./report-card";
 import { ReviewCard } from "./review-card";
 
-type Tab = StoryStatus | "reports" | "log";
+type Tab = StoryStatus | "reports" | "comments" | "log";
 
 const TABS: { key: Tab; label: string; empty: string }[] = [
-  { key: "pending", label: "Waiting", empty: "Nothing is waiting. Every memory has been reviewed." },
-  { key: "reports", label: "Reports", empty: "No open reports. Nobody has flagged a memory." },
-  { key: "approved", label: "Approved", empty: "No approved memories yet." },
-  { key: "rejected", label: "Not approved", empty: "No memories have been turned down." },
-  { key: "hidden", label: "Hidden", empty: "No memories are hidden." },
+  { key: "pending", label: "Waiting", empty: "Nothing is waiting. Every post has been reviewed." },
+  { key: "reports", label: "Reports", empty: "No open reports. Nobody has flagged a post." },
+  { key: "comments", label: "Comments", empty: "" },
+  { key: "approved", label: "Approved", empty: "No approved posts yet." },
+  { key: "rejected", label: "Not approved", empty: "No posts have been turned down." },
+  { key: "hidden", label: "Hidden", empty: "No posts are hidden." },
   { key: "log", label: "History", empty: "" },
 ];
 
@@ -42,7 +45,7 @@ const done: Record<ReviewAction, (name: string) => string> = {
 const closed: Record<ReportOutcome, (name: string) => string> = {
   hidden: (name) => `Hid “${name}” and closed its reports.`,
   kept: (name) => `Kept “${name}” up and closed its reports.`,
-  gone: () => "Closed the reports about a deleted memory.",
+  gone: () => "Closed the reports about a deleted post.",
 };
 
 export function ModerationPanel() {
@@ -75,6 +78,7 @@ function ReviewQueue({ user }: { user: User }) {
   const [more, setMore] = useState(false);
   const [waiting, setWaiting] = useState<number | null>(null);
   const [reported, setReported] = useState<number | null>(null);
+  const [commentsReported, setCommentsReported] = useState<number | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [round, setRound] = useState(0);
@@ -97,6 +101,9 @@ function ReviewQueue({ user }: { user: User }) {
     countOpenReports()
       .then((count) => current && setReported(count))
       .catch((e) => console.error("Could not count the reports", e));
+    countOpenCommentReports()
+      .then((count) => current && setCommentsReported(count))
+      .catch((e) => console.error("Could not count the comment reports", e));
     if (tab === "reports") {
       loadReports(user)
         .then((found) => {
@@ -109,7 +116,7 @@ function ReviewQueue({ user }: { user: User }) {
           setGroups([]);
           setError(friendlyError(e));
         });
-    } else if (tab !== "log") {
+    } else if (tab !== "log" && tab !== "comments") {
       loadReviewQueue(user, tab)
         .then((queue) => {
           if (!current) return;
@@ -153,12 +160,12 @@ function ReviewQueue({ user }: { user: User }) {
   return (
     <div className="flex flex-col gap-6">
       <section className={card}>
-        <h1 className="text-xl font-extrabold text-brand-red sm:text-2xl">Review memories</h1>
+        <h1 className={pageTitle}>Review posts</h1>
         <p className="mt-2 text-ink-soft">
-          Nothing is public until you approve it. If you turn a memory down or hide it, its
+          Nothing is public until you approve it. If you turn a post down or hide it, its
           author sees your note on their account page.
         </p>
-        <div role="tablist" aria-label="Memories" className="mt-5 flex flex-wrap gap-2">
+        <div role="tablist" aria-label="Posts" className="mt-5 flex flex-wrap gap-2">
           {TABS.map((t) => (
             <button
               key={t.key}
@@ -175,6 +182,7 @@ function ReviewQueue({ user }: { user: User }) {
               {t.label}
               {t.key === "pending" && waiting !== null && ` (${waiting})`}
               {t.key === "reports" && reported !== null && ` (${reported})`}
+              {t.key === "comments" && commentsReported !== null && ` (${commentsReported})`}
             </button>
           ))}
         </div>
@@ -190,6 +198,11 @@ function ReviewQueue({ user }: { user: User }) {
       <div role="tabpanel" aria-label={current.label} className="flex flex-col gap-6">
         {tab === "log" ? (
           <ModerationLog />
+        ) : tab === "comments" ? (
+          <CommentReports
+            user={user}
+            onClosed={(count) => setCommentsReported((n) => (n === null ? n : Math.max(0, n - count)))}
+          />
         ) : tab === "reports" ? (
           groups === null ? (
             <Loading />
@@ -224,7 +237,7 @@ function ReviewQueue({ user }: { user: User }) {
             )}
           </>
         )}
-        {tab !== "log" && (tab === "reports" ? groups : stories) !== null && (
+        {tab !== "log" && tab !== "comments" && (tab === "reports" ? groups : stories) !== null && (
           <button
             type="button"
             onClick={() => {
@@ -256,7 +269,7 @@ function NotModerator({ uid }: { uid: string }) {
 
   return (
     <section className={card}>
-      <h1 className="text-xl font-extrabold text-brand-red sm:text-2xl">Review memories</h1>
+      <h1 className={pageTitle}>Review posts</h1>
       <p className="mt-3 text-ink">This page is only for moderators.</p>
       <p className="mt-4 text-sm text-ink-soft">
         If you&apos;ve been asked to help moderate, send this code to the campaign team:

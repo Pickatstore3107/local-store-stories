@@ -1,6 +1,5 @@
 import {
   collection,
-  deleteDoc,
   deleteField,
   doc,
   getDoc,
@@ -25,6 +24,8 @@ import { checkPostLimit, DAILY_MEMORY_LIMIT, readPostLimit } from "./post-limits
 
 // Must match the list in firestore.rules.
 export const CATEGORIES = [
+  "Restaurants",
+  "Cafes",
   "Tea Stalls",
   "Bakeries",
   "School Canteens",
@@ -77,8 +78,14 @@ export type Story = {
   reviewLogId?: string;
   /** Set by a moderator to show the story in the Wall's Featured row. */
   featuredAt?: Timestamp;
-  /** How many people loved it; see src/lib/reactions.ts. */
+  /** How many people loved it privately, before likes were public; see src/lib/reactions.ts. */
   reactionCount?: number;
+  /** How many people liked it, and who did last; see src/lib/likes.ts. */
+  likeCount?: number;
+  lastLikerId?: string;
+  /** How many comments it has; see src/lib/comments.ts. */
+  commentCount?: number;
+  commentChange?: string;
 };
 
 export type StoryInput = {
@@ -272,7 +279,7 @@ export async function shareStory(user: User, input: StoryInput, photo: Blob) {
           await saveWithLimit(storyRef, story, user.uid, limit.raw, other);
         } catch {
           throw new FriendlyError(
-            "You can share one memory a minute, and up to " +
+            "You can share one post a minute, and up to " +
               `${DAILY_MEMORY_LIMIT} a day. Please try again a little later.`,
           );
         }
@@ -330,10 +337,39 @@ export async function setStoryPin(
   if (story.status === "approved") await refreshWall(user, [story.id]);
 }
 
+// Firestore takes up to 500 changes in one write.
+const WRITE_MAX = 500;
+
+/**
+ * Security rules from before likes and comments refuse to look for them,
+ * and then there are none: an empty list. Any other error is passed on.
+ */
+export function beforeLikes(error: unknown): never[] {
+  if (error instanceof FirebaseError && error.code === "permission-denied") return [];
+  throw error;
+}
+
+/**
+ * Deletes a story with its likes and comments, in one write. A memory with
+ * more than Firestore can take at once keeps the rest, but nobody can read
+ * the comments of a deleted memory, and people can still tidy their own away.
+ */
+async function deleteStoryDoc(storyId: string) {
+  const { db } = getFirebase();
+  const [likes, comments] = await Promise.all([
+    getDocs(query(collection(db, "likes"), where("storyId", "==", storyId))).then((r) => r.docs, beforeLikes),
+    getDocs(query(collection(db, "comments"), where("storyId", "==", storyId))).then((r) => r.docs, beforeLikes),
+  ]);
+  const batch = writeBatch(db);
+  for (const d of [...comments, ...likes].slice(0, WRITE_MAX - 1)) batch.delete(d.ref);
+  batch.delete(doc(db, "stories", storyId));
+  await batch.commit();
+}
+
 /** Deletes a story's photo first, then the story itself, then its invite links. */
 export async function deleteStory(user: User, story: { id: string; status: StoryStatus }) {
   await deletePhoto(user, story.id);
-  await deleteDoc(doc(getFirebase().db, "stories", story.id));
+  await deleteStoryDoc(story.id);
   // They stop working with the memory gone; this tidies them away.
   await deleteStoryInvites(user, story.id).catch((error) =>
     console.error("Could not delete the memory's invites", error),
@@ -346,8 +382,7 @@ export async function deleteAllMyStories(user: User) {
   const stories = await myStoryDocs(user.uid);
   if (!stories.length) return;
   await callApi(user, "/api/photos", { method: "DELETE" });
-  const { db } = getFirebase();
-  await Promise.all(stories.map((story) => deleteDoc(doc(db, "stories", story.id))));
+  for (const story of stories) await deleteStoryDoc(story.id);
   const approved = stories.filter((story) => story.status === "approved");
   if (approved.length) await refreshWall(user, approved.map((story) => story.id));
 }

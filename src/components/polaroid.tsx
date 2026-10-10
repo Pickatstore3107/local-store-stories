@@ -43,7 +43,7 @@ export function PolaroidPhoto({
     // eslint-disable-next-line @next/next/no-img-element -- a signed link from our image host, already sized
     <img
       src={url}
-      alt={`Photo shared with the memory of ${storeName}`}
+      alt={`Photo shared with the post about ${storeName}`}
       width={whole ? 1200 : 600}
       height={whole ? 1200 : 600}
       loading={eager ? "eager" : "lazy"}
@@ -135,11 +135,11 @@ export function PolaroidCard({
           <Link
             href={`${path}?report=1`}
             prefetch={false}
-            title="Report this memory"
+            title="Report this post"
             className="relative z-10 -mr-1.5 rounded-full p-1.5 text-ink-soft/80 transition hover:text-brand-red focus-visible:text-brand-red"
           >
             <FlagIcon />
-            <span className="sr-only">Report this memory</span>
+            <span className="sr-only">Report this post</span>
           </Link>
         </div>
       </div>
