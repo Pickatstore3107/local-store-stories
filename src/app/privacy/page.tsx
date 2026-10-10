@@ -89,8 +89,8 @@ export default function PrivacyPage() {
             never sees who you are or your posts.
           </p>
           <p className="mt-2">
-            The map can show where you are as a blue dot, with the posts and shops near you,
-            but only after you tap the locate button and allow it when your phone asks. Your
+            The map can show where you are as a blue dot, with the posts near you, but
+            only after you tap Near me and allow it when your phone asks. Your
             location stays in the page: we never save it, never send it to us, and never use it
             for a pin. You can turn it off in your browser&apos;s site settings at any time.
           </p>

@@ -1,26 +1,11 @@
 "use client";
 
-import type {
-  GeoJSONSource,
-  MapGeoJSONFeature,
-  MapMouseEvent,
-  Map as MapLibreMap,
-  PaddingOptions,
-} from "maplibre-gl";
+import type { ControlPosition, MapMouseEvent, Map as MapLibreMap, PaddingOptions } from "maplibre-gl";
 import { useEffect, useRef, useState, type RefObject } from "react";
 import type { WallMemory } from "@/lib/memories";
 import type { LatLng } from "@/lib/pins";
-import {
-  COLORS,
-  addMeLayers,
-  addPlaceLayer,
-  addSelectedPinLayer,
-  addSelectionLayers,
-  collection,
-  openMap,
-  point,
-  showSelected,
-} from "./open-map";
+import { addMeLayers, addPlaceLayer, addSelectionLayers, openMap, showSelected } from "./open-map";
+import { addPinSource, photoPins, type PhotoPins, type PinPost } from "./photo-pins";
 
 export type PinnedMemory = WallMemory & { pin: LatLng };
 
@@ -28,10 +13,10 @@ export type PinnedMemory = WallMemory & { pin: LatLng };
 type Pin = Pick<PinnedMemory, "id" | "pin">;
 
 /**
- * Memories in the same square sit a little apart, inside it, so each can be
- * tapped once the map is zoomed in.
+ * Where each memory sits on the map. Memories in the same square sit a
+ * little apart, inside it, so each can be tapped once the map is zoomed in.
  */
-function spread(memories: Pin[]) {
+export function pinSpots(memories: Pin[]) {
   const bySpot = new Map<string, Pin[]>();
   for (const m of memories) {
     const key = `${m.pin.lat},${m.pin.lng}`;
@@ -46,6 +31,12 @@ function spread(memories: Pin[]) {
     });
   }
   return spots;
+}
+
+/** Memories as the photo pins show them. */
+export function pinPosts(memories: (Pin & Pick<PinnedMemory, "storeName" | "photoUrl">)[]): PinPost[] {
+  const spots = pinSpots(memories);
+  return memories.map((m) => ({ id: m.id, spot: spots.get(m.id)!, name: m.storeName, photo: m.photoUrl }));
 }
 
 export function fitTo(
@@ -66,15 +57,6 @@ export function fitTo(
   );
 }
 
-/** Puts memories on a map that has the memory layers, and returns where each one sits. */
-export function setMemories(map: MapLibreMap, memories: Pin[]) {
-  const spots = spread(memories);
-  (map.getSource("lss-memories") as GeoJSONSource).setData(
-    collection(memories.map((m) => point(spots.get(m.id)!, { id: m.id }))),
-  );
-  return spots;
-}
-
 type Latest = RefObject<{
   onSelect: (id: string | null) => void;
   onVisible?: (ids: Set<string>) => void;
@@ -82,6 +64,7 @@ type Latest = RefObject<{
   onMap?: (map: MapLibreMap) => void;
   onEmptyClick?: (event: MapMouseEvent) => void;
   focusPadding?: PaddingOptions;
+  moveToSelected?: boolean;
   memories: PinnedMemory[];
   spots: Map<string, LatLng>;
 }>;
@@ -95,6 +78,19 @@ function reportVisible(m: MapLibreMap, latest: Latest) {
   latest.current.onVisible?.(ids);
 }
 
+/**
+ * How far from the middle of the map a spot should land so it's in the
+ * middle of the part not covered. Moves are given this rather than the
+ * padding itself, which the map would keep and add to every later fit.
+ */
+export function centerOffset(padding?: PaddingOptions): [number, number] {
+  if (!padding) return [0, 0];
+  return [
+    ((padding.left ?? 0) - (padding.right ?? 0)) / 2,
+    ((padding.top ?? 0) - (padding.bottom ?? 0)) / 2,
+  ];
+}
+
 /** Padding with a little extra all round, so pins aren't fitted right to an edge. */
 export function withMargin(padding: PaddingOptions, extra = 40): PaddingOptions {
   return {
@@ -105,96 +101,34 @@ export function withMargin(padding: PaddingOptions, extra = 40): PaddingOptions 
   };
 }
 
-/** Zooms in until a numbered circle splits into its pins. */
-async function zoomInto(m: MapLibreMap, cluster: MapGeoJSONFeature) {
-  if (cluster.geometry.type !== "Point") return;
-  const source = m.getSource("lss-memories") as GeoJSONSource;
-  const zoom = await source.getClusterExpansionZoom(cluster.properties.cluster_id as number);
-  m.easeTo({ center: cluster.geometry.coordinates as [number, number], zoom: zoom + 0.5 });
-}
-
-/** The pins, numbered circles, blue dot and the rest, drawn on top of the streets. */
-export function addMemoryLayers(m: MapLibreMap) {
+/** The photo pins, numbered circles, blue dot and the rest, on top of the streets. */
+export function addMemoryLayers(m: MapLibreMap, options?: { clusterRadius?: number }) {
   addMeLayers(m);
-  m.addSource("lss-memories", {
-    type: "geojson",
-    data: collection([]),
-    cluster: true,
-    clusterRadius: 42,
-    clusterMaxZoom: 16,
-  });
   addSelectionLayers(m);
-  m.addLayer({
-    id: "lss-cluster-glow",
-    type: "circle",
-    source: "lss-memories",
-    filter: ["has", "point_count"],
-    paint: { "circle-radius": 30, "circle-color": COLORS.YELLOW, "circle-blur": 0.9, "circle-opacity": 0.55 },
-  });
-  m.addLayer({
-    id: "lss-clusters",
-    type: "symbol",
-    source: "lss-memories",
-    filter: ["has", "point_count"],
-    layout: {
-      "icon-image": ["concat", "lss-cluster-", ["to-string", ["get", "point_count"]]],
-      "icon-allow-overlap": true,
-      "icon-ignore-placement": true,
-    },
-  });
-  m.addLayer({
-    id: "lss-pin-glow",
-    type: "circle",
-    source: "lss-memories",
-    filter: ["!", ["has", "point_count"]],
-    paint: { "circle-radius": 13, "circle-color": COLORS.YELLOW, "circle-blur": 1, "circle-opacity": 0.75 },
-  });
-  m.addLayer({
-    id: "lss-pins",
-    type: "symbol",
-    source: "lss-memories",
-    filter: ["!", ["has", "point_count"]],
-    layout: {
-      "icon-image": "lss-pin",
-      "icon-anchor": "bottom",
-      "icon-allow-overlap": true,
-      "icon-ignore-placement": true,
-    },
-  });
+  // The area round the chosen post, lighter than when sharing, and only once
+  // the map is close enough for it to be bigger than the photo.
+  m.setPaintProperty("lss-area-fill", "fill-opacity", 0.14);
+  m.setPaintProperty("lss-area-line", "line-width", 1.5);
+  m.setLayerZoomRange("lss-area-fill", 13.5, 24);
+  m.setLayerZoomRange("lss-area-line", 13.5, 24);
+  addPinSource(m, options);
   addPlaceLayer(m);
-  addSelectedPinLayer(m);
 }
 
 function addHandlers(m: MapLibreMap, latest: Latest) {
   m.on("click", (event) => {
-    // A finger is bigger than a pin, so anything close counts.
-    const { x, y } = event.point;
-    const hit = m.queryRenderedFeatures(
-      [
-        [x - 12, y - 12],
-        [x + 12, y + 12],
-      ],
-      { layers: ["lss-pins", "lss-selected", "lss-clusters"] },
-    );
-    const pin = hit.find((f) => f.layer.id === "lss-pins");
-    const cluster = hit.find((f) => f.layer.id === "lss-clusters");
-    if (pin) latest.current.onSelect(pin.properties.id as string);
-    else if (cluster) zoomInto(m, cluster);
-    else if (hit.length) return;
-    else if (latest.current.onEmptyClick) latest.current.onEmptyClick(event);
+    // A tap on a photo pin is handled by the pin.
+    if ((event.originalEvent.target as Element | null)?.closest?.(".lss-marker")) return;
+    if (latest.current.onEmptyClick) latest.current.onEmptyClick(event);
     else latest.current.onSelect(null);
   });
-  for (const layer of ["lss-pins", "lss-clusters", "lss-selected"]) {
-    m.on("mouseenter", layer, () => (m.getCanvas().style.cursor = "pointer"));
-    m.on("mouseleave", layer, () => (m.getCanvas().style.cursor = ""));
-  }
   m.on("moveend", () => reportVisible(m, latest));
 }
 
 /**
- * Memories as glowing pins on a real map of Hyderabad. Pins close together
- * merge into a numbered circle; tapping one zooms in. Tapping a pin selects
- * its memory.
+ * Memories as small square photos on a real map of Hyderabad. Photos close
+ * together merge into a numbered circle; tapping one zooms in. Tapping a
+ * photo selects its memory.
  */
 export function MemoryMap({
   memories,
@@ -205,8 +139,10 @@ export function MemoryMap({
   onMap,
   onEmptyClick,
   focusPadding,
+  moveToSelected = true,
   fitKey,
   label,
+  credits,
   framed = true,
   className = "relative h-below-menu max-h-[640px] min-h-[340px]",
 }: {
@@ -222,27 +158,34 @@ export function MemoryMap({
   onEmptyClick?: (event: MapMouseEvent) => void;
   /** Room to leave around a memory brought into view, for anything covering the map. */
   focusPadding?: PaddingOptions;
+  /** Whether the map moves to the selected memory, or only shows it. */
+  moveToSelected?: boolean;
   /** Change it to fit the map to the memories again. */
   fitKey?: string;
   label: string;
+  /** The corner for the map's credits. */
+  credits?: ControlPosition;
   /** A rounded frame, for a map inside a page rather than filling it. */
   framed?: boolean;
   /** Size and position; relative unless the map covers its parent. */
   className?: string;
 }) {
   const box = useRef<HTMLDivElement>(null);
+  // The map opens once, so where its credits go is settled then.
+  const creditsAt = useRef(credits);
+  const pins = useRef<PhotoPins | null>(null);
   const [map, setMap] = useState<MapLibreMap | null>(null);
   const [failed, setFailed] = useState(false);
   const latest: Latest = useRef({ onSelect, onVisible, onReady, memories, spots: new Map<string, LatLng>() });
   useEffect(() => {
-    latest.current = { ...latest.current, onSelect, onVisible, onReady, onMap, onEmptyClick, focusPadding, memories };
+    latest.current = { ...latest.current, onSelect, onVisible, onReady, onMap, onEmptyClick, focusPadding, moveToSelected, memories };
   });
 
   // Opens the map once.
   useEffect(() => {
     const gone = new AbortController();
     let opened: MapLibreMap | null = null;
-    openMap(box.current!, gone.signal)
+    openMap(box.current!, gone.signal, {}, { credits: creditsAt.current })
       .then((m) => {
         if (!m) return;
         if (gone.signal.aborted) return m.remove();
@@ -254,6 +197,11 @@ export function MemoryMap({
         });
         m.on("load", () => {
           addMemoryLayers(m);
+          pins.current = photoPins(m, {
+            onPick: (id) => latest.current.onSelect(id),
+            onCluster: (at, zoom) =>
+              m.easeTo({ center: at, zoom, offset: centerOffset(latest.current.focusPadding) }),
+          });
           addHandlers(m, latest);
           setMap(m);
           latest.current.onMap?.(m);
@@ -266,6 +214,7 @@ export function MemoryMap({
       });
     return () => {
       gone.abort();
+      pins.current?.remove();
       opened?.remove();
     };
   }, []);
@@ -273,7 +222,9 @@ export function MemoryMap({
   // Puts the memories on it.
   useEffect(() => {
     if (!map) return;
-    latest.current.spots = setMemories(map, memories);
+    const posts = pinPosts(memories);
+    latest.current.spots = new Map(posts.map((post) => [post.id, post.spot]));
+    pins.current?.show(posts);
     reportVisible(map, latest);
   }, [map, memories]);
 
@@ -289,13 +240,13 @@ export function MemoryMap({
     if (!map) return;
     const memory = selectedId ? latest.current.memories.find((m) => m.id === selectedId) : null;
     const spot = memory ? latest.current.spots.get(memory.id) ?? memory.pin : null;
-    showSelected(map, spot, memory?.pin ?? null);
-    map.setFilter("lss-pins", ["all", ["!", ["has", "point_count"]], ["!=", ["get", "id"], selectedId ?? ""]]);
-    if (!spot) return;
+    showSelected(map, null, memory?.pin ?? null);
+    pins.current?.setActive(memory?.id ?? null);
+    if (!spot || !latest.current.moveToSelected) return;
     const zoom = map.getZoom() < 13 ? 15 : map.getZoom();
     const padding = latest.current.focusPadding;
     if (padding) {
-      map.easeTo({ center: [spot.lng, spot.lat], zoom, padding });
+      map.easeTo({ center: [spot.lng, spot.lat], zoom, offset: centerOffset(padding) });
       return;
     }
     // Centres it, above the memory that opens over the bottom of the map on a phone.

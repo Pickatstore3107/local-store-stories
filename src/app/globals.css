@@ -86,14 +86,14 @@ html {
   height: calc(100dvh - var(--header-h) - var(--bar-h) - 3rem);
 }
 
-/* On the full-screen map on a phone, fingers zoom, so the + and − buttons
-   go, and the map's credits sit just above the list. */
+/* On the full-screen map the credits sit just above the cards, and on a
+   phone, where fingers zoom, the + and − buttons go. */
+.lss-full-map .maplibregl-ctrl-bottom-left {
+  bottom: var(--cards-px, 0px);
+}
 @media (max-width: 639px) {
   .lss-full-map .maplibregl-ctrl-top-right {
     display: none;
-  }
-  .lss-full-map .maplibregl-ctrl-bottom-right {
-    bottom: var(--sheet-px, 0px);
   }
 }
 

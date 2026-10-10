@@ -1,11 +1,10 @@
 import type { MapGeoJSONFeature, Map as MapLibreMap, PointLike } from "maplibre-gl";
-import { metresBetween } from "@/lib/nearby";
 import type { LatLng } from "@/lib/pins";
 import type { Category } from "@/lib/stories";
 
 // The shops already drawn on the map. Their names and kinds come from
-// OpenStreetMap, inside the same free map tiles as the streets, so finding
-// the ones near you costs nothing and asks no other service. Small shops
+// OpenStreetMap, inside the same free map tiles as the streets, so opening
+// one that's tapped costs nothing and asks no other service. Small shops
 // that nobody has added to OpenStreetMap yet are missing.
 
 export type Shop = {
@@ -17,8 +16,6 @@ export type Shop = {
   /** Our category for it, when one plainly fits. */
   category: Category | null;
 };
-
-export type ShopNear = Shop & { metres: number };
 
 // OpenStreetMap's kinds of shop, in plain words. Anything listed here counts
 // as a store.
@@ -143,12 +140,6 @@ export function shopFrom(feature: Pick<MapGeoJSONFeature, "properties" | "geomet
   };
 }
 
-/** The map's layer of shops, cafés and other places, if this map has one. */
-function placesSource(map: MapLibreMap) {
-  const layer = map.getStyle().layers.find((l) => "source-layer" in l && l["source-layer"] === "poi");
-  return layer && "source" in layer ? layer.source : null;
-}
-
 /** The style's layers that draw shops, for telling whether one was tapped. */
 export function placeLayers(map: MapLibreMap) {
   return map
@@ -168,22 +159,3 @@ export function shopAt(map: MapLibreMap, box: [PointLike, PointLike]) {
   return null;
 }
 
-/**
- * The shops the map has loaded near a spot, nearest first: within `metres`
- * of it, or anywhere in view when there's no limit. Shops only come with the
- * map once it's zoomed in to streets.
- */
-export function shopsNear(map: MapLibreMap, from: LatLng, metres: number | null, limit = 40): ShopNear[] {
-  const source = placesSource(map);
-  if (!source) return [];
-  const bounds = map.getBounds();
-  const found = new Map<string, ShopNear>();
-  for (const feature of map.querySourceFeatures(source, { sourceLayer: "poi" })) {
-    const shop = shopFrom(feature);
-    if (!shop || found.has(shop.key)) continue;
-    const distance = metresBetween(from, shop.spot);
-    if (metres === null ? !bounds.contains([shop.spot.lng, shop.spot.lat]) : distance > metres) continue;
-    found.set(shop.key, { ...shop, metres: distance });
-  }
-  return [...found.values()].sort((a, b) => a.metres - b.metres).slice(0, limit);
-}

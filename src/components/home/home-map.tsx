@@ -1,41 +1,21 @@
 "use client";
 
-import type { Map as MapLibreMap, Marker } from "maplibre-gl";
+import type { Map as MapLibreMap } from "maplibre-gl";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import type { WallMemory } from "@/lib/memories";
 import type { LatLng } from "@/lib/pins";
 import { ArrowIcon, PlaceIcon } from "../icons";
-import { addMemoryLayers, setMemories } from "../map/memory-map";
+import { addMemoryLayers, pinPosts } from "../map/memory-map";
 import { openMap } from "../map/open-map";
-
-// The most liked pinned memories show as round photos; the rest as pins.
-const PHOTO_PINS = 5;
+import { photoPins } from "../map/photo-pins";
 
 type Pinned = WallMemory & { pin: LatLng };
 
-/** A round photo on a white ring with a red dot under it, for a memory on the map. */
-function photoPin(url: string) {
-  const element = document.createElement("div");
-  element.className = "flex flex-col items-center";
-  const ring = document.createElement("div");
-  ring.className = "h-9 w-9 overflow-hidden rounded-full bg-sand ring-2 ring-white shadow-[0_3px_8px_rgb(43_29_26/0.35)]";
-  const image = document.createElement("img");
-  image.src = url;
-  image.alt = "";
-  image.decoding = "async";
-  image.className = "h-full w-full object-cover";
-  ring.append(image);
-  const dot = document.createElement("span");
-  dot.className = "mt-0.5 h-2 w-2 rounded-full bg-brand-red ring-2 ring-white";
-  element.append(ring, dot);
-  return element;
-}
-
 /**
- * A card on Home with a live map of Hyderabad and the memories on it, a few
- * as round photos. The map is only a picture: tapping anywhere on the card
- * opens the full map.
+ * A card on Home with a live map of Hyderabad and the posts on it as small
+ * square photos, like the full map. The map is only a picture: tapping
+ * anywhere on the card opens the full map.
  */
 export function HomeMap({ memories }: { memories: WallMemory[] }) {
   const box = useRef<HTMLDivElement>(null);
@@ -52,7 +32,8 @@ export function HomeMap({ memories }: { memories: WallMemory[] }) {
           if (gone.signal.aborted) return m.remove();
           opened = m;
           m.on("load", () => {
-            addMemoryLayers(m);
+            // Small pins, so fewer join into numbered circles.
+            addMemoryLayers(m, { clusterRadius: 32 });
             setMap(m);
           });
         })
@@ -68,32 +49,15 @@ export function HomeMap({ memories }: { memories: WallMemory[] }) {
     };
   }, []);
 
-  // The memories, with all of them in view.
+  // The posts, with all of them in view.
   useEffect(() => {
     if (!map) return;
-    const pinned = memories.filter((m): m is Pinned => m.pin !== null);
-    const withPhotos = pinned
-      .filter((m) => m.photoUrl)
-      .sort((a, b) => b.likes.count - a.likes.count || b.approvedAt - a.approvedAt)
-      .slice(0, PHOTO_PINS);
-    const photoIds = new Set(withPhotos.map((m) => m.id));
-    const spots = [...setMemories(map, pinned.filter((m) => !photoIds.has(m.id))).values()];
-    const markers: Marker[] = [];
-    let alive = true;
-    import("maplibre-gl").then(({ default: maplibregl }) => {
-      if (!alive) return;
-      for (const m of withPhotos) {
-        markers.push(
-          new maplibregl.Marker({ element: photoPin(m.photoUrl!), anchor: "bottom" })
-            .setLngLat([m.pin.lng, m.pin.lat])
-            .addTo(map),
-        );
-      }
-    });
-    const all = [...spots, ...withPhotos.map((m) => m.pin)];
-    if (all.length) {
-      const lats = all.map((s) => s.lat);
-      const lngs = all.map((s) => s.lng);
+    const posts = pinPosts(memories.filter((m): m is Pinned => m.pin !== null));
+    const pins = photoPins(map, { small: true, interactive: false });
+    pins.show(posts);
+    if (posts.length) {
+      const lats = posts.map((p) => p.spot.lat);
+      const lngs = posts.map((p) => p.spot.lng);
       map.fitBounds(
         [
           [Math.min(...lngs), Math.min(...lats)],
@@ -102,10 +66,7 @@ export function HomeMap({ memories }: { memories: WallMemory[] }) {
         { padding: { top: 56, right: 36, bottom: 44, left: 36 }, maxZoom: 13.5, animate: false },
       );
     }
-    return () => {
-      alive = false;
-      for (const marker of markers) marker.remove();
-    };
+    return () => pins.remove();
   }, [map, memories]);
 
   return (
