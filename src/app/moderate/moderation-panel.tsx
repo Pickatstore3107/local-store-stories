@@ -162,8 +162,9 @@ function ReviewQueue({ user }: { user: User }) {
       <section className={card}>
         <h1 className={pageTitle}>Review posts</h1>
         <p className="mt-2 text-ink-soft">
-          Nothing is public until you approve it. If you turn a post down or hide it, its
-          author sees your note on their account page.
+          Posts go up straight away. When three people report one, it comes down and waits
+          here for you. If you turn a post down or hide it, its author sees your note on their
+          account page.
         </p>
         <div role="tablist" aria-label="Posts" className="mt-5 flex flex-wrap gap-2">
           {TABS.map((t) => (

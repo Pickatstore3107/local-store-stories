@@ -112,7 +112,7 @@ export function PhotoCropper({
         onPointerUp={up}
         onPointerCancel={up}
         onKeyDown={keys}
-        className="block aspect-[4/5] w-full cursor-grab touch-none rounded-2xl bg-sand outline-none focus-visible:ring-2 focus-visible:ring-brand-red/50 active:cursor-grabbing"
+        className="mx-auto block aspect-[4/5] w-full max-w-[36dvh] cursor-grab touch-none rounded-2xl bg-sand outline-none focus-visible:ring-2 focus-visible:ring-brand-red/50 active:cursor-grabbing"
       />
       <div className="mt-2.5 flex items-center gap-3">
         <label className="flex min-w-0 flex-1 items-center gap-2.5 text-[0.85rem] font-semibold text-ink-soft">

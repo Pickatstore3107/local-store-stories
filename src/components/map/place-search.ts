@@ -51,8 +51,12 @@ const KIND_WORDS: Record<string, string> = {
 
 const CATEGORY_OF: Record<string, Category> = {
   bakery: "Bakeries",
+  cafe: "Cafes",
   confectionery: "Bakeries",
   convenience: "Kirana Stores",
+  fast_food: "Restaurants",
+  food_court: "Restaurants",
+  restaurant: "Restaurants",
   supermarket: "Kirana Stores",
   books: "Bookstores",
   stationery: "Bookstores",

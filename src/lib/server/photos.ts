@@ -56,8 +56,8 @@ export function videoId(uid: string, storyId: string) {
   return `${photoId(uid, storyId)}/v`;
 }
 
-// "authenticated" photos can only be seen through links this server signs,
-// so they stay private until a moderator publishes them.
+// "authenticated" photos and videos can only be seen through links this
+// server signs, so only people allowed to see a post get them.
 const privateImage = { type: "authenticated", resource_type: "image" } as const;
 const privateVideo = { type: "authenticated", resource_type: "video" } as const;
 

@@ -109,6 +109,8 @@ function StoryForm({
   // How much of the upload is done, from 0 to 1, while sharing.
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  // Tried to share with something missing: what's still missing shows until it's fixed.
+  const [tried, setTried] = useState(false);
   // The new post's ID, once it's shared.
   const [shared, setShared] = useState<string | null>(null);
   const heading = useRef<HTMLHeadingElement>(null);
@@ -126,6 +128,7 @@ function StoryForm({
   function go(next: number) {
     moved.current = true;
     setError(null);
+    setTried(false);
     setStep(next);
   }
 
@@ -142,10 +145,13 @@ function StoryForm({
     !rights && "Confirm you may share these photos or this video.",
   ].filter(Boolean) as string[];
 
+  const shownError = tried && problems.length ? problems[0] : error;
+
   async function submit(event: FormEvent) {
     event.preventDefault();
     if (problems.length) {
-      setError(problems[0]);
+      setTried(true);
+      setError(null);
       return;
     }
     if (!user || !picked || !category) return;
@@ -408,9 +414,9 @@ function StoryForm({
             down what breaks the rules.
           </p>
 
-          {error && (
+          {shownError && (
             <p role="alert" className="mt-4 rounded-xl bg-brand-red/10 px-4 py-3 text-sm text-brand-red-deep">
-              {error}
+              {shownError}
             </p>
           )}
         </form>

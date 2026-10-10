@@ -32,7 +32,7 @@ export function releasePicked(picked: Picked) {
 }
 
 const tile =
-  "flex h-32 cursor-pointer flex-col items-center justify-center gap-1 rounded-2xl bg-white text-center ring-1 ring-ink/10 transition hover:ring-brand-red/40 focus-within:ring-2 focus-within:ring-brand-red/40";
+  "flex h-28 cursor-pointer flex-col items-center justify-center gap-1 rounded-2xl bg-white text-center ring-1 ring-ink/10 transition hover:ring-brand-red/40 focus-within:ring-2 focus-within:ring-brand-red/40";
 
 function seconds(duration: number) {
   const whole = Math.round(duration);
@@ -277,7 +277,7 @@ export function MediaStep({
             playsInline
             preload="metadata"
             aria-label="Your video"
-            className="aspect-[4/5] w-full rounded-2xl bg-ink object-contain"
+            className="mx-auto block aspect-[4/5] w-full max-w-[36dvh] rounded-2xl bg-ink object-contain"
           />
           <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[0.85rem] text-ink-soft">
             {video.duration !== null && <span>{seconds(video.duration)}</span>}
@@ -303,7 +303,7 @@ export function MediaStep({
               label={`Photo ${photos.indexOf(current) + 1} of ${photos.length}`}
             />
           ) : (
-            <div className="aspect-[4/5] w-full animate-pulse rounded-2xl bg-sand" aria-hidden="true" />
+            <div className="mx-auto aspect-[4/5] w-full max-w-[36dvh] animate-pulse rounded-2xl bg-sand" aria-hidden="true" />
           )}
           <ul aria-label="Your photos" className="mt-3 flex gap-2 overflow-x-auto pb-1 pt-1.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {photos.map((photo, i) => (
