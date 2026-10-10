@@ -12,7 +12,8 @@ import { KindIcon, off, on, pill } from "../home/kind-chips";
 import { CloseIcon, CommentIcon, GridIcon, HeartIcon, SearchIcon } from "../icons";
 import { MediaBadge } from "../polaroid";
 import { setReturnPath } from "../require-account";
-import { secondaryButton } from "../ui";
+import { primaryButton, secondaryButton } from "../ui";
+import { useMyFollows } from "../use-my-follows";
 import { setWallFilters, useWallFilters } from "../use-wall-filters";
 import { Illustration } from "@/components/illustration";
 
@@ -31,10 +32,13 @@ function postMatches(memory: WallMemory, words: string[]) {
   return words.every((word) => all.includes(word));
 }
 
+const tab = "rounded-full px-3 py-1.5 text-xs font-bold transition sm:px-4 sm:text-sm";
+
 /**
  * Explore: every memory as a grid of photos, like Instagram's, with one
- * search for stores, places, people and the words of memories, and the
- * categories to narrow it down.
+ * search for stores, places, people and the words of memories, the
+ * categories to narrow it down, and a switch to only the posts of people
+ * you follow.
  */
 export function ExploreBrowser({ memories }: { memories: WallMemory[] }) {
   const filters = useWallFilters();
@@ -42,16 +46,34 @@ export function ExploreBrowser({ memories }: { memories: WallMemory[] }) {
   const { category } = filters;
   const words = useMemo(() => searchWords(query), [query]);
   const searching = words.length > 0;
+  const following = filters.following && !searching;
   const [gridCount, setGridCount] = useState(GRID_PAGE);
+  const { user, consent } = useAuth();
+  const myFollows = useMyFollows();
 
   const inCategory = useMemo(
     () => (category ? memories.filter((m) => m.category === category) : memories),
     [memories, category],
   );
   const posts = useMemo(
-    () => (searching ? inCategory.filter((m) => postMatches(m, words)) : inCategory),
-    [inCategory, searching, words],
+    () =>
+      searching
+        ? inCategory.filter((m) => postMatches(m, words))
+        : following
+          ? inCategory.filter((m) => myFollows.following.has(m.authorId))
+          : inCategory,
+    [inCategory, searching, words, following, myFollows.following],
   );
+  // The Following switch: why there's nothing to show yet, if there isn't.
+  const followingNote = !following
+    ? null
+    : !user || !consent
+      ? "signIn"
+      : !myFollows.ready
+        ? "loading"
+        : myFollows.following.size === 0
+          ? "nobody"
+          : null;
   const places = useMemo(
     () =>
       searching
@@ -116,7 +138,7 @@ export function ExploreBrowser({ memories }: { memories: WallMemory[] }) {
           <button
             type="button"
             aria-pressed={category === null}
-            onClick={() => setWallFilters({ ...filters, following: false, category: null })}
+            onClick={() => setWallFilters({ ...filters, category: null })}
             className={`${pill} ${category === null ? on : off}`}
           >
             <GridIcon className="h-[1.1rem] w-[1.1rem]" />
@@ -127,7 +149,7 @@ export function ExploreBrowser({ memories }: { memories: WallMemory[] }) {
               key={c}
               type="button"
               aria-pressed={category === c}
-              onClick={() => setWallFilters({ ...filters, following: false, category: category === c ? null : c })}
+              onClick={() => setWallFilters({ ...filters, category: category === c ? null : c })}
               className={`${pill} ${category === c ? on : off}`}
             >
               <KindIcon category={c} picked={category === c} />
@@ -223,14 +245,40 @@ export function ExploreBrowser({ memories }: { memories: WallMemory[] }) {
       )}
 
       <section aria-labelledby="posts-heading" className="mt-6">
-        <h2 id="posts-heading" className={searching ? "text-base font-extrabold text-ink" : "sr-only"}>
-          {searching ? "Posts" : "Every post"}
-        </h2>
-        {posts.length === 0 ? (
+        <div className="flex items-center justify-between gap-3">
+          <h2 id="posts-heading" className={searching ? "text-base font-extrabold text-ink" : "sr-only"}>
+            {searching ? "Posts" : following ? "Posts from people you follow" : "Every post"}
+          </h2>
+          {!searching && (
+            <div role="group" aria-label="Whose posts" className="ml-auto flex shrink-0 rounded-full bg-sand p-0.5">
+              {([false, true] as const).map((each) => (
+                <button
+                  key={String(each)}
+                  type="button"
+                  aria-pressed={following === each}
+                  onClick={() => {
+                    setGridCount(GRID_PAGE);
+                    setWallFilters({ ...filters, query: "", following: each });
+                  }}
+                  className={`${tab} ${following === each ? "bg-white text-ink shadow-sm" : "text-ink-soft hover:text-ink"}`}
+                >
+                  {each ? "Following" : "Everyone"}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+        {followingNote ? (
+          <FollowingNote note={followingNote} />
+        ) : posts.length === 0 ? (
           <div className="py-12 text-center">
             <Illustration name={searching ? "lost" : "share"} />
             <p className="mt-3 font-hand text-2xl text-ink">
-              {searching ? "No posts match yet." : "No posts here yet."}
+              {searching
+                ? "No posts match yet."
+                : following && !category
+                  ? "The people you follow haven't shared a post yet."
+                  : "No posts here yet."}
             </p>
             <p className="mt-2 text-ink-soft">
               Know one?{" "}
@@ -260,6 +308,37 @@ export function ExploreBrowser({ memories }: { memories: WallMemory[] }) {
         )}
       </section>
     </>
+  );
+}
+
+/** What the Following switch shows before there's anything to show. */
+function FollowingNote({ note }: { note: "signIn" | "loading" | "nobody" }) {
+  const { user } = useAuth();
+  if (note === "loading") {
+    return (
+      <p role="status" className="py-14 text-center text-ink-soft">
+        Loading…
+      </p>
+    );
+  }
+  return (
+    <div className="py-14 text-center">
+      <p className="font-hand text-2xl text-ink">
+        {note === "signIn" ? "See posts from the people you follow." : "You're not following anyone yet."}
+      </p>
+      <p className="mx-auto mt-2 max-w-md text-ink-soft">
+        Tap Follow next to a name on any post. Their posts will show here.
+      </p>
+      {note === "signIn" && (
+        <Link
+          href={user ? "/welcome" : "/signin"}
+          onClick={() => setReturnPath("/explore?following=1")}
+          className={`${primaryButton} mt-6`}
+        >
+          {user ? "Finish joining" : "Sign in"}
+        </Link>
+      )}
+    </div>
   );
 }
 

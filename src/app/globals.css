@@ -175,6 +175,203 @@ html {
   }
 }
 
+/* Home coming to life. Each part waits until it's on screen (src/components/
+   home/reveal.tsx) and until the opening screen has gone; --i staggers a
+   row so its items arrive one after another. Without motion, all of it is
+   simply there. */
+@keyframes up-in {
+  from {
+    opacity: 0;
+    translate: 0 18px;
+  }
+}
+@keyframes pop-in {
+  0% {
+    opacity: 0;
+    scale: 0.6;
+  }
+  60% {
+    opacity: 1;
+    scale: 1.06;
+  }
+}
+@keyframes slide-in {
+  from {
+    opacity: 0;
+    translate: 64px 0;
+    rotate: 4deg;
+  }
+}
+/* Covers dealt onto the pile from the side. */
+@keyframes deal-in {
+  from {
+    opacity: 0;
+    translate: 70% 30px;
+    rotate: 16deg;
+  }
+}
+/* The top cover moving a little either way, to show it can be swiped. */
+@keyframes nudge {
+  0%,
+  100% {
+    translate: 0 0;
+    rotate: 0deg;
+  }
+  30% {
+    translate: -26px 0;
+    rotate: -4deg;
+  }
+  65% {
+    translate: 12px 0;
+    rotate: 2deg;
+  }
+}
+/* A photo pin dropping onto the map. */
+@keyframes drop-in {
+  0% {
+    opacity: 0;
+    translate: 0 -22px;
+  }
+  60% {
+    opacity: 1;
+    translate: 0 2px;
+  }
+}
+/* The new word in the Home title coming up as the old one goes. */
+@keyframes word-in {
+  from {
+    opacity: 0;
+    translate: 0 0.5em;
+  }
+}
+/* A strip of store names moving along. Two copies sit side by side, so
+   half way along looks the same as the start. */
+@keyframes ticker {
+  to {
+    translate: -50% 0;
+  }
+}
+@keyframes sway {
+  0%,
+  100% {
+    rotate: 2deg;
+    translate: 0 0;
+  }
+  50% {
+    rotate: -1deg;
+    translate: 0 -4px;
+  }
+}
+@keyframes flicker {
+  0%,
+  100% {
+    scale: 1;
+    rotate: 0deg;
+  }
+  40% {
+    scale: 1.14;
+    rotate: -6deg;
+  }
+  70% {
+    scale: 0.96;
+    rotate: 4deg;
+  }
+}
+/* A yellow highlighter stroke drawn under a word. */
+@keyframes underline-in {
+  from {
+    scale: 0 1;
+  }
+}
+
+@utility anim-up {
+  animation: up-in 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) calc(var(--i, 0) * 70ms) both;
+}
+@utility anim-pop {
+  animation: pop-in 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) calc(var(--i, 0) * 45ms) both;
+}
+@utility anim-slide {
+  animation: slide-in 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) calc(var(--i, 0) * 90ms) both;
+}
+@utility anim-deal {
+  animation: deal-in 0.65s cubic-bezier(0.2, 0.9, 0.25, 1.05) calc(var(--i, 0) * 110ms) both;
+}
+@utility anim-nudge {
+  animation: nudge 1s ease-in-out 1.1s;
+}
+@utility anim-word {
+  animation: word-in 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@utility anim-sway {
+  animation:
+    pop-in 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) 0.15s both,
+    sway 6s ease-in-out 0.9s infinite;
+}
+@utility anim-flicker {
+  animation: flicker 1.6s ease-in-out 0.6s 3;
+}
+@utility anim-underline {
+  transform-origin: left center;
+  animation: underline-in 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) 0.45s both;
+}
+/* A ring spreading out from a dot, a few times. */
+@keyframes ring-out {
+  0% {
+    scale: 1;
+    opacity: 1;
+  }
+  75%,
+  100% {
+    scale: 2.2;
+    opacity: 0;
+  }
+}
+@utility anim-ring {
+  animation: ring-out 1.4s cubic-bezier(0, 0, 0.2, 1) 0.8s 4;
+}
+@utility anim-ticker {
+  animation: ticker var(--ticker-time, 40s) linear infinite;
+}
+
+/* Photo pins on Home's map drop in one after another. */
+.home-map .lss-marker > span {
+  animation: drop-in 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) 0.4s both;
+}
+.home-map .maplibregl-marker:nth-child(3n + 2) > span {
+  animation-delay: 0.52s;
+}
+.home-map .maplibregl-marker:nth-child(3n) > span {
+  animation-delay: 0.64s;
+}
+.home-map .maplibregl-marker:nth-child(n + 7) > span {
+  animation-duration: 0.6s;
+}
+
+:root[data-splash] :is(.anim-up, .anim-pop, .anim-slide, .anim-deal, .anim-nudge, .anim-sway, .anim-underline, .anim-flicker, .anim-ring),
+[data-reveal]:not([data-shown])
+  :is(.anim-up, .anim-pop, .anim-slide, .anim-deal, .anim-nudge, .anim-flicker, .anim-ring, .lss-marker > span),
+[data-reveal]:not([data-shown]):is(.anim-up, .anim-pop) {
+  animation-play-state: paused;
+}
+@media (prefers-reduced-motion: reduce) {
+  :is(
+    .anim-up,
+    .anim-pop,
+    .anim-slide,
+    .anim-deal,
+    .anim-nudge,
+    .anim-word,
+    .anim-sway,
+    .anim-flicker,
+    .anim-underline,
+    .anim-ring,
+    .anim-ticker
+  ),
+  .home-map .lss-marker > span {
+    animation: none;
+  }
+}
+
 /* Moving between pages (src/app/template.tsx). The header and the bottom
    bar stay put while the page under them moves. */
 ::view-transition {

@@ -3,8 +3,8 @@
 import { useMemo, useSyncExternalStore } from "react";
 import { CATEGORIES, type Category } from "@/lib/stories";
 
-// Home's category and Following tab, and Explore's search and category,
-// live in the page's address (/?category=…&following=1, /explore?q=…), so
+// Home's category, and Explore's search, category and Following switch,
+// live in the page's address (/?category=…, /explore?q=…&following=1), so
 // a filtered page can be shared and the Back button returns to it.
 // Typing changes the page straight away; the address catches up a moment
 // later, because browsers limit how often a page may change it.

@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import Form from "next/form";
 import { ColourDeck } from "@/components/home/colour-deck";
-import { HomeFeed } from "@/components/home/home-feed";
 import { HomeHero } from "@/components/home/home-hero";
 import { HomeMap } from "@/components/home/home-map";
 import { KindChips } from "@/components/home/kind-chips";
 import { PopularAreas } from "@/components/home/popular-areas";
+import { Reveal } from "@/components/home/reveal";
+import { StoreTicker } from "@/components/home/store-ticker";
 import { Trending } from "@/components/home/trending";
 import { ArrowIcon, SearchIcon } from "@/components/icons";
 import { InstagramFeed } from "@/components/instagram-feed";
@@ -18,22 +19,19 @@ export const metadata: Metadata = {
 
 /**
  * Home: a poster of the city and what the site is about, a search for
- * places and people, the kinds of places, the map, a few numbers, what's
- * trending this week, popular areas, then everyone's memories as posts,
- * newest first.
+ * places and people, the kinds of places, a pile of covers of what's
+ * trending, a tape of store names, the newest posts as colour cards, the
+ * map and popular areas. Every post, to scroll through, is on Explore.
  */
 export default async function Home() {
   const wall = await loadWall();
   const memories = wall?.memories ?? [];
-  const builtAt = wall?.builtAt ?? 0;
-  // The newest posts, for the row of colour cards.
-  const fresh = [...memories].sort((a, b) => b.approvedAt - a.approvedAt).slice(0, 10);
 
   return (
     <main className="mx-auto w-full max-w-xl flex-1 px-4 pb-8 sm:px-5 sm:pb-12 sm:pt-2">
       <HomeHero />
 
-      <Form action="/explore" role="search" className="relative mt-3">
+      <Form action="/explore" role="search" className="anim-up relative mt-3 [--i:4]">
         <label htmlFor="home-search" className="sr-only">
           Search for a place, area or person
         </label>
@@ -76,21 +74,21 @@ export default async function Home() {
       ) : (
         <>
           {/* The pile of covers on a band of yellow that fades into the page. */}
-          <div className="-mx-4 mt-3 rounded-b-[2rem] bg-gradient-to-b from-brand-yellow/80 via-brand-yellow/30 to-transparent px-4 pb-3 pt-4 sm:-mx-5 sm:px-5">
-            <Trending memories={memories} alsoShown={fresh.map((m) => m.id)} />
+          <Reveal className="-mx-4 mt-3 rounded-b-[2rem] bg-gradient-to-b from-brand-yellow/80 via-brand-yellow/30 to-transparent px-4 pb-3 pt-4 sm:-mx-5 sm:px-5">
+            <Trending memories={memories} />
+          </Reveal>
+          <div className="mt-3">
+            <StoreTicker memories={memories} />
           </div>
-          <div className="mt-4">
-            <ColourDeck memories={fresh} />
-          </div>
-          <div className="mt-4">
+          <Reveal className="mt-3">
+            <ColourDeck memories={memories} />
+          </Reveal>
+          <Reveal className="anim-up mt-4">
             <HomeMap memories={memories} />
-          </div>
-          <div className="mt-4">
+          </Reveal>
+          <Reveal className="mt-5">
             <PopularAreas memories={memories} />
-          </div>
-          <div className="mt-6">
-            <HomeFeed memories={memories} builtAt={builtAt} />
-          </div>
+          </Reveal>
         </>
       )}
 
