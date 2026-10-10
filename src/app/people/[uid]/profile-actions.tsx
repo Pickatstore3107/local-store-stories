@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/components/auth-provider";
 import { FollowButton } from "@/components/follow-button";
+import { BookmarkIcon } from "@/components/icons";
 import { setReturnPath } from "@/components/require-account";
 import { useMyFollows } from "@/components/use-my-follows";
 import { friendlyError } from "@/lib/auth-errors";
@@ -14,7 +15,7 @@ const small =
   "inline-flex items-center justify-center rounded-full px-5 py-2.5 text-sm font-bold transition";
 const note = "mt-3 text-sm text-ink-soft";
 
-/** Follow and Block on someone's profile, or Edit on your own. */
+/** Follow and Block on someone's profile, or Edit, Saved and Share on your own. */
 export function ProfileActions({ uid, name }: { uid: string; name: string }) {
   const { loading, user, consent } = useAuth();
   const { blocked } = useMyFollows();
@@ -36,6 +37,10 @@ export function ProfileActions({ uid, name }: { uid: string; name: string }) {
         <div className="flex flex-wrap justify-center gap-3">
           <Link href="/account" className={`${small} bg-white text-ink ring-1 ring-ink/20 hover:bg-paper`}>
             Edit profile
+          </Link>
+          <Link href="/saved" className={`${small} gap-1.5 bg-white text-ink ring-1 ring-ink/20 hover:bg-paper`}>
+            <BookmarkIcon filled className="h-4 w-4 text-brand-red" />
+            Saved
           </Link>
           <Link href="/share" className={`${small} bg-brand-red text-white hover:bg-brand-red-deep`}>
             Share a memory

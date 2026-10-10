@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Form from "next/form";
-import { Anton, Noto_Sans_Telugu } from "next/font/google";
 import { HomeFeed } from "@/components/home/home-feed";
 import { HomeHero } from "@/components/home/home-hero";
 import { HomeMap } from "@/components/home/home-map";
@@ -17,15 +16,11 @@ export const metadata: Metadata = {
   alternates: { canonical: "/" },
 };
 
-// Tall poster letters for the city's name at the top, and a Telugu font
-// for phones that don't have one. Only Home loads them.
-const anton = Anton({ variable: "--font-anton", weight: "400", subsets: ["latin"] });
-const telugu = Noto_Sans_Telugu({ variable: "--font-noto-telugu", weight: "600", subsets: ["telugu"], preload: false });
-
 /**
- * Home: what the site is about, a search for places and people, the kinds
- * of places, the map, a few numbers, what's trending this week, popular
- * areas, then everyone's memories as posts, newest first.
+ * Home: a poster of the city and what the site is about, a search for
+ * places and people, the kinds of places, the map, a few numbers, what's
+ * trending this week, popular areas, then everyone's memories as posts,
+ * newest first.
  */
 export default async function Home() {
   const wall = await loadWall();
@@ -33,7 +28,7 @@ export default async function Home() {
   const builtAt = wall?.builtAt ?? 0;
 
   return (
-    <main className={`mx-auto w-full max-w-xl flex-1 px-4 pb-8 sm:px-5 sm:pb-12 sm:pt-2 ${anton.variable} ${telugu.variable}`}>
+    <main className="mx-auto w-full max-w-xl flex-1 px-4 pb-8 sm:px-5 sm:pb-12 sm:pt-2">
       <HomeHero />
 
       <Form action="/explore" role="search" className="relative mt-3">

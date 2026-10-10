@@ -15,9 +15,9 @@ const navLink =
 
 /**
  * The logo, and on a computer Home, Explore, the map, Share, the bell and
- * your profile. Phones get those in the bar at the bottom instead, and the
- * city here. Visitors get Sign in, and people who signed in but haven't
- * finished joining are sent to finish.
+ * your profile. Phones get the main ones in the bar at the bottom instead,
+ * and the city and the bell here. Visitors get Sign in, and people who
+ * signed in but haven't finished joining are sent to finish.
  */
 export function SiteHeader() {
   const { loading, user, profile, consent } = useAuth();
@@ -36,9 +36,10 @@ export function SiteHeader() {
           className="h-7 w-auto sm:h-11"
         />
       </Link>
-      {/* On a phone, the city sits here; the rest is in the bar at the bottom. */}
-      <div className="sm:hidden">
+      {/* On a phone, the city and the bell sit here; the rest is in the bar at the bottom. */}
+      <div className="flex items-center gap-0.5 sm:hidden">
         <CityPicker />
+        {!loading && me && <BellLink />}
       </div>
       <nav aria-label="Main" className="hidden items-center gap-2 sm:flex">
         <Link href="/" aria-current={pathname === "/" ? "page" : undefined} className={navLink}>

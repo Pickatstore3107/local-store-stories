@@ -6,8 +6,7 @@ import { useSyncExternalStore, type ReactNode } from "react";
 import { personPath } from "@/lib/people";
 import { useAuth } from "./auth-provider";
 import { Avatar } from "./avatar";
-import { useBell } from "./bell";
-import { BellIcon, BookmarkIcon, HomeIcon, MapIcon, PersonIcon, PlusIcon } from "./icons";
+import { HomeIcon, MapIcon, PersonIcon, PlusIcon } from "./icons";
 
 // Whether someone is typing in a box, when the phone's keyboard is up and
 // the bar would only be in the way.
@@ -65,18 +64,16 @@ function Item({
 }
 
 /**
- * The phone's main buttons, on a bar along the bottom where a thumb
- * reaches: Home, the map, a red button to add a place, Saved, Activity and
- * your profile. Computers have them in the menu at the top. Sized in
- * pixels, not rem, so it's the same slim bar on every phone, with the red
- * button inside it rather than sticking out above.
+ * The phone's four main buttons, on a bar along the bottom where a thumb
+ * reaches: Home, the map, a red button to add a place and your profile.
+ * Saved places are on your profile and Home, and Activity is the bell at
+ * the top. Computers have all of them in the menu at the top. Sized in
+ * pixels, not rem, so it's the same slim bar on every phone.
  */
 export function BottomBar() {
   const { loading, user, profile, consent } = useAuth();
   const pathname = usePathname();
   const typing = useTyping();
-  const bell = useBell();
-  const unseen = !!bell && bell.ringAt > bell.seenAt;
   const me = user && consent && profile ? { uid: user.uid, name: profile.displayName } : null;
   const mine = me ? personPath(me.uid) : null;
   const icon = "h-[22px] w-[22px]";
@@ -86,7 +83,7 @@ export function BottomBar() {
       aria-label="Main"
       className={`fixed inset-x-0 bottom-0 z-40 border-t border-ink/10 bg-white pb-[env(safe-area-inset-bottom)] shadow-[0_-6px_20px_rgb(90_50_20/0.06)] transition-transform duration-200 sm:hidden ${typing ? "translate-y-full" : ""}`}
     >
-      <ul className="mx-auto flex h-[52px] max-w-lg items-stretch px-1">
+      <ul className="mx-auto flex h-[52px] max-w-md items-stretch px-2">
         <Item href="/" label="Home" current={pathname === "/"}>
           <HomeIcon filled={pathname === "/"} className={icon} />
         </Item>
@@ -105,22 +102,6 @@ export function BottomBar() {
             Add Place
           </Link>
         </li>
-        <Item href="/saved" label="Saved" current={pathname === "/saved"}>
-          <BookmarkIcon filled={pathname === "/saved"} className={icon} />
-        </Item>
-        <Item
-          href="/activity"
-          label="Activity"
-          spoken={unseen ? "Activity, something new" : undefined}
-          current={pathname === "/activity"}
-        >
-          <span className="relative">
-            <BellIcon className={icon} />
-            {unseen && (
-              <span aria-hidden="true" className="absolute right-0 top-0 h-[8px] w-[8px] rounded-full bg-brand-red ring-2 ring-white" />
-            )}
-          </span>
-        </Item>
         {me && mine ? (
           <Item href={mine} label="Me" spoken="My profile" current={pathname === mine || pathname === "/account"}>
             <span className={`rounded-full ring-2 ring-offset-1 ${pathname === mine ? "ring-brand-red" : "ring-transparent"}`}>

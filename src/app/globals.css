@@ -10,8 +10,6 @@
   --sand: #f4e8d2;
   --ink: #2b1d1a;
   --ink-soft: #6e5a55;
-  /* The warm tan of an old Hyderabad poster, for big display letters. */
-  --tan: #b4875a;
 }
 
 @theme inline {
@@ -22,11 +20,7 @@
   --color-sand: var(--sand);
   --color-ink: var(--ink);
   --color-ink-soft: var(--ink-soft);
-  --color-tan: var(--tan);
   --font-sans: var(--font-jakarta), system-ui, sans-serif;
-  --font-poster: var(--font-anton), Impact, "Arial Narrow", sans-serif;
-  /* An iPhone's or Windows' own Telugu font, else ours. */
-  --font-telugu: "Telugu Sangam MN", "Nirmala UI", var(--font-noto-telugu), sans-serif;
   --font-hand: var(--font-kalam), "Segoe Print", "Bradley Hand", cursive;
 }
 
