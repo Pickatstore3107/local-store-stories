@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { memoryPath, placeLine, textLang, type WallMemory } from "@/lib/memories";
 import { personPath } from "@/lib/people";
-import { StarIcon } from "./icons";
+import { PhotosIcon, PlayIcon, StarIcon } from "./icons";
 
 function FlagIcon() {
   return (
@@ -14,6 +14,17 @@ function FlagIcon() {
         strokeLinejoin="round"
       />
     </svg>
+  );
+}
+
+/** A small mark on a post's photo when it has more photos, or is a video. */
+export function MediaBadge({ memory }: { memory: Pick<WallMemory, "photoCount" | "hasVideo"> }) {
+  if (!memory.hasVideo && memory.photoCount < 2) return null;
+  return (
+    <span className="pointer-events-none absolute bottom-2 right-2 flex h-6 w-6 items-center justify-center rounded-full bg-ink/55 text-white">
+      {memory.hasVideo ? <PlayIcon className="h-3.5 w-3.5" /> : <PhotosIcon className="h-3.5 w-3.5" />}
+      <span className="sr-only">{memory.hasVideo ? "Video" : `${memory.photoCount} photos`}</span>
+    </span>
   );
 }
 
@@ -87,6 +98,7 @@ export function PolaroidCard({
     <article className="group relative h-full rounded-[1.4rem] bg-white p-1.5 lift transition motion-safe:duration-300 motion-safe:hover:-translate-y-1 sm:p-2">
       <div className="relative overflow-hidden rounded-2xl">
         <PolaroidPhoto url={memory.photoUrl} storeName={memory.storeName} eager={eager} />
+        <MediaBadge memory={memory} />
         <span className="absolute left-2 top-2 max-w-[calc(100%-3rem)] truncate rounded-full bg-brand-yellow px-2 py-0.5 text-[0.68rem] font-bold text-ink sm:text-xs">
           {memory.category}
         </span>

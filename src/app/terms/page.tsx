@@ -19,7 +19,7 @@ export default function TermsPage() {
     <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-6 sm:px-5 sm:py-12 text-ink">
       <h1 className={pageTitle}>Terms and conditions</h1>
       <p className="mt-2 text-sm text-ink-soft">
-        Draft for the pilot. Last updated 9 October 2026.
+        Draft for the pilot. Last updated 10 October 2026.
       </p>
 
       <div className="mt-8 space-y-6 leading-relaxed">
@@ -49,15 +49,16 @@ export default function TermsPage() {
         <section>
           <h2 className="text-lg font-bold">Your posts stay yours</h2>
           <p className="mt-2">
-            You keep the rights to the words and photos you share. By sharing a post, you let
-            us show it on this site, on the map, in link previews when someone shares it, and in
-            the invite links you send, for as long as it stays up. We may resize or crop photos so
-            they fit. You can delete a post, or your whole account, at any time from your
-            profile, and it comes off the site.
+            You keep the rights to the words, photos and videos you share. By sharing a post,
+            you let us show it on this site, on the map, in link previews when someone shares
+            it, and in the invite links you send, for as long as it stays up. We may resize or
+            crop photos so they fit, and we show only the first 30 seconds of a video. You can
+            delete a post, or your whole account, at any time from your profile, and it comes
+            off the site.
           </p>
           <p className="mt-2">
-            Only share photos you took yourself or have permission to use. If a photo shows
-            people, make sure they are happy for it to be shared.
+            Only share photos and videos you took yourself or have permission to use. If they
+            show people, make sure they are happy for them to be shared.
           </p>
         </section>
 
@@ -78,9 +79,10 @@ export default function TermsPage() {
         <section>
           <h2 className="text-lg font-bold">How posts are checked</h2>
           <p className="mt-2">
-            A moderator reads every post before anyone else can see it. We may decline a
-            post, or take one down later, if it breaks these terms or someone reports it with
-            good reason, and you&apos;ll see why on your profile. To keep the site free of spam,
+            Posts go up straight away. Anyone can report a post, and a moderator reads every
+            report. When three people report a post, it comes off the site until a moderator
+            has looked at it. We may take a post down if it breaks these terms or someone
+            reports it with good reason, and you&apos;ll see why on your profile. To keep the site free of spam,
             each person can share one new post a minute and up to {DAILY_MEMORY_LIMIT} a day.
             Comments show at once, without links, a few a minute; a moderator deletes any that
             break these terms once they are reported. We may close the account of anyone who

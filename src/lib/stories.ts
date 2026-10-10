@@ -65,8 +65,12 @@ export type Story = {
   visibility: Visibility;
   rightsConfirmed: true;
   status: StoryStatus;
-  /** The photo's private ID at Cloudinary, our image host. */
-  photoId: string;
+  /** Its photos' private IDs at Cloudinary, our image host, in order: one to five. */
+  photoIds?: string[];
+  /** Or its video's, instead of photos. */
+  videoId?: string;
+  /** Or the one photo posts had before. */
+  photoId?: string;
   /** Where the store was, for the map; see src/lib/pins.ts. */
   pin?: Pin;
   createdAt: Timestamp;
@@ -86,7 +90,14 @@ export type Story = {
   /** How many comments it has; see src/lib/comments.ts. */
   commentCount?: number;
   commentChange?: string;
+  /** How many open reports it has; see src/lib/reports.ts. */
+  reportCount?: number;
 };
+
+/** The photo or video shown first: on cards, in lists and in link previews. */
+export function coverId(story: Pick<Story, "photoIds" | "videoId" | "photoId">) {
+  return story.videoId ?? story.photoIds?.[0] ?? story.photoId ?? null;
+}
 
 export type StoryInput = {
   storeName: string;
@@ -102,45 +113,8 @@ export type StoryInput = {
 
 export type MyStory = Story & { id: string; thumbUrl: string | null };
 
-// Photos are resized and re-encoded on the phone before upload. Drawing to a
-// canvas drops all metadata, including the GPS location a camera may embed.
-const PHOTO_MAX_SIDE = 1600;
-
-async function toJpeg(image: ImageBitmap, maxSide: number, quality: number) {
-  const scale = Math.min(1, maxSide / Math.max(image.width, image.height));
-  const canvas = document.createElement("canvas");
-  canvas.width = Math.round(image.width * scale);
-  canvas.height = Math.round(image.height * scale);
-  const context = canvas.getContext("2d");
-  if (!context) throw new Error("Canvas is not available");
-  context.fillStyle = "#ffffff"; // transparent PNGs get a white background
-  context.fillRect(0, 0, canvas.width, canvas.height);
-  context.drawImage(image, 0, 0, canvas.width, canvas.height);
-  return new Promise<Blob>((resolve, reject) =>
-    canvas.toBlob(
-      (blob) => (blob ? resolve(blob) : reject(new Error("Could not encode the photo"))),
-      "image/jpeg",
-      quality,
-    ),
-  );
-}
-
-export class UnreadablePhotoError extends Error {}
-
-/** Returns a location-free JPEG, at most 1600 pixels on its longer side. */
-export async function preparePhoto(file: File) {
-  let image: ImageBitmap;
-  try {
-    image = await createImageBitmap(file, { imageOrientation: "from-image" });
-  } catch {
-    throw new UnreadablePhotoError(file.type);
-  }
-  try {
-    return await toJpeg(image, PHOTO_MAX_SIDE, 0.82);
-  } finally {
-    image.close();
-  }
-}
+/** What a post shows: one to five photos, cropped and ready (src/lib/media.ts), or one video. */
+export type PostMedia = { photos: Blob[] } | { video: Blob };
 
 /** Calls one of our server routes as the signed-in person. */
 export async function callApi(user: User, path: string, init: RequestInit) {
@@ -232,29 +206,109 @@ async function saveWithLimit(
   await batch.commit();
 }
 
+async function uploadPhotos(
+  user: User,
+  storyId: string,
+  photos: Blob[],
+  onProgress: (done: number) => void,
+) {
+  let done = 0;
+  // All at once: each is small, and a slow connection then waits for one round, not five.
+  const results = await Promise.allSettled(
+    photos.map(async (photo, i) => {
+      const form = new FormData();
+      form.set("storyId", storyId);
+      form.set("index", String(i + 1));
+      form.set("photo", photo, `photo-${i + 1}.jpg`);
+      const response = await callApi(user, "/api/photos", { method: "POST", body: form });
+      onProgress(++done / photos.length);
+      return ((await response.json()) as { photoId: string }).photoId;
+    }),
+  );
+  // Waits for every one, so none arrives after a failed post is tidied away.
+  const failed = results.find((result) => result.status === "rejected");
+  if (failed) throw failed.reason;
+  return results.map((result) => (result as PromiseFulfilledResult<string>).value);
+}
+
+const VIDEO_FAILED = "We couldn't upload the video. Please check your connection and try again.";
+
 /**
- * Uploads the photo, then saves the story as pending review. Nobody but
- * the author can see either until a moderator approves it.
+ * Sends the video straight to Cloudinary, which is told by our server
+ * exactly where it may go. Videos are too big to pass through our server.
  */
-export async function shareStory(user: User, input: StoryInput, photo: Blob) {
+async function uploadVideo(
+  user: User,
+  storyId: string,
+  video: Blob,
+  onProgress: (done: number) => void,
+) {
+  const response = await callApi(user, "/api/videos", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ storyId }),
+  });
+  const { url, fields } = (await response.json()) as { url: string; fields: Record<string, string> };
+  const form = new FormData();
+  for (const [key, value] of Object.entries(fields)) form.set(key, value);
+  form.set("file", video);
+  // fetch can't tell how much has gone, so this uses XMLHttpRequest.
+  const id = await new Promise<string>((resolve, reject) => {
+    const request = new XMLHttpRequest();
+    request.open("POST", url);
+    request.responseType = "json";
+    request.upload.onprogress = (event) => {
+      if (event.lengthComputable) onProgress(event.loaded / event.total);
+    };
+    request.onload = () => {
+      const body = request.response as { public_id?: string; error?: { message?: string } } | null;
+      if (request.status === 200 && body?.public_id) resolve(body.public_id);
+      else {
+        console.error("Video upload failed", request.status, body?.error?.message);
+        reject(new FriendlyError(VIDEO_FAILED));
+      }
+    };
+    request.onerror = () => reject(new FriendlyError(VIDEO_FAILED));
+    request.send(form);
+  });
+  return id;
+}
+
+/**
+ * Uploads the photos or video, then saves the post. It goes up on Home
+ * straight away; moderators act on reports. onProgress hears how much of
+ * the upload is done, from 0 to 1.
+ */
+export async function shareStory(
+  user: User,
+  input: StoryInput,
+  media: PostMedia,
+  onProgress: (done: number) => void = () => {},
+) {
   const { db } = getFirebase();
   const limit = await loadPostLimit(user.uid);
   const check = checkPostLimit(limit.before, Date.now());
   if (!check.ok) throw new FriendlyError(check.message);
 
   const storyRef = doc(collection(db, "stories"));
-  const form = new FormData();
-  form.set("storyId", storyRef.id);
-  form.set("photo", photo, "photo.jpg");
-  const response = await callApi(user, "/api/photos", { method: "POST", body: form });
-  const { photoId } = (await response.json()) as { photoId: string };
+  let uploaded;
+  try {
+    uploaded =
+      "video" in media
+        ? { videoId: await uploadVideo(user, storyRef.id, media.video, onProgress) }
+        : { photoIds: await uploadPhotos(user, storyRef.id, media.photos, onProgress) };
+  } catch (error) {
+    // Any that did arrive are tidied away.
+    await deletePhoto(user, storyRef.id).catch(() => {});
+    throw error;
+  }
 
   const story = {
     authorId: user.uid,
     ...cleanInput(input),
     rightsConfirmed: true,
-    status: "pending",
-    photoId,
+    status: "approved",
+    ...uploaded,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   };
@@ -289,6 +343,7 @@ export async function shareStory(user: User, input: StoryInput, photo: Blob) {
     await deletePhoto(user, storyRef.id).catch(() => {});
     throw error;
   }
+  await refreshWall(user, [storyRef.id]);
   return storyRef.id;
 }
 
@@ -302,20 +357,21 @@ async function myStoryDocs(uid: string) {
 export async function loadMyStories(user: User): Promise<MyStory[]> {
   const stories = await myStoryDocs(user.uid);
   stories.sort((a, b) => (b.createdAt?.toMillis() ?? 0) - (a.createdAt?.toMillis() ?? 0));
+  const covers = stories.flatMap((story) => coverId(story) ?? []);
   let urls: Record<string, string> = {};
-  if (stories.length) {
+  if (covers.length) {
     try {
       const response = await callApi(user, "/api/photos/thumbnails", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ storyIds: stories.map((s) => s.id) }),
+        body: JSON.stringify({ photoIds: covers }),
       });
       ({ urls } = (await response.json()) as { urls: Record<string, string> });
     } catch (error) {
       console.error("Could not load thumbnails", error); // the list still shows
     }
   }
-  return stories.map((story) => ({ ...story, thumbUrl: urls[story.id] ?? null }));
+  return stories.map((story) => ({ ...story, thumbUrl: urls[coverId(story) ?? ""] ?? null }));
 }
 
 function deletePhoto(user: User, storyId: string) {

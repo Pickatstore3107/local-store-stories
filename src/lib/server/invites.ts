@@ -40,7 +40,7 @@ export async function loadInvite(code: string): Promise<InviteLanding | null> {
       status: "open",
       inviter: inviter?.name ? { name: inviter.name, city: inviter.city } : null,
       memory: story ? wallMemory(story, inviter ? { [story.authorId]: inviter } : {}) : null,
-      shareImageUrl: story ? safely(() => sharePhotoUrl(story.photoId)) : null,
+      shareImageUrl: story ? safely(() => sharePhotoUrl(story.coverId)) : null,
     };
   } catch (error) {
     console.error(`Could not load invite ${code}`, error);

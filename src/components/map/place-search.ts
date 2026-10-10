@@ -12,6 +12,9 @@ export type Place = {
   name: string;
   /** "Restaurant · Somajiguda, Hyderabad" */
   detail: string;
+  /** Its neighbourhood and city, when OpenStreetMap knows them. */
+  area: string | null;
+  city: string | null;
   spot: LatLng;
   /** West, south, east, north, for an area to fit in view. */
   extent: [number, number, number, number] | null;
@@ -48,8 +51,12 @@ const KIND_WORDS: Record<string, string> = {
 
 const CATEGORY_OF: Record<string, Category> = {
   bakery: "Bakeries",
+  cafe: "Cafes",
   confectionery: "Bakeries",
   convenience: "Kirana Stores",
+  fast_food: "Restaurants",
+  food_court: "Restaurants",
+  restaurant: "Restaurants",
   supermarket: "Kirana Stores",
   books: "Bookstores",
   stationery: "Bookstores",
@@ -80,6 +87,8 @@ export function placeFrom({ geometry, properties: p }: PhotonFeature): Place | n
     key: `${word(p.osm_type) ?? ""}${String(p.osm_id ?? `${lat},${lng}`)}`,
     name,
     detail: [kind, area].filter(Boolean).join(" · "),
+    area: word(p.locality) ?? word(p.district),
+    city: word(p.city),
     spot: { lat, lng },
     // Photon gives west, north, east, south.
     extent: extent ? [extent[0], extent[3], extent[2], extent[1]] : null,

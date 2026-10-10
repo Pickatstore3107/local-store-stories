@@ -4,15 +4,16 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { Avatar } from "@/components/avatar";
 import { FollowButton } from "@/components/follow-button";
-import { PolaroidPhoto } from "@/components/polaroid";
 import { ActionsRow, LikeablePhoto, LikesLine } from "@/components/post/post-parts";
+import { PostMedia } from "@/components/post/post-media";
 import { useLike } from "@/components/post/use-likes";
 import { textLang, type Memory } from "@/lib/memories";
 import { personPath } from "@/lib/people";
 
 /**
- * A memory's page, as a post: who shared it with Follow, the whole photo
- * (tap twice to like), Like, Comment and Share, who liked it, then its words.
+ * A memory's page, as a post: who shared it with Follow, its photos or
+ * video (tap a photo twice to like), Like, Comment and Share, who liked
+ * it, then its words.
  */
 export function MemoryPost({ memory, children }: { memory: Memory; children: ReactNode }) {
   const like = useLike(memory.id, memory.likes, memory.builtAt);
@@ -44,7 +45,7 @@ export function MemoryPost({ memory, children }: { memory: Memory; children: Rea
       </header>
 
       <LikeablePhoto like={like}>
-        <PolaroidPhoto url={memory.photoUrl} storeName={memory.storeName} whole eager />
+        <PostMedia memory={memory} />
         <span className="pointer-events-none absolute left-3 top-3 rounded-full bg-brand-yellow px-2.5 py-1 text-xs font-bold text-ink">
           {memory.category}
         </span>

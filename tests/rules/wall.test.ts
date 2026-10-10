@@ -86,6 +86,14 @@ beforeEach(async () => {
   await env.clearFirestore();
 });
 
+/** Taking back a report: one off its post's count, unless it was never counted. */
+const takeBack = (db: Firestore, uid: string, storyId: string, uncount = true) => {
+  const batch = writeBatch(db);
+  batch.delete(doc(db, "reports", `${storyId}_${uid}`));
+  if (uncount) batch.update(doc(db, "stories", storyId), { reportCount: increment(-1) });
+  return batch.commit();
+};
+
 describe("featuring a memory", () => {
   beforeEach(() =>
     seed({
@@ -258,15 +266,30 @@ describe("reporting a memory", () => {
     }),
   );
 
-  const report = (db: Firestore, uid: string, storyId: string, overrides: Record<string, unknown> = {}, id = `${storyId}_${uid}`) =>
-    setDoc(doc(db, "reports", id), {
+  /** The batch the post page writes: the report, counted on the post. */
+  const report = (
+    db: Firestore,
+    uid: string,
+    storyId: string,
+    overrides: Record<string, unknown> = {},
+    id = `${storyId}_${uid}`,
+    onStory: Record<string, unknown> | null = { reportCount: increment(1) },
+  ) => {
+    const batch = writeBatch(db);
+    const data = {
       storyId,
       reason: "private",
       by: uid,
       at: serverTimestamp(),
       status: "open",
+      counted: true,
       ...overrides,
-    });
+    };
+    // An override of undefined leaves that field out.
+    batch.set(doc(db, "reports", id), Object.fromEntries(Object.entries(data).filter(([, v]) => v !== undefined)));
+    if (onStory) batch.update(doc(db, "stories", storyId), onStory);
+    return batch.commit();
+  };
 
   it("lets a person who gave consent report an approved memory, once", async () => {
     await assertSucceeds(report(as("ravi"), "ravi", "a1"));
@@ -300,6 +323,82 @@ describe("reporting a memory", () => {
     await assertFails(report(db, "ravi", "a1", { storyId: "l1" }));
   });
 
+  it("counts each report on the post, in the same batch", async () => {
+    await assertSucceeds(report(as("ravi"), "ravi", "a1"));
+    await assertSucceeds(report(as("mallory"), "mallory", "a1"));
+    expect(await read("stories/a1")).toMatchObject({ status: "approved", reportCount: 2 });
+  });
+
+  it("refuses a report that isn't counted, or is counted wrongly", async () => {
+    const db = as("ravi");
+    await assertFails(report(db, "ravi", "a1", {}, undefined, null));
+    await assertFails(report(db, "ravi", "a1", { counted: false }));
+    await assertFails(report(db, "ravi", "a1", { counted: undefined }));
+    await assertFails(report(db, "ravi", "a1", {}, undefined, { reportCount: increment(2) }));
+    await assertFails(report(db, "ravi", "a1", {}, undefined, { reportCount: 1, caption: "Changed it." }));
+    await assertFails(report(db, "ravi", "a1", {}, undefined, { reportCount: increment(1), status: "pending" }));
+  });
+
+  it("refuses changing the count without a report", async () => {
+    await assertFails(updateDoc(doc(as("ravi"), "stories/a1"), { reportCount: increment(1) }));
+    await assertFails(updateDoc(doc(as("asha"), "stories/a1"), { reportCount: 0 }));
+    await assertSucceeds(report(as("ravi"), "ravi", "a1"));
+    await assertFails(updateDoc(doc(as("ravi"), "stories/a1"), { reportCount: increment(1) }));
+    await assertFails(updateDoc(doc(as("asha"), "stories/a1"), { reportCount: increment(-1) }));
+  });
+
+  it("takes a post off the site at the third report, until a moderator looks", async () => {
+    await seed({ a2: story("a2", "approved", { reportCount: 2 }) });
+    await assertFails(report(as("ravi"), "ravi", "a2"));
+    await assertFails(
+      report(as("ravi"), "ravi", "a2", {}, undefined, { reportCount: increment(1), status: "hidden" }),
+    );
+    await assertSucceeds(
+      report(as("ravi"), "ravi", "a2", {}, undefined, { reportCount: increment(1), status: "pending" }),
+    );
+    expect(await read("stories/a2")).toMatchObject({ status: "pending", reportCount: 3 });
+    await assertFails(getDoc(doc(visitor(), "stories/a2")));
+    await assertFails(report(as("mallory"), "mallory", "a2"));
+  });
+
+  it("takes one off the count when an open report is taken back", async () => {
+    await assertSucceeds(report(as("ravi"), "ravi", "a1"));
+    await assertFails(takeBack(as("ravi"), "ravi", "a1", false));
+    await assertFails(takeBack(as("mallory"), "ravi", "a1"));
+    await assertSucceeds(takeBack(as("ravi"), "ravi", "a1"));
+    expect((await read("stories/a1"))?.reportCount).toBe(0);
+    // Reporting again counts once, so nobody can hold a post back alone.
+    await assertSucceeds(report(as("ravi"), "ravi", "a1"));
+    expect((await read("stories/a1"))?.reportCount).toBe(1);
+  });
+
+  it("takes back a report about a post that's gone, or one that was never counted", async () => {
+    await seed(
+      { a2: story("a2", "approved", { reportCount: 1 }) },
+      {
+        "reports/a2_ravi": { storyId: "a2", reason: "unkind", by: "ravi", at: new Date(2026, 9, 3), status: "open" },
+        "reports/gone_ravi": {
+          storyId: "gone",
+          reason: "unkind",
+          by: "ravi",
+          at: new Date(2026, 9, 3),
+          status: "open",
+          counted: true,
+        },
+      },
+    );
+    await assertSucceeds(takeBack(as("ravi"), "ravi", "a2", false));
+    expect((await read("stories/a2"))?.reportCount).toBe(1);
+    await assertSucceeds(takeBack(as("ravi"), "ravi", "gone", false));
+  });
+
+  it("lets a moderator start a post's count again, and nobody else", async () => {
+    await seed({ a2: story("a2", "approved", { reportCount: 2 }) });
+    await assertFails(updateDoc(doc(as("asha"), "stories/a2"), { reportCount: deleteField() }));
+    await assertFails(updateDoc(doc(as("mod"), "stories/a2"), { reportCount: 0 }));
+    await assertSucceeds(updateDoc(doc(as("mod"), "stories/a2"), { reportCount: deleteField() }));
+  });
+
   it("shows reports only to moderators and to the person who sent them", async () => {
     await assertSucceeds(report(as("ravi"), "ravi", "a1"));
     const reports = (db: Firestore) => collection(db, "reports");
@@ -325,7 +424,7 @@ describe("reporting a memory", () => {
     for (const db of [as("mallory"), as("asha"), as("mod"), visitor()]) {
       await assertFails(deleteDoc(doc(db, "reports/a1_ravi")));
     }
-    await assertSucceeds(deleteDoc(doc(as("ravi"), "reports/a1_ravi")));
+    await assertSucceeds(takeBack(as("ravi"), "ravi", "a1"));
   });
 
   it("doesn't let the reporter change a report", async () => {
@@ -372,6 +471,52 @@ describe("closing reports", () => {
     await assertSucceeds(close(as("mod"), "a1_ravi", "kept"));
     expect(await read("reports/a1_ravi")).toMatchObject({ status: "closed", outcome: "kept", closedBy: "mod" });
     await assertFails(close(as("mod"), "a1_ravi", "kept"));
+  });
+
+  it("puts a held post back up and closes its reports in one batch", async () => {
+    const counted = (by: string) => ({
+      [`reports/held_${by}`]: { storyId: "held", reason: "unkind", by, at: new Date(2026, 9, 3), status: "open", counted: true },
+    });
+    await seed(
+      { held: story("held", "pending", { reportCount: 3 }) },
+      { ...counted("ravi"), ...counted("mallory"), ...counted("asha") },
+    );
+    const db = as("mod");
+    const keep = (approve: boolean) => {
+      const batch = writeBatch(db);
+      if (approve) {
+        batch.update(doc(db, "stories/held"), {
+          status: "approved",
+          reviewedAt: serverTimestamp(),
+          reviewLogId: "L3",
+          updatedAt: serverTimestamp(),
+          reportCount: deleteField(),
+        });
+        batch.set(doc(db, "moderationLog/L3"), {
+          storyId: "held",
+          storeName: "Ravi Bakery",
+          action: "approved",
+          from: "pending",
+          by: "mod",
+          at: serverTimestamp(),
+        });
+      }
+      for (const by of ["ravi", "mallory", "asha"]) {
+        batch.update(doc(db, "reports", `held_${by}`), {
+          status: "closed",
+          outcome: "kept",
+          closedBy: "mod",
+          closedAt: serverTimestamp(),
+        });
+      }
+      return batch.commit();
+    };
+    await assertFails(keep(false));
+    await assertSucceeds(keep(true));
+    expect(await read("stories/held")).toMatchObject({ status: "approved" });
+    expect(await read("stories/held")).not.toHaveProperty("reportCount");
+    // A closed report is taken back without changing the count.
+    await assertSucceeds(takeBack(as("ravi"), "ravi", "held", false));
   });
 
   it("closes reports with the outcome that really happened", async () => {

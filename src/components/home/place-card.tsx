@@ -6,6 +6,7 @@ import { personPath } from "@/lib/people";
 import { useAuth } from "../auth-provider";
 import { Avatar } from "../avatar";
 import { HeartIcon, PlaceIcon } from "../icons";
+import { MediaBadge } from "../polaroid";
 import { SaveButton } from "../post/save-button";
 import { useLike } from "../post/use-likes";
 import { setReturnPath } from "../require-account";
@@ -53,6 +54,7 @@ export function PlaceCard({
             {memory.storeName}
           </span>
         )}
+        <MediaBadge memory={memory} />
         {rank !== undefined && (
           <span className="sticker absolute left-2 top-2 -rotate-[4deg] rounded-md bg-brand-yellow px-1.5 py-0.5 text-[0.75rem] font-extrabold leading-tight text-ink">
             #{rank}

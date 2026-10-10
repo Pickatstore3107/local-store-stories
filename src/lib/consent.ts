@@ -3,6 +3,6 @@
  * Bump it when the text changes; firestore.rules accepts only this value,
  * so update both together.
  */
-export const CONSENT_VERSION = "2026-10-v3";
+export const CONSENT_VERSION = "2026-10-v4";
 
 export const MIN_AGE = 18;
