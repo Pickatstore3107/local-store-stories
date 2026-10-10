@@ -8,8 +8,8 @@ import { personPath, type ListedPerson } from "@/lib/people";
 import { CATEGORIES, type Category } from "@/lib/stories";
 import { useAuth } from "../auth-provider";
 import { Avatar } from "../avatar";
-import { chip, chipOff, chipOn } from "../home/home-feed";
-import { CloseIcon, CommentIcon, HeartIcon, SearchIcon } from "../icons";
+import { KindIcon, off, on, pill } from "../home/kind-chips";
+import { CloseIcon, CommentIcon, GridIcon, HeartIcon, SearchIcon } from "../icons";
 import { setReturnPath } from "../require-account";
 import { secondaryButton } from "../ui";
 import { setWallFilters, useWallFilters } from "../use-wall-filters";
@@ -75,7 +75,7 @@ export function ExploreBrowser({ memories }: { memories: WallMemory[] }) {
         <label htmlFor="explore-search" className="sr-only">
           Search stores, places and people
         </label>
-        <SearchIcon className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-ink-soft" />
+        <SearchIcon className="pointer-events-none absolute left-3.5 top-1/2 h-[1.1rem] w-[1.1rem] -translate-y-1/2 text-ink-soft" />
         <input
           id="explore-search"
           type="search"
@@ -87,7 +87,7 @@ export function ExploreBrowser({ memories }: { memories: WallMemory[] }) {
             setWallFilters({ ...filters, following: false, query: event.target.value });
           }}
           placeholder="Search stores, places and people"
-          className="h-[3.25rem] w-full rounded-full border-0 bg-white pl-12 pr-12 text-base text-ink outline-none ring-1 ring-ink/5 lift transition placeholder:text-ink-soft/85 focus:ring-2 focus:ring-brand-red/40 [&::-webkit-search-cancel-button]:hidden"
+          className="h-11 w-full rounded-full border-0 bg-white pl-10 pr-11 text-base text-ink outline-none ring-1 ring-ink/[0.06] transition placeholder:text-ink-soft/85 focus:ring-2 focus:ring-brand-red/40 [&::-webkit-search-cancel-button]:hidden"
         />
         {filters.query && (
           <button
@@ -97,9 +97,9 @@ export function ExploreBrowser({ memories }: { memories: WallMemory[] }) {
               setWallFilters({ ...filters, following: false, query: "" });
               document.getElementById("explore-search")?.focus();
             }}
-            className="absolute right-2 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full text-ink-soft transition hover:bg-paper hover:text-ink"
+            className="absolute right-1.5 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-ink-soft transition hover:bg-paper hover:text-ink"
           >
-            <CloseIcon className="h-5 w-5" />
+            <CloseIcon className="h-4 w-4" />
             <span className="sr-only">Clear the search</span>
           </button>
         )}
@@ -109,14 +109,15 @@ export function ExploreBrowser({ memories }: { memories: WallMemory[] }) {
         <div
           role="group"
           aria-label="Categories"
-          className="-mx-4 mt-3 flex gap-2 overflow-x-auto px-4 pb-2 pt-1 sm:mx-0 sm:flex-wrap sm:px-0"
+          className="-mx-4 mt-2.5 flex gap-1.5 overflow-x-auto px-4 py-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0 [&::-webkit-scrollbar]:hidden"
         >
           <button
             type="button"
             aria-pressed={category === null}
             onClick={() => setWallFilters({ ...filters, following: false, category: null })}
-            className={`${chip} ${category === null ? chipOn : chipOff}`}
+            className={`${pill} ${category === null ? on : off}`}
           >
+            <GridIcon className="h-[1.1rem] w-[1.1rem]" />
             All
           </button>
           {categories.map((c: Category) => (
@@ -125,9 +126,10 @@ export function ExploreBrowser({ memories }: { memories: WallMemory[] }) {
               type="button"
               aria-pressed={category === c}
               onClick={() => setWallFilters({ ...filters, following: false, category: category === c ? null : c })}
-              className={`${chip} ${category === c ? chipOn : chipOff}`}
+              className={`${pill} ${category === c ? on : off}`}
             >
-              {c}
+              <KindIcon category={c} picked={category === c} />
+              <span className="whitespace-nowrap">{c}</span>
             </button>
           ))}
         </div>
@@ -135,7 +137,7 @@ export function ExploreBrowser({ memories }: { memories: WallMemory[] }) {
 
       <p role="status" className="sr-only">
         {searching &&
-          `${posts.length === 1 ? "1 memory" : `${posts.length} memories`}, ${
+          `${posts.length === 1 ? "1 post" : `${posts.length} posts`}, ${
             people.list.length === 1 ? "1 person" : `${people.list.length} people`
           } found.`}
       </p>
@@ -206,7 +208,7 @@ export function ExploreBrowser({ memories }: { memories: WallMemory[] }) {
                         {place.storeName}
                       </span>
                       <span className="block truncate text-sm text-ink-soft">
-                        {place.area} · {place.memories.length === 1 ? "1 memory" : `${place.memories.length} memories`}
+                        {place.area} · {place.memories.length === 1 ? "1 post" : `${place.memories.length} posts`}
                         {place.likes > 0 && ` · ${place.likes === 1 ? "1 like" : `${place.likes} likes`}`}
                       </span>
                     </span>
@@ -220,12 +222,12 @@ export function ExploreBrowser({ memories }: { memories: WallMemory[] }) {
 
       <section aria-labelledby="posts-heading" className="mt-6">
         <h2 id="posts-heading" className={searching ? "text-base font-extrabold text-ink" : "sr-only"}>
-          {searching ? "Memories" : "Every memory"}
+          {searching ? "Posts" : "Every post"}
         </h2>
         {posts.length === 0 ? (
           <div className="py-12 text-center">
             <p className="font-hand text-2xl text-ink">
-              {searching ? "No memories match yet." : "No memories here yet."}
+              {searching ? "No posts match yet." : "No posts here yet."}
             </p>
             <p className="mt-2 text-ink-soft">
               Know one?{" "}

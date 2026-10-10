@@ -73,13 +73,13 @@ export function Comments({
     !!member && (comment.authorId === member.uid || storyAuthorId === member.uid || isModeratorNow);
 
   return (
-    <section id="comments" aria-labelledby="comments-heading" className="mt-8 scroll-mt-24">
-      <h2 id="comments-heading" className="text-lg font-extrabold text-ink">
+    <section id="comments" aria-labelledby="comments-heading" className="scroll-mt-24">
+      <h2 id="comments-heading" className="text-[1.05rem] font-bold text-ink">
         Comments{shown.length > 0 && <span className="font-bold text-ink-soft"> ({shown.length})</span>}
       </h2>
 
       {shown.length === 0 ? (
-        <p className="mt-2 text-ink-soft">No comments yet. Say something kind about this memory.</p>
+        <p className="mt-2 text-ink-soft">No comments yet. Say something kind about this post.</p>
       ) : (
         <ul className="mt-2 divide-y divide-ink/5">
           {shown.map((comment) => (
@@ -259,7 +259,7 @@ function CommentBox({
     } catch (e) {
       setError(
         e instanceof FirebaseError && e.code === "permission-denied"
-          ? "You can't comment on this memory right now."
+          ? "You can't comment on this post right now."
           : friendlyError(e),
       );
     } finally {

@@ -50,7 +50,7 @@ export function CityPicker() {
             <CheckIcon className="h-4 w-4 text-brand-red" />
           </p>
           <p className="px-3 pb-1 pt-2 text-[0.8rem] leading-snug text-ink-soft">
-            Memories from Hyderabad only, for the pilot.
+            Posts from Hyderabad only, for the pilot.
           </p>
         </div>
       )}

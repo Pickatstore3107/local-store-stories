@@ -39,10 +39,10 @@ export const REVIEW_NOTE_MAX = 300;
 
 /** Ready-made notes for the author; the moderator can edit them before sending. */
 export const NOTE_SUGGESTIONS = [
-  ["Not about a store", "Please share a memory of a local store or the people who ran it."],
+  ["Not about a store", "Please share a post about a local store or the people who ran it."],
   ["Unclear photo", "Please use a clear photo of the store, or of you there."],
   ["Personal details", "Please leave out phone numbers, addresses and other personal details."],
-  ["Unkind", "Please keep your story kind about the real people in it."],
+  ["Unkind", "Please keep your post kind about the real people in it."],
   ["Not their photo", "Please share only photos you took or have permission to use."],
 ] as const;
 
@@ -197,7 +197,7 @@ export async function closeReports(
   } catch (error) {
     if (error instanceof FirebaseError && error.code === "permission-denied") {
       throw new FriendlyError(
-        "We couldn't close these reports. Someone may have just changed this memory. Please refresh and try again.",
+        "We couldn't close these reports. Someone may have just changed this post. Please refresh and try again.",
       );
     }
     throw error;
@@ -213,10 +213,10 @@ export async function featureStory(user: User, storyId: string, featured: boolea
     });
   } catch (error) {
     const code = error instanceof FirebaseError ? error.code : null;
-    if (code === "not-found") throw new FriendlyError("Its author has deleted this memory.");
+    if (code === "not-found") throw new FriendlyError("Its author has deleted this post.");
     if (code === "permission-denied") {
       throw new FriendlyError(
-        "Only approved memories on Home can be featured. Please refresh and try again.",
+        "Only approved posts on Home can be featured. Please refresh and try again.",
       );
     }
     throw error;
@@ -263,10 +263,10 @@ export async function reviewStory(
     await batch.commit();
   } catch (error) {
     const code = error instanceof FirebaseError ? error.code : null;
-    if (code === "not-found") throw new FriendlyError("Its author has deleted this memory.");
+    if (code === "not-found") throw new FriendlyError("Its author has deleted this post.");
     if (code === "permission-denied") {
       throw new FriendlyError(
-        "We couldn't save that. Someone may have just reviewed this memory. Please refresh and try again.",
+        "We couldn't save that. Someone may have just reviewed this post. Please refresh and try again.",
       );
     }
     throw error;

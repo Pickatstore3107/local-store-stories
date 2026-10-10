@@ -77,12 +77,12 @@ export function PassTheMemory({
   }
 
   const url = invite ? `${origin}${invitePath(invite.code)}` : "";
-  const message = `I shared a memory of ${storeName} on Local Stores & Their Stories. Which store do you never forget? Share yours here: ${url}`;
+  const message = `I shared a post about ${storeName} on Local Stores & Their Stories. Which store do you never forget? Share yours here: ${url}`;
 
   async function send() {
     if (canShare) {
       try {
-        await navigator.share({ title: "Pass the memory", text: message });
+        await navigator.share({ title: "Pass it on", text: message });
       } catch {
         // They closed the share sheet.
       }
@@ -103,14 +103,14 @@ export function PassTheMemory({
   return (
     <section aria-labelledby={`pass-${storyId}`} className="rounded-2xl bg-brand-yellow/15 p-5">
       <h2 id={`pass-${storyId}`} className="font-hand text-2xl font-bold text-ink">
-        Pass the memory
+        Pass it on
       </h2>
       <p className="mt-1 text-sm leading-relaxed text-ink-soft">
         Send your invite link to friends so they can share a store they never forgot, and they
         can pass it on too. You&apos;ll see everyone who joins through it, and they&apos;ll
         follow you.
         {visibility === "link" &&
-          " Anyone with the link can also see this memory, even though it isn't on Home."}
+          " Anyone with the link can also see this post, even though it isn't on Home."}
       </p>
 
       {invite === undefined ? (

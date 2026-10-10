@@ -65,7 +65,7 @@ export function MapExplorer({
               In this part of the map
             </h2>
             <p className="text-sm text-ink-soft">
-              {inView.length === 1 ? "1 memory" : `${inView.length} memories`}
+              {inView.length === 1 ? "1 post" : `${inView.length} posts`}
             </p>
           </div>
           {inView.length === 0 ? (
@@ -157,7 +157,7 @@ function MapCard({
             href={memoryPath(memory.id)}
             className="rounded-full bg-brand-red px-4 py-2 text-sm font-bold text-white transition hover:bg-brand-red-deep"
           >
-            Open memory
+            Open post
           </Link>
         </div>
       </div>

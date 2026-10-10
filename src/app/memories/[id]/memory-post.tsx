@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { Avatar } from "@/components/avatar";
 import { FollowButton } from "@/components/follow-button";
 import { PolaroidPhoto } from "@/components/polaroid";
@@ -10,16 +11,16 @@ import { textLang, type Memory } from "@/lib/memories";
 import { personPath } from "@/lib/people";
 
 /**
- * The top of a memory's page, as a post: who shared it with Follow, the
- * whole photo (tap twice to like), Like, Comment and Share, and who liked it.
+ * A memory's page, as a post: who shared it with Follow, the whole photo
+ * (tap twice to like), Like, Comment and Share, who liked it, then its words.
  */
-export function MemoryPost({ memory }: { memory: Memory }) {
+export function MemoryPost({ memory, children }: { memory: Memory; children: ReactNode }) {
   const like = useLike(memory.id, memory.likes, memory.builtAt);
   const { author } = memory;
 
   return (
-    <div className="overflow-hidden rounded-3xl bg-white lift">
-      <header className="flex items-center gap-3 px-4 py-3">
+    <div className="overflow-hidden rounded-[1.25rem] bg-white ring-1 ring-ink/[0.06]">
+      <header className="flex items-center gap-2.5 px-3.5 py-2.5">
         {author ? (
           <>
             <Link href={personPath(author.uid)} tabIndex={-1} aria-hidden="true">
@@ -29,11 +30,11 @@ export function MemoryPost({ memory }: { memory: Memory }) {
               <Link
                 href={personPath(author.uid)}
                 lang={textLang(author.name)}
-                className="block truncate font-bold text-ink hover:text-brand-red"
+                className="block truncate text-[0.95rem] font-bold text-ink hover:text-brand-red"
               >
                 {author.name}
               </Link>
-              {author.city && <p className="truncate text-sm text-ink-soft">{author.city}</p>}
+              {author.city && <p className="truncate text-[0.8rem] text-ink-soft">{author.city}</p>}
             </div>
             <FollowButton uid={author.uid} name={author.name} compact />
           </>
@@ -49,7 +50,7 @@ export function MemoryPost({ memory }: { memory: Memory }) {
         </span>
       </LikeablePhoto>
 
-      <div className="flex flex-col items-start gap-1 px-4 pb-4 pt-1.5">
+      <div className="flex flex-col items-start gap-1 px-3.5 pt-1.5">
         <ActionsRow
           like={like}
           storyId={memory.id}
@@ -65,6 +66,7 @@ export function MemoryPost({ memory }: { memory: Memory }) {
         />
         <LikesLine like={like} storyId={memory.id} privateLoves={memory.likes.privateLoves} />
       </div>
+      <div className="px-3.5 pb-4 pt-2">{children}</div>
     </div>
   );
 }

@@ -100,13 +100,13 @@ export function LikersDialog({
               {privateLoves > 0 && (
                 <p className="py-3 text-sm text-ink-soft">
                   {privateLoves === 1
-                    ? "1 person loved this memory before likes showed names. That stays private."
-                    : `${privateLoves} people loved this memory before likes showed names. That stays private.`}
+                    ? "1 person loved this post before likes showed names. That stays private."
+                    : `${privateLoves} people loved this post before likes showed names. That stays private.`}
                 </p>
               )}
             </>
           )}
-          <p className="pb-2 pt-1 text-xs text-ink-soft">Likes are public: anyone can see who liked a memory.</p>
+          <p className="pb-2 pt-1 text-xs text-ink-soft">Likes are public: anyone can see who liked a post.</p>
         </div>
       </div>
     </dialog>

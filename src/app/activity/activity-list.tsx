@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/components/auth-provider";
 import { Avatar } from "@/components/avatar";
 import { FollowButton } from "@/components/follow-button";
-import { card, primaryButton } from "@/components/ui";
+import { pageLead, pageTitle, primaryButton } from "@/components/ui";
 import { friendlyError } from "@/lib/auth-errors";
 import { loadActivity, markBellSeen, type Activity } from "@/lib/follows";
 import { shortDate, textLang } from "@/lib/memories";
@@ -52,9 +52,9 @@ export function ActivityList() {
   const items = loaded && user && loaded.uid === user.uid ? loaded : null;
 
   return (
-    <section className={card}>
-      <h1 className="text-xl font-extrabold text-brand-red sm:text-2xl">Activity</h1>
-      <p className="mt-2 text-sm text-ink-soft">
+    <section className="w-full">
+      <h1 className={pageTitle}>Activity</h1>
+      <p className={pageLead}>
         When someone follows you, or a friend joins through one of your invite links, it shows
         here. Only you can see this page.
       </p>
@@ -71,10 +71,10 @@ export function ActivityList() {
         <div className="mt-6 text-center">
           <p className="font-hand text-xl text-ink">Nothing here yet.</p>
           <p className="mt-2 text-sm text-ink-soft">
-            Share a memory, then send its invite link to a friend who remembers the same stores.
+            Share a post, then send its invite link to a friend who remembers the same stores.
           </p>
           <Link href="/share" className={`${primaryButton} mt-5`}>
-            Share a memory
+            Share a post
           </Link>
         </div>
       ) : (

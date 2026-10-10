@@ -3,13 +3,11 @@ import Form from "next/form";
 import { HomeFeed } from "@/components/home/home-feed";
 import { HomeHero } from "@/components/home/home-hero";
 import { HomeMap } from "@/components/home/home-map";
-import { HomeTiles } from "@/components/home/home-tiles";
 import { KindChips } from "@/components/home/kind-chips";
 import { PopularAreas } from "@/components/home/popular-areas";
 import { Trending } from "@/components/home/trending";
 import { ArrowIcon, SearchIcon } from "@/components/icons";
 import { InstagramFeed } from "@/components/instagram-feed";
-import { groupPlaces } from "@/lib/memories";
 import { loadWall } from "@/lib/server/wall";
 
 export const metadata: Metadata = {
@@ -62,17 +60,13 @@ export default async function Home() {
         <HomeMap memories={memories} />
       </div>
 
-      <div className="mt-2">
-        <HomeTiles places={groupPlaces(memories).length} />
-      </div>
-
       {wall === null ? (
         <p role="alert" className="py-12 text-center text-ink-soft">
-          The memories couldn&apos;t be loaded just now. Please try again in a minute.
+          The posts couldn&apos;t be loaded just now. Please try again in a minute.
         </p>
       ) : memories.length === 0 ? (
         <div className="py-12 text-center">
-          <p className="font-hand text-2xl text-ink">The first memories are on their way.</p>
+          <p className="font-hand text-2xl text-ink">The first posts are on their way.</p>
           <p className="mt-2 text-ink-soft">Which store do you still think about?</p>
         </div>
       ) : (

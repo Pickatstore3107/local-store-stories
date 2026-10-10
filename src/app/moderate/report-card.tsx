@@ -78,9 +78,9 @@ export function ReportCard({
   if (!story) {
     return (
       <article className={card}>
-        <h2 className="text-xl font-extrabold text-ink">A deleted memory</h2>
+        <h2 className="text-xl font-extrabold text-ink">A deleted post</h2>
         <p className="mt-2 text-sm text-ink-soft">
-          Its author deleted this memory after it was reported, so there&apos;s nothing left to
+          Its author deleted this post after it was reported, so there&apos;s nothing left to
           check.
         </p>
         {reportList}
@@ -148,7 +148,7 @@ export function ReportCard({
         </div>
       ) : (
         <>
-          <p className="mt-6 text-sm text-ink-soft">This memory is already hidden.</p>
+          <p className="mt-6 text-sm text-ink-soft">This post is already hidden.</p>
           <button
             type="button"
             disabled={busy}

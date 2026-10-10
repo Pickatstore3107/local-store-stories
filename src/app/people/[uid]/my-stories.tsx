@@ -80,7 +80,7 @@ export function MyStories({ user }: { user: User }) {
       await navigator.clipboard.writeText(`${window.location.origin}${memoryPath(story.id)}`);
       setCopied(story.id);
     } catch {
-      setError("Copying isn't allowed here. Open the memory and copy its address instead.");
+      setError("Copying isn't allowed here. Open the post and copy its address instead.");
     }
   }
 
@@ -116,9 +116,9 @@ export function MyStories({ user }: { user: User }) {
 
   return (
     <section className={card} id="memories">
-      <h2 className="text-lg font-extrabold text-ink">Manage my memories</h2>
+      <h2 className="text-[1.05rem] font-bold text-ink">Manage my posts</h2>
       <p className="mt-1 text-sm text-ink-soft">
-        Only you can see this part: memories waiting for review, ones shared by link, and
+        Only you can see this part: posts waiting for review, ones shared by link, and
         everyone&apos;s invite links.
       </p>
 
@@ -128,7 +128,7 @@ export function MyStories({ user }: { user: User }) {
         </p>
       ) : stories.length === 0 ? (
         <p className="mt-4 text-sm text-ink-soft">
-          You haven&apos;t shared a memory yet. Which store do you still think about?
+          You haven&apos;t shared a post yet. Which store do you still think about?
         </p>
       ) : (
         <ul className="mt-4 flex flex-col gap-4">
@@ -178,7 +178,7 @@ export function MyStories({ user }: { user: User }) {
                         onClick={() => setPassing(passing === story.id ? null : story.id)}
                         className="font-bold text-brand-red underline underline-offset-4"
                       >
-                        Pass the memory
+                        Pass it on
                       </button>
                     )}
                     {(story.status === "pending" || story.status === "approved") && (
@@ -256,8 +256,8 @@ export function MyStories({ user }: { user: User }) {
                   />
                   <p className="mt-2 text-sm text-ink-soft">
                     {story.visibility === "public"
-                      ? "The map shows memories shared with everyone, once they're approved."
-                      : "This memory is shared by link, so it won't show on the map. The pin is kept in case you share it with everyone later."}
+                      ? "The map shows posts shared with everyone, once they're approved."
+                      : "This post is shared by link, so it won't show on the map. The pin is kept in case you share it with everyone later."}
                   </p>
                   <div className="mt-3 flex flex-wrap items-center gap-3">
                     <button

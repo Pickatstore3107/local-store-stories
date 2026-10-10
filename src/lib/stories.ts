@@ -279,7 +279,7 @@ export async function shareStory(user: User, input: StoryInput, photo: Blob) {
           await saveWithLimit(storyRef, story, user.uid, limit.raw, other);
         } catch {
           throw new FriendlyError(
-            "You can share one memory a minute, and up to " +
+            "You can share one post a minute, and up to " +
               `${DAILY_MEMORY_LIMIT} a day. Please try again a little later.`,
           );
         }

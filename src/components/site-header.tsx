@@ -56,7 +56,7 @@ export function SiteHeader() {
           aria-current={pathname === "/share" ? "page" : undefined}
           className="ml-1 rounded-full bg-brand-red px-4 py-2 text-sm font-bold text-white shadow-[0_6px_16px_rgb(163_23_27/0.25)] transition hover:bg-brand-red-deep"
         >
-          Share a memory
+          Share a post
         </Link>
         {!loading && me && <BellLink />}
         {!loading && me && (

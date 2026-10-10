@@ -114,7 +114,7 @@ export function PlaceCard({
             onClick={() => setReturnPath(window.location.pathname)}
             className="font-bold text-brand-red underline underline-offset-2"
           >
-            {user ? "Finish joining to like" : "Sign in to like memories"}
+            {user ? "Finish joining to like" : "Sign in to like posts"}
           </Link>
         </p>
       )}

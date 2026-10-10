@@ -5,7 +5,7 @@ export const GRIEVANCE_EMAIL = "krishna@pickatstore.in";
 export const SITE_NAME = "Local Stores & Their Stories";
 
 export const SITE_DESCRIPTION =
-  "Share a memory of the neighbourhood store you never really left. A people-first campaign by Pick at Store.";
+  "Share a post about the neighbourhood store you never really left. A people-first campaign by Pick at Store.";
 
 /**
  * The site's public address, for search engines and link previews. Vercel

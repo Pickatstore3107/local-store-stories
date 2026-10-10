@@ -17,8 +17,8 @@ export async function generateMetadata({ params }: PageProps<"/invite/[code]">):
   const { code } = await params;
   const invite = await loadInvite(code);
   const from = invite?.status === "open" ? invite.inviter?.name : null;
-  const title = from ? `${from} passed you a memory` : "Pass the memory";
-  const description = "Share a memory of a local store you never forgot, and pass it on.";
+  const title = from ? `${from} sent you a post` : "Pass it on";
+  const description = "Share a post about a local store you never forgot, and pass it on.";
   return {
     title: `${title} · ${SITE}`,
     description,
@@ -30,7 +30,7 @@ export async function generateMetadata({ params }: PageProps<"/invite/[code]">):
       description,
       images:
         invite?.status === "open" && invite.shareImageUrl
-          ? [{ url: invite.shareImageUrl, width: 1200, height: 630, alt: "A memory of a local store" }]
+          ? [{ url: invite.shareImageUrl, width: 1200, height: 630, alt: "A post about a local store" }]
           : undefined,
     },
   };
@@ -55,15 +55,15 @@ async function InviteContent({ code }: { code: string }) {
 
   return (
     <article>
-      <p className="text-sm font-bold uppercase tracking-[0.2em] text-ink-soft">Pass the memory</p>
+      <p className="text-sm font-bold uppercase tracking-[0.2em] text-ink-soft">Pass it on</p>
       <h1 className="mt-3 font-hand text-2xl font-bold leading-tight text-brand-red sm:text-4xl">
-        {open ? `${name ?? "A friend"} passed you a memory` : "Some places never leave us"}
+        {open ? `${name ?? "A friend"} sent you a post` : "Some places never leave us"}
       </h1>
       {open && (
         <p className="mt-4 text-lg leading-relaxed text-ink">
           {open.memory
             ? `${name ?? "They"} remembered ${open.memory.storeName}, and picked you to share a store you never forgot.`
-            : `${name ?? "They"} shared a memory of a local store, and picked you to share yours.`}
+            : `${name ?? "They"} shared a post about a local store, and picked you to share yours.`}
         </p>
       )}
 
@@ -82,7 +82,7 @@ async function InviteContent({ code }: { code: string }) {
         <p className="mt-2">
           Local Stores &amp; Their Stories is a people-first campaign by Pick at Store. Share a
           photo and a few lines about the chai stall, bakery or kirana you grew up with. A person
-          reads every memory before it goes up on{" "}
+          reads every post before it goes up on{" "}
           <Link href="/" className="font-bold text-brand-red underline underline-offset-4">
             the site
           </Link>

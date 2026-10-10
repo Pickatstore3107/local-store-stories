@@ -6,7 +6,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { useAuth } from "@/components/auth-provider";
 import { setExitPath } from "@/components/require-account";
 import { BackIcon } from "@/components/icons";
-import { card, input, primaryButton, secondaryButton } from "@/components/ui";
+import { card, input, pageTitle, primaryButton, secondaryButton } from "@/components/ui";
 import {
   CITY_MAX,
   CITY_MIN,
@@ -107,7 +107,7 @@ export function AccountPanel() {
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-4">
       <Link
         href={personPath(user.uid)}
         className="inline-flex items-center gap-0.5 text-sm font-bold text-brand-red underline-offset-4 hover:underline"
@@ -115,12 +115,9 @@ export function AccountPanel() {
         <BackIcon className="h-4 w-4" />
         My profile
       </Link>
+      <h1 className={pageTitle}>Profile and settings</h1>
       <section className={card}>
-        <h1 className="text-xl font-extrabold text-brand-red sm:text-2xl">Profile and settings</h1>
-
-        <h2 className="mt-6 text-sm font-bold uppercase tracking-wider text-ink-soft">
-          Shown publicly
-        </h2>
+        <h2 className="text-[0.8rem] font-semibold text-ink-soft">Shown publicly</h2>
         {editing ? (
           <form onSubmit={save} noValidate className="mt-3">
             <label htmlFor="displayName" className="block text-sm font-bold text-ink">
@@ -178,7 +175,7 @@ export function AccountPanel() {
           </div>
         )}
 
-        <h2 className="mt-6 text-sm font-bold uppercase tracking-wider text-ink-soft">
+        <h2 className="mt-6 text-[0.8rem] font-semibold text-ink-soft">
           Private, only you can see this
         </h2>
         <p className="mt-2 text-ink">Signed in with {signedInWith}</p>
@@ -191,11 +188,11 @@ export function AccountPanel() {
       <BlockedPeople />
 
       <section className={card}>
-        <h2 className="text-lg font-extrabold text-ink">Delete my account</h2>
+        <h2 className="text-[1.05rem] font-bold text-ink">Delete my account</h2>
         <p className="mt-2 text-sm text-ink-soft">
-          This permanently removes your profile, your memories and photos, your likes and
+          This permanently removes your profile, your posts and photos, your likes and
           comments, your invite links, who you follow and who follows you, the people you
-          blocked, the memories you loved, the reports you sent, your consent record and your
+          blocked, the posts you loved, the reports you sent, your consent record and your
           sign-in. It cannot be undone.
         </p>
         {!confirmingDelete ? (

@@ -132,7 +132,7 @@ function CommentReportCard({
             {group.storeName}
           </Link>
         ) : (
-          "a memory that has been deleted"
+          "a post that has been deleted"
         )}
       </p>
       {group.comment ? (

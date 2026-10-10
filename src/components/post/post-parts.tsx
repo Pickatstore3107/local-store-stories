@@ -171,7 +171,7 @@ function LikeNotes({ like, returnTo }: { like: LikeState; returnTo: string }) {
             onClick={() => setReturnPath(returnTo)}
             className="font-bold text-brand-red underline underline-offset-4"
           >
-            {user ? "Finish joining to like memories" : "Sign in to like memories"}
+            {user ? "Finish joining to like posts" : "Sign in to like posts"}
           </Link>
         </p>
       )}

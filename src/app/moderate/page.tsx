@@ -3,7 +3,7 @@ import { RequireAccount } from "@/components/require-account";
 import { ModerationPanel } from "./moderation-panel";
 
 export const metadata: Metadata = {
-  title: "Review memories · Local Stores & Their Stories",
+  title: "Review posts · Local Stores & Their Stories",
   robots: { index: false, follow: false },
 };
 

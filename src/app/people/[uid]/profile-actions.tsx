@@ -12,8 +12,8 @@ import { friendlyError } from "@/lib/auth-errors";
 import { block } from "@/lib/follows";
 
 const small =
-  "inline-flex items-center justify-center rounded-full px-5 py-2.5 text-sm font-bold transition";
-const note = "mt-3 text-sm text-ink-soft";
+  "inline-flex h-9 items-center justify-center rounded-full px-4 text-[0.85rem] font-bold transition";
+const note = "mt-2.5 text-[0.8rem] text-ink-soft";
 
 /** Follow and Block on someone's profile, or Edit, Saved and Share on your own. */
 export function ProfileActions({ uid, name }: { uid: string; name: string }) {
@@ -34,7 +34,7 @@ export function ProfileActions({ uid, name }: { uid: string; name: string }) {
   if (user?.uid === uid) {
     return (
       <div className="flex flex-col items-center sm:items-start">
-        <div className="flex flex-wrap justify-center gap-3">
+        <div className="flex flex-wrap justify-center gap-2">
           <Link href="/account" className={`${small} bg-white text-ink ring-1 ring-ink/20 hover:bg-paper`}>
             Edit profile
           </Link>
@@ -43,7 +43,7 @@ export function ProfileActions({ uid, name }: { uid: string; name: string }) {
             Saved
           </Link>
           <Link href="/share" className={`${small} bg-brand-red text-white hover:bg-brand-red-deep`}>
-            Share a memory
+            Share a post
           </Link>
         </div>
         <p className={note}>Anyone can see your profile, your followers and who you follow.</p>

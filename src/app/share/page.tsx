@@ -4,12 +4,12 @@ import { Loading, RequireAccount } from "@/components/require-account";
 import { ShareForm } from "./share-form";
 
 export const metadata: Metadata = {
-  title: "Share a memory · Local Stores & Their Stories",
+  title: "Share a post · Local Stores & Their Stories",
   description:
     "Tell the story of a neighbourhood store you remember, with a photo, and put it on the Hyderabad map.",
   alternates: { canonical: "/share" },
   openGraph: {
-    title: "Share a memory",
+    title: "Share a post",
     description:
       "Tell the story of a neighbourhood store you remember, with a photo, and put it on the Hyderabad map.",
   },

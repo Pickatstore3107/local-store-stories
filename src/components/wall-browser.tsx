@@ -102,9 +102,9 @@ export function WallBrowser({ wall, children }: { wall: Wall; children?: ReactNo
 
       <div className="mt-7 flex items-center justify-between gap-3 sm:mt-10">
         <h2 id="memories-heading" className="text-xl font-extrabold tracking-tight text-ink sm:text-2xl">
-          {filtering ? "Memories found" : "Fresh memories"}
+          {filtering ? "Posts found" : "Fresh posts"}
         </h2>
-        <div role="group" aria-label="Whose memories" className="flex shrink-0 rounded-full bg-sand p-1">
+        <div role="group" aria-label="Whose posts" className="flex shrink-0 rounded-full bg-sand p-1">
           {([false, true] as const).map((each) => (
             <button
               key={String(each)}
@@ -148,7 +148,7 @@ export function WallBrowser({ wall, children }: { wall: Wall; children?: ReactNo
       <p role="status" className="sr-only">
         {filtering &&
           !followingNote &&
-          (shown.length === 1 ? "1 memory found." : `${shown.length} memories found.`)}
+          (shown.length === 1 ? "1 post found." : `${shown.length} posts found.`)}
       </p>
 
       {featured.length > 0 && (
@@ -173,8 +173,8 @@ export function WallBrowser({ wall, children }: { wall: Wall; children?: ReactNo
         <div className="py-16 text-center">
           <p className="font-hand text-2xl text-ink">
             {following && !words.length && !category
-              ? "The people you follow haven't shared a memory yet."
-              : "No memories match yet."}
+              ? "The people you follow haven't shared a post yet."
+              : "No posts match yet."}
           </p>
           <p className="mt-2 text-ink-soft">Know one? It could be the first.</p>
           <div className="mt-6 flex flex-wrap justify-center gap-3">
@@ -183,13 +183,13 @@ export function WallBrowser({ wall, children }: { wall: Wall; children?: ReactNo
               onClick={() => setWallFilters({ query: "", category: null, following: false })}
               className={secondaryButton}
             >
-              Show all memories
+              Show all posts
             </button>
             <Link
               href="/share"
               className="inline-flex items-center px-4 font-bold text-brand-red underline underline-offset-4"
             >
-              Share a memory
+              Share a post
             </Link>
           </div>
         </div>
@@ -198,7 +198,7 @@ export function WallBrowser({ wall, children }: { wall: Wall; children?: ReactNo
           <section aria-labelledby={featured.length ? "more-heading" : "memories-heading"} className="mt-4 sm:mt-6">
             {featured.length > 0 && (
               <h3 id="more-heading" className="text-base font-extrabold text-ink sm:text-lg">
-                More memories
+                More posts
               </h3>
             )}
             <ul className="mt-3 grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-3 xl:grid-cols-4">
@@ -229,11 +229,11 @@ function FollowingNote({ note }: { note: "signIn" | "loading" | "nobody" }) {
     <div className="py-16 text-center">
       <p className="font-hand text-2xl text-ink">
         {note === "signIn"
-          ? "See memories from the people you follow."
+          ? "See posts from the people you follow."
           : "You're not following anyone yet."}
       </p>
       <p className="mx-auto mt-2 max-w-md text-ink-soft">
-        Tap a name on any memory to open their profile, then tap Follow. Their memories will
+        Tap a name on any post to open their profile, then tap Follow. Their posts will
         show here.
       </p>
       {note === "signIn" && (

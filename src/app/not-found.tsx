@@ -14,7 +14,7 @@ export default function NotFound() {
       <p className="text-sm font-bold uppercase tracking-wide text-brand-red">Page not found</p>
       <h1 className="mt-2 font-hand text-3xl text-ink sm:text-4xl">This page isn&apos;t here.</h1>
       <p className="mt-3 leading-relaxed text-ink-soft">
-        The link may be mistyped, or the page may have moved. The memories are all on Home and
+        The link may be mistyped, or the page may have moved. The posts are all on Home and
         on the map.
       </p>
       <div className="mt-8 flex flex-wrap justify-center gap-3">

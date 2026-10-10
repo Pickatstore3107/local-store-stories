@@ -5,24 +5,22 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { WallMemory } from "@/lib/memories";
 import type { Category } from "@/lib/stories";
 import { useAuth } from "../auth-provider";
-import { PostCard } from "../post/post-card";
 import { setReturnPath } from "../require-account";
 import { primaryButton, secondaryButton } from "../ui";
 import { useMyFollows } from "../use-my-follows";
 import { setWallFilters, useWallFilters } from "../use-wall-filters";
+import { PlaceCard } from "./place-card";
 
-export const chip = "shrink-0 rounded-full px-3.5 py-1.5 text-sm font-bold transition";
-export const chipOff = "bg-white text-ink ring-1 ring-ink/10 hover:ring-ink/25";
-export const chipOn = "bg-brand-red text-white ring-1 ring-brand-red";
 const tab = "rounded-full px-3 py-1.5 text-xs font-bold transition sm:px-4 sm:text-sm";
 
 // Posts are added to the page a few at a time as people scroll, so a long
 // feed doesn't load every photo at once.
-const PAGE = 8;
+const PAGE = 12;
 
 /**
  * Home's feed: everyone's memories or only those of people you follow,
- * of the kind picked at the top of Home, one post per row, newest first.
+ * of the kind picked at the top of Home, two small posts per row, newest
+ * first.
  */
 export function HomeFeed({ memories, builtAt }: { memories: WallMemory[]; builtAt: number }) {
   const filters = useWallFilters();
@@ -74,9 +72,9 @@ export function HomeFeed({ memories, builtAt }: { memories: WallMemory[]; builtA
     <section aria-labelledby="feed-heading">
       <div className="flex items-center justify-between gap-3">
         <h2 id="feed-heading" className="text-[1.15rem] font-extrabold tracking-tight text-ink">
-          Latest memories
+          Latest posts
         </h2>
-        <div role="group" aria-label="Whose memories" className="flex shrink-0 rounded-full bg-sand p-0.5">
+        <div role="group" aria-label="Whose posts" className="flex shrink-0 rounded-full bg-sand p-0.5">
           {([false, true] as const).map((each) => (
             <button
               key={String(each)}
@@ -106,7 +104,7 @@ export function HomeFeed({ memories, builtAt }: { memories: WallMemory[]; builtA
       <p role="status" className="sr-only">
         {(category || following) &&
           !followingNote &&
-          (shown.length === 1 ? "1 memory." : `${shown.length} memories.`)}
+          (shown.length === 1 ? "1 post." : `${shown.length} posts.`)}
       </p>
 
       {followingNote ? (
@@ -115,8 +113,8 @@ export function HomeFeed({ memories, builtAt }: { memories: WallMemory[]; builtA
         <div className="py-14 text-center">
           <p className="font-hand text-2xl text-ink">
             {following && !category
-              ? "The people you follow haven't shared a memory yet."
-              : "No memories here yet."}
+              ? "The people you follow haven't shared a post yet."
+              : "No posts here yet."}
           </p>
           <p className="mt-2 text-ink-soft">Know one? It could be the first.</p>
           <div className="mt-6 flex flex-wrap justify-center gap-3">
@@ -125,19 +123,19 @@ export function HomeFeed({ memories, builtAt }: { memories: WallMemory[]; builtA
               onClick={() => setWallFilters({ query: "", category: null, following: false })}
               className={secondaryButton}
             >
-              Show all memories
+              Show all posts
             </button>
             <Link href="/share" className={primaryButton}>
-              Share a memory
+              Share a post
             </Link>
           </div>
         </div>
       ) : (
         <>
-          <ul className="mt-3 flex flex-col gap-5">
-            {shown.slice(0, shownCount).map((memory, i) => (
+          <ul className="mt-2.5 grid grid-cols-2 gap-2.5 sm:grid-cols-3">
+            {shown.slice(0, shownCount).map((memory) => (
               <li key={memory.id}>
-                <PostCard memory={memory} builtAt={builtAt} eager={i < 1} />
+                <PlaceCard memory={memory} builtAt={builtAt} />
               </li>
             ))}
           </ul>
@@ -161,10 +159,10 @@ function FollowingNote({ note }: { note: "signIn" | "loading" | "nobody" }) {
   return (
     <div className="py-14 text-center">
       <p className="font-hand text-2xl text-ink">
-        {note === "signIn" ? "See memories from the people you follow." : "You're not following anyone yet."}
+        {note === "signIn" ? "See posts from the people you follow." : "You're not following anyone yet."}
       </p>
       <p className="mx-auto mt-2 max-w-md text-ink-soft">
-        Tap Follow next to a name on any memory. Their memories will show here.
+        Tap Follow next to a name on any post. Their posts will show here.
       </p>
       {note === "signIn" && (
         <Link

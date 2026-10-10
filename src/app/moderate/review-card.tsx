@@ -43,7 +43,7 @@ export function StoryDetails({ story, children }: { story: ReviewStory; children
         // eslint-disable-next-line @next/next/no-img-element -- private, signed link from our server
         <img
           src={story.photoUrl}
-          alt={`Photo shared with the memory of ${story.storeName}`}
+          alt={`Photo shared with the post about ${story.storeName}`}
           className="max-h-[28rem] w-full bg-paper object-contain"
         />
       ) : (

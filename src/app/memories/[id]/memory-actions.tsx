@@ -121,7 +121,7 @@ function ReportPanel({ id }: { id: string }) {
     } catch (e) {
       setError(
         e instanceof FirebaseError && e.code === "permission-denied"
-          ? `This memory can't be reported right now. It may already have been taken down. If you can still see it, please email ${GRIEVANCE_EMAIL}.`
+          ? `This post can't be reported right now. It may already have been taken down. If you can still see it, please email ${GRIEVANCE_EMAIL}.`
           : friendlyError(e),
       );
     } finally {
@@ -137,14 +137,14 @@ function ReportPanel({ id }: { id: string }) {
         className="inline-flex items-center gap-2 text-sm font-bold text-ink-soft underline underline-offset-4 hover:text-brand-red"
       >
         <FlagIcon />
-        Report this memory
+        Report this post
       </button>
     );
   }
 
   const emailLink = (
     <a
-      href={`mailto:${GRIEVANCE_EMAIL}?subject=${encodeURIComponent("Report a memory")}&body=${encodeURIComponent(`About ${memoryPath(id)}:\n\n`)}`}
+      href={`mailto:${GRIEVANCE_EMAIL}?subject=${encodeURIComponent("Report a post")}&body=${encodeURIComponent(`About ${memoryPath(id)}:\n\n`)}`}
       className="font-bold text-brand-red underline underline-offset-4"
     >
       {GRIEVANCE_EMAIL}
@@ -163,7 +163,7 @@ function ReportPanel({ id }: { id: string }) {
           tabIndex={-1}
           className="text-lg font-extrabold text-ink outline-none"
         >
-          Report this memory
+          Report this post
         </h2>
         <button
           type="button"
@@ -189,7 +189,7 @@ function ReportPanel({ id }: { id: string }) {
         </p>
       ) : reported ? (
         <p role="status" className="mt-3 rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
-          Thank you. A moderator will look at your report. The memory stays up until they
+          Thank you. A moderator will look at your report. The post stays up until they
           decide.
         </p>
       ) : (

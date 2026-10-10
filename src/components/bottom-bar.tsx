@@ -6,7 +6,7 @@ import { useSyncExternalStore, type ReactNode } from "react";
 import { personPath } from "@/lib/people";
 import { useAuth } from "./auth-provider";
 import { Avatar } from "./avatar";
-import { HomeIcon, MapIcon, PersonIcon, PlusIcon } from "./icons";
+import { BookmarkIcon, HomeIcon, MapIcon, PersonIcon, PlusIcon } from "./icons";
 
 // Whether someone is typing in a box, when the phone's keyboard is up and
 // the bar would only be in the way.
@@ -64,11 +64,11 @@ function Item({
 }
 
 /**
- * The phone's four main buttons, on a bar along the bottom where a thumb
- * reaches: Home, the map, a red button to add a place and your profile.
- * Saved places are on your profile and Home, and Activity is the bell at
- * the top. Computers have all of them in the menu at the top. Sized in
- * pixels, not rem, so it's the same slim bar on every phone.
+ * The phone's main buttons, on a bar along the bottom where a thumb
+ * reaches: Home and the map, the red button to add a place in the middle,
+ * then Saved and your profile. Activity is the bell at the top. Computers
+ * have them in the menu at the top. Sized in pixels, not rem, so it's the
+ * same slim bar on every phone.
  */
 export function BottomBar() {
   const { loading, user, profile, consent } = useAuth();
@@ -102,6 +102,9 @@ export function BottomBar() {
             Add Place
           </Link>
         </li>
+        <Item href="/saved" label="Saved" current={pathname === "/saved"}>
+          <BookmarkIcon filled={pathname === "/saved"} className={icon} />
+        </Item>
         {me && mine ? (
           <Item href={mine} label="Me" spoken="My profile" current={pathname === mine || pathname === "/account"}>
             <span className={`rounded-full ring-2 ring-offset-1 ${pathname === mine ? "ring-brand-red" : "ring-transparent"}`}>

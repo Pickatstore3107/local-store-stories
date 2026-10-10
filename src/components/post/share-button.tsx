@@ -23,7 +23,7 @@ export function ShareButton({
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState<boolean | null>(null);
   const box = useRef<HTMLDivElement>(null);
-  const title = `A memory of ${storeName}, ${city}`;
+  const title = `A post about ${storeName}, ${city}`;
 
   const url = () => `${window.location.origin}${memoryPath(storyId)}`;
 

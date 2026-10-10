@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { pageTitle } from "@/components/ui";
 import { GRIEVANCE_EMAIL } from "@/lib/site";
 
 export const metadata: Metadata = {
@@ -13,7 +14,7 @@ export const metadata: Metadata = {
 export default function PrivacyPage() {
   return (
     <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-6 sm:px-5 sm:py-12 text-ink">
-      <h1 className="text-2xl font-extrabold text-brand-red sm:text-3xl">Privacy notice</h1>
+      <h1 className={pageTitle}>Privacy notice</h1>
       <p className="mt-2 text-sm text-ink-soft">
         Draft for the pilot. Last updated 10 October 2026.
       </p>
@@ -23,7 +24,7 @@ export default function PrivacyPage() {
           <h2 className="text-lg font-bold">Who we are</h2>
           <p className="mt-2">
             Local Stores &amp; Their Stories is a campaign run by Pick at Store. We collect
-            only what we need to let you share memories of local stores. The rules for using
+            only what we need to let you share posts about local stores. The rules for using
             the site are in our{" "}
             <Link href="/terms" className="font-bold text-brand-red underline underline-offset-4">
               terms and conditions
@@ -36,57 +37,57 @@ export default function PrivacyPage() {
           <h2 className="text-lg font-bold">What we collect</h2>
           <ul className="mt-2 list-disc space-y-1 pl-6">
             <li>Your Google email address, to sign you in. Never shown publicly.</li>
-            <li>The name and city you choose. Shown publicly with your stories.</li>
-            <li>Stories and photos you choose to share, once they are approved.</li>
+            <li>The name and city you choose. Shown publicly with your posts.</li>
+            <li>Posts and photos you choose to share, once they are approved.</li>
             <li>Photos are resized on your phone and the location hidden inside them is removed before upload. They are stored privately with our image provider, Cloudinary, until they are approved.</li>
-            <li>If you put a memory on the Hyderabad map, the 500-metre square of the city you tapped, never the exact spot.</li>
-            <li>Which memories you like. Anyone can see who liked a memory, as on Instagram. Loves from before 9 October 2026, when likes started showing names, stay private: they count, but nobody can see who.</li>
+            <li>If you put a post on the Hyderabad map, the 500-metre square of the city you tapped, never the exact spot.</li>
+            <li>Which posts you like. Anyone can see who liked a post, as on Instagram. Loves from before 9 October 2026, when likes started showing names, stay private: they count, but nobody can see who.</li>
             <li>The places you save with the bookmark. Only you can see this.</li>
-            <li>Comments you write under memories. Anyone who can see the memory can read them, with your name.</li>
-            <li>Reports you send about a memory or a comment. Only moderators can read them.</li>
+            <li>Comments you write under posts. Anyone who can see the post can read them, with your name.</li>
+            <li>Reports you send about a post or a comment. Only moderators can read them.</li>
             <li>The invite links you make, and who joined through them. If you joined through a friend&apos;s invite link, who invited you and through which link.</li>
             <li>Who you follow and who follows you. Anyone can see this, as on Instagram.</li>
             <li>The people you block. Only you can see this, and they aren&apos;t told.</li>
             <li>When someone last followed you and when you last opened your activity, to show the dot on the bell. Only you can see this.</li>
-            <li>When you last shared a memory or wrote a comment, and how many that day, to stop bots and scripts from flooding the site. Only you can see this.</li>
+            <li>When you last shared a post or wrote a comment, and how many that day, to stop bots and scripts from flooding the site. Only you can see this.</li>
             <li>When you agreed to this notice, and that you confirmed you are 18 or older.</li>
           </ul>
         </section>
 
         <section>
-          <h2 className="text-lg font-bold">Who sees your stories</h2>
+          <h2 className="text-lg font-bold">Who sees your posts</h2>
           <p className="mt-2">
-            A moderator reads every story, with its photo and your public name and city,
+            A moderator reads every post, with its photo and your public name and city,
             before anyone else can see it. Moderators never see your email address. Once
-            approved, a story is shown to everyone, or only to people you share its link with
-            if you chose that. If a moderator doesn&apos;t approve a story or hides it later,
+            approved, a post is shown to everyone, or only to people you share its link with
+            if you chose that. If a moderator doesn&apos;t approve a post or hides it later,
             you&apos;ll see why on your profile. We keep a short record of each
             decision (the store&apos;s name, what was decided and why, but not your name) so we
             can answer questions about it later.
           </p>
           <p className="mt-2">
-            Once a story is approved, its photo is shown through a web link. If a moderator
-            hides the story later, anyone who saved that link can still open the photo until
-            you delete the story.
+            Once a post is approved, its photo is shown through a web link. If a moderator
+            hides the post later, anyone who saved that link can still open the photo until
+            you delete the post.
           </p>
         </section>
 
         <section>
           <h2 className="text-lg font-bold">The Hyderabad map</h2>
           <p className="mt-2">
-            Putting a memory on the map is optional. When you tap where the store was, we keep
+            Putting a post on the map is optional. When you tap where the store was, we keep
             only which 500-metre square of the city you tapped, and the map shows the pin in the
             middle of that square, so it&apos;s within about 500 metres of the store and never
             marks a door or a home. Pins never come from your phone&apos;s location or your
-            photo. Only approved memories shared with everyone appear on the map. You can move
+            photo. Only approved posts shared with everyone appear on the map. You can move
             the pin or take it off from your profile at any time. The map itself comes from
             OpenStreetMap, through a free service called OpenFreeMap. When a map opens,
             including the one at the top of Home, your phone or computer asks OpenFreeMap for
             the streets to draw, so it sees your internet address, as any website would. It
-            never sees who you are or your memories.
+            never sees who you are or your posts.
           </p>
           <p className="mt-2">
-            The map can show where you are as a blue dot, with the memories and shops near you,
+            The map can show where you are as a blue dot, with the posts and shops near you,
             but only after you tap the locate button and allow it when your phone asks. Your
             location stays in the page: we never save it, never send it to us, and never use it
             for a pin. You can turn it off in your browser&apos;s site settings at any time.
@@ -108,7 +109,7 @@ export default function PrivacyPage() {
             each one first, and we take down any that don&apos;t belong. They load only when you
             scroll down to them. Your phone or computer then gets them from Curator and
             Instagram, which see your internet address, as any website would, and may use
-            their own cookies. They never see who you are on this site or your memories.
+            their own cookies. They never see who you are on this site or your posts.
           </p>
         </section>
 
@@ -133,10 +134,10 @@ export default function PrivacyPage() {
         <section>
           <h2 className="text-lg font-bold">Invite links</h2>
           <p className="mt-2">
-            Each memory comes with an invite link for you to send to friends, and they can pass
-            it on. Anyone with the link can join through it and, once the memory is approved,
+            Each post comes with an invite link for you to send to friends, and they can pass
+            it on. Anyone with the link can join through it and, once the post is approved,
             see it, even if you shared it only by link. When friends join through yours, you see
-            their names under that memory and on your activity page. Which link someone joined
+            their names under that post and on your activity page. Which link someone joined
             through is visible only to them and to the friend who sent it. Your public profile
             record also notes who invited you, if anyone did. If you delete your account, your
             invite links stop working.
@@ -147,9 +148,9 @@ export default function PrivacyPage() {
           <h2 className="text-lg font-bold">Profiles and following</h2>
           <p className="mt-2">
             Everyone who joins has a profile page with the name and city they chose, the
-            memories they shared with everyone, and how many people they follow and are followed
+            posts they shared with everyone, and how many people they follow and are followed
             by. Anyone, even without an account, can open a profile and see who that person
-            follows and who follows them. A memory you shared only by link never appears on
+            follows and who follows them. A post you shared only by link never appears on
             your profile. We ask search engines not to list profiles.
           </p>
           <p className="mt-2">
@@ -170,22 +171,22 @@ export default function PrivacyPage() {
         <section>
           <h2 className="text-lg font-bold">Likes and comments</h2>
           <p className="mt-2">
-            When you like a memory, your name shows in its list of likes, and may show under it
+            When you like a post, your name shows in its list of likes, and may show under it
             as the latest person to like it. Unliking takes your name off. Comments show at once,
-            with your name, to anyone who can see the memory. You can delete your own comments,
-            and the person who shared a memory can delete comments on it. Comments can&apos;t
+            with your name, to anyone who can see the post. You can delete your own comments,
+            and the person who shared a post can delete comments on it. Comments can&apos;t
             have links, and each person can write a few a minute, to keep out spam.
           </p>
         </section>
 
         <section>
-          <h2 className="text-lg font-bold">Reporting a memory or a comment</h2>
+          <h2 className="text-lg font-bold">Reporting a post or a comment</h2>
           <p className="mt-2">
-            If a memory is unkind, shows private details, or uses your photo or your store
-            without your agreement, report it from the memory&apos;s page. A moderator reads
-            every report and decides whether to hide the memory; it stays up until they do.
+            If a post is unkind, shows private details, or uses your photo or your store
+            without your agreement, report it from the post&apos;s page. A moderator reads
+            every report and decides whether to hide the post; it stays up until they do.
             Comments can be reported the same way, and a moderator decides whether to delete
-            them. Moderators can see who sent a report, but the author of the memory or comment
+            them. Moderators can see who sent a report, but the author of the post or comment
             can&apos;t. You can also email us without an account.
           </p>
         </section>
@@ -195,7 +196,7 @@ export default function PrivacyPage() {
           <ul className="mt-2 list-disc space-y-1 pl-6">
             <li>We never sell your personal data.</li>
             <li>We never show your email address or home location.</li>
-            <li>We never use your stories to target ads at you.</li>
+            <li>We never use your posts to target ads at you.</li>
           </ul>
         </section>
 
@@ -203,8 +204,8 @@ export default function PrivacyPage() {
           <h2 className="text-lg font-bold">Your choices</h2>
           <p className="mt-2">
             You can see and edit your public details, and delete your account and everything
-            linked to it (your memories and photos, your likes and comments, your invite links,
-            who you follow and who follows you, the people you blocked, the memories you loved,
+            linked to it (your posts and photos, your likes and comments, your invite links,
+            who you follow and who follows you, the people you blocked, the posts you loved,
             the places you saved and the reports you sent), from <strong>Profile and settings</strong> on your profile at any time. You can also write to us to
             access, correct or erase your data.
           </p>

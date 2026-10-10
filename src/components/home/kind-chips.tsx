@@ -8,10 +8,20 @@ import { setWallFilters, useWallFilters } from "../use-wall-filters";
 // Each kind's drawing in red or amber, so the row isn't all one colour.
 const AMBER = new Set<Category>(["Cafes", "Bakeries", "Kirana Stores", "Bookstores", "Festival Memories", "Local Legends"]);
 
-const pill =
+export const pill =
   "flex h-[2.35rem] shrink-0 items-center gap-1.5 rounded-full pl-2.5 pr-3.5 text-[0.82rem] font-semibold leading-none transition";
-const on = "bg-brand-red text-white shadow-[0_4px_10px_rgb(163_23_27/0.25)]";
-const off = "bg-white text-ink ring-1 ring-ink/[0.06] hover:text-brand-red";
+export const on = "bg-brand-red text-white";
+export const off = "bg-white text-ink ring-1 ring-ink/[0.06] hover:text-brand-red";
+
+/** A kind's drawing, white when its pill is picked. */
+export function KindIcon({ category, picked }: { category: Category; picked: boolean }) {
+  return (
+    <CategoryIcon
+      category={category}
+      className={`h-[1.1rem] w-[1.1rem] ${picked ? "text-white" : AMBER.has(category) ? "text-[#d98200]" : "text-brand-red"}`}
+    />
+  );
+}
 
 /**
  * Every kind of place as a row of small pills, "All" first. Picking one
@@ -46,10 +56,7 @@ export function KindChips() {
             onClick={() => pick(picked ? null : each)}
             className={`${pill} ${picked ? on : off}`}
           >
-            <CategoryIcon
-              category={each}
-              className={`h-[1.1rem] w-[1.1rem] ${picked ? "text-white" : AMBER.has(each) ? "text-[#d98200]" : "text-brand-red"}`}
-            />
+            <KindIcon category={each} picked={picked} />
             <span className="whitespace-nowrap">{each}</span>
           </button>
         );

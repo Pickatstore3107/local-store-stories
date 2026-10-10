@@ -4,7 +4,7 @@ import { loadWall } from "@/lib/server/wall";
 
 export const metadata: Metadata = {
   title: "Explore · Local Stores & Their Stories",
-  description: "Every memory of a local store, as a wall of photos. Search for stores, places and people.",
+  description: "Every post about a local store, as a wall of photos. Search for stores, places and people.",
   alternates: { canonical: "/explore" },
 };
 
@@ -16,7 +16,7 @@ export default async function ExplorePage() {
       <h1 className="sr-only">Explore</h1>
       {wall === null ? (
         <p role="alert" className="py-24 text-center text-ink-soft">
-          The memories couldn&apos;t be loaded just now. Please try again in a minute.
+          The posts couldn&apos;t be loaded just now. Please try again in a minute.
         </p>
       ) : (
         <ExploreBrowser memories={wall.memories} />
