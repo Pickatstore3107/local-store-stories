@@ -8,6 +8,7 @@ import {
   getPublicDocuments,
   hasDatabase,
   queryPublic,
+  queryPublicSince,
   type Fields,
   type PublicDocument,
 } from "./firestore";
@@ -35,6 +36,10 @@ export const RETRY_LIFE = { stale: 300, revalidate: 60, expire: 3600 };
 const WALL_LIMIT = 500;
 const FEATURED_LIMIT = 6;
 const COMMENTS_LIMIT = 300;
+// The likes of the last week, for what's trending on Home. Enough for the
+// pilot; beyond it the busiest memories still come out on top.
+const WEEK_MS = 7 * 86_400_000;
+const WEEK_LIKES_LIMIT = 500;
 
 export const text = (value: unknown) => (typeof value === "string" && value ? value : null);
 const number = (value: unknown) => (typeof value === "number" ? value : null);
@@ -166,7 +171,7 @@ function likesOf(story: PublicStory, people: Record<string, Person>): Likes {
 }
 
 /** An approved memory as a post on Home, a square in Explore, or a card on the map or a profile. */
-export function wallMemory(story: PublicStory, people: Record<string, Person>): WallMemory {
+export function wallMemory(story: PublicStory, people: Record<string, Person>, weekLikes = 0): WallMemory {
   return {
     id: story.id,
     storeName: story.storeName,
@@ -184,21 +189,41 @@ export function wallMemory(story: PublicStory, people: Record<string, Person>): 
     featuredAt: story.featuredAt,
     pin: story.pin,
     likes: likesOf(story, people),
+    weekLikes,
     comments: story.commentCount,
   };
+}
+
+/**
+ * How many likes each memory got in the last seven days, by memory ID.
+ * Empty on error: Home then ranks by all likes instead.
+ */
+async function loadWeekLikes(): Promise<Record<string, number>> {
+  const counts: Record<string, number> = {};
+  if (!hasDatabase()) return counts;
+  try {
+    const likes = await queryPublicSince("likes", "at", Date.now() - WEEK_MS, WEEK_LIKES_LIMIT);
+    for (const { data } of likes) {
+      const storyId = text(data.storyId);
+      if (storyId) counts[storyId] = (counts[storyId] ?? 0) + 1;
+    }
+  } catch (error) {
+    console.error("Could not load the likes of the last week", error);
+  }
+  return counts;
 }
 
 /** Every approved memory shared with everyone, newest first. Null on error. */
 export async function loadWall(): Promise<Wall | null> {
   "use cache";
   cacheTag(WALL_TAG);
-  const data = await loadPublicMemories();
+  const [data, weekLikes] = await Promise.all([loadPublicMemories(), loadWeekLikes()]);
   if (!data) {
     cacheLife(RETRY_LIFE);
     return null;
   }
   const memories = data.stories
-    .map((story) => wallMemory(story, data.people))
+    .map((story) => wallMemory(story, data.people, weekLikes[story.id] ?? 0))
     .sort((a, b) => b.approvedAt - a.approvedAt);
   const featured = memories
     .filter((memory) => memory.featuredAt)

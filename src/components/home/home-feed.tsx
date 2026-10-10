@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { WallMemory } from "@/lib/memories";
-import { CATEGORIES, type Category } from "@/lib/stories";
+import type { Category } from "@/lib/stories";
 import { useAuth } from "../auth-provider";
 import { PostCard } from "../post/post-card";
 import { setReturnPath } from "../require-account";
@@ -22,7 +22,7 @@ const PAGE = 8;
 
 /**
  * Home's feed: everyone's memories or only those of people you follow,
- * by category, one post per row, newest first.
+ * of the kind picked at the top of Home, one post per row, newest first.
  */
 export function HomeFeed({ memories, builtAt }: { memories: WallMemory[]; builtAt: number }) {
   const filters = useWallFilters();
@@ -41,8 +41,6 @@ export function HomeFeed({ memories, builtAt }: { memories: WallMemory[]; builtA
       ),
     [memories, following, myFollows.following, category],
   );
-  // Only categories that have memories, plus the one in the address.
-  const categories = CATEGORIES.filter((c) => c === category || memories.some((m) => m.category === c));
 
   // The next few posts, when the end of the feed comes into view.
   useEffect(() => {
@@ -75,10 +73,10 @@ export function HomeFeed({ memories, builtAt }: { memories: WallMemory[]; builtA
   return (
     <section aria-labelledby="feed-heading">
       <div className="flex items-center justify-between gap-3">
-        <h2 id="feed-heading" className="text-xl font-extrabold tracking-tight text-ink">
+        <h2 id="feed-heading" className="text-[1.15rem] font-extrabold tracking-tight text-ink">
           Latest memories
         </h2>
-        <div role="group" aria-label="Whose memories" className="flex shrink-0 rounded-full bg-sand p-1">
+        <div role="group" aria-label="Whose memories" className="flex shrink-0 rounded-full bg-sand p-0.5">
           {([false, true] as const).map((each) => (
             <button
               key={String(each)}
@@ -96,32 +94,13 @@ export function HomeFeed({ memories, builtAt }: { memories: WallMemory[]; builtA
         </div>
       </div>
 
-      {categories.length > 1 && (
-        <div
-          role="group"
-          aria-label="Categories"
-          className="-mx-4 mt-3 flex gap-2 overflow-x-auto px-4 pb-2 pt-1 sm:mx-0 sm:flex-wrap sm:px-0"
-        >
-          <button
-            type="button"
-            aria-pressed={category === null}
-            onClick={() => pick(null)}
-            className={`${chip} ${category === null ? chipOn : chipOff}`}
-          >
-            All
+      {category && (
+        <p className="mt-2 text-sm text-ink-soft">
+          Showing {category} only.{" "}
+          <button type="button" onClick={() => pick(null)} className="font-bold text-brand-red underline underline-offset-2">
+            Show all
           </button>
-          {categories.map((c) => (
-            <button
-              key={c}
-              type="button"
-              aria-pressed={category === c}
-              onClick={() => pick(category === c ? null : c)}
-              className={`${chip} ${category === c ? chipOn : chipOff}`}
-            >
-              {c}
-            </button>
-          ))}
-        </div>
+        </p>
       )}
 
       <p role="status" className="sr-only">

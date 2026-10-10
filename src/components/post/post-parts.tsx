@@ -8,6 +8,7 @@ import { useAuth } from "../auth-provider";
 import { CommentIcon, HeartIcon } from "../icons";
 import { setReturnPath } from "../require-account";
 import { LikersDialog } from "./likers-dialog";
+import { SaveButton } from "./save-button";
 import { ShareButton } from "./share-button";
 import type { LikeState } from "./use-likes";
 
@@ -62,7 +63,7 @@ export function LikeablePhoto({
   );
 }
 
-/** Like, Comment and Share, under a post's photo. */
+/** Like, Comment and Share under a post's photo, and Save on the right. */
 export function ActionsRow({
   like,
   storyId,
@@ -106,6 +107,11 @@ export function ActionsRow({
         </Link>
       )}
       <ShareButton storyId={storyId} storeName={storeName} city={city} />
+      <SaveButton
+        storyId={storyId}
+        storeName={storeName}
+        className={`${iconButton} -mr-2 ml-auto aria-pressed:text-brand-red`}
+      />
     </div>
   );
 }

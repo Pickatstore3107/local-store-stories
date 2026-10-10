@@ -153,6 +153,19 @@ service cloud.firestore {
         allow delete: if isOwner(uid)
           && (!exists(story()) || loves(getAfter(story())) == loves(get(story())) - 1);
       }
+
+      // Places this person saved, like bookmarks. Only they can see them;
+      // nobody else learns who saved a memory. Only members who have given
+      // consent can save.
+      match /saved/{storyId} {
+        allow get, list: if isOwner(uid);
+        allow create: if isOwner(uid)
+          && exists(/databases/$(database)/documents/usersPrivate/$(uid))
+          && storyId.size() <= 40
+          && request.resource.data.keys().hasOnly(['at'])
+          && request.resource.data.at == request.time;
+        allow delete: if isOwner(uid);
+      }
     }
 
     // A memory of a store. The author creates it as pending; only a moderator

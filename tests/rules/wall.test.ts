@@ -214,6 +214,40 @@ describe("private loves from before likes were public", () => {
   });
 });
 
+describe("saving a place", () => {
+  beforeEach(() => seed({ a1: story("a1", "approved") }));
+
+  const saved = (db: Firestore, uid: string, storyId: string) => doc(db, "usersPrivate", uid, "saved", storyId);
+
+  it("lets a member save and unsave a memory", async () => {
+    const db = as("ravi");
+    await assertSucceeds(setDoc(saved(db, "ravi", "a1"), { at: serverTimestamp() }));
+    await assertSucceeds(getDocs(collection(db, "usersPrivate/ravi/saved")));
+    await assertSucceeds(deleteDoc(saved(db, "ravi", "a1")));
+  });
+
+  it("keeps who saved a memory private, even from its author and moderators", async () => {
+    await assertSucceeds(setDoc(saved(as("ravi"), "ravi", "a1"), { at: serverTimestamp() }));
+    for (const db of [as("asha"), as("mod"), as("mallory"), visitor()]) {
+      await assertFails(getDoc(saved(db, "ravi", "a1")));
+      await assertFails(getDocs(collection(db, "usersPrivate/ravi/saved")));
+      await assertFails(deleteDoc(saved(db, "ravi", "a1")));
+    }
+  });
+
+  it("only saves for yourself, with the time it was saved and nothing else", async () => {
+    await assertFails(setDoc(saved(as("mallory"), "ravi", "a1"), { at: serverTimestamp() }));
+    await assertFails(setDoc(saved(visitor(), "ravi", "a1"), { at: serverTimestamp() }));
+    await assertFails(setDoc(saved(as("ravi"), "ravi", "a1"), { at: new Date(2020, 0, 1) }));
+    await assertFails(setDoc(saved(as("ravi"), "ravi", "a1"), { at: serverTimestamp(), note: "hi" }));
+    await assertFails(setDoc(saved(as("ravi"), "ravi", "x".repeat(41)), { at: serverTimestamp() }));
+  });
+
+  it("needs consent first", async () => {
+    await assertFails(setDoc(saved(as("newcomer"), "newcomer", "a1"), { at: serverTimestamp() }));
+  });
+});
+
 describe("reporting a memory", () => {
   beforeEach(() =>
     seed({

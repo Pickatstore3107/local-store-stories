@@ -3,6 +3,7 @@ import {
   collection,
   deleteDoc,
   doc,
+  getCountFromServer,
   getDoc,
   getDocs,
   limit,
@@ -237,6 +238,13 @@ export async function loadActivity(user: User): Promise<{ items: Activity[]; see
     newest.map(async (item) => ({ ...item, name: await nameOf(item.uid) })),
   );
   return { items, seenAt };
+}
+
+/** How many people follow this person. Firestore counts them without sending them. */
+export async function countFollowers(uid: string) {
+  const { db } = getFirebase();
+  const counted = await getCountFromServer(query(collection(db, "follows"), where("to", "==", uid)));
+  return counted.data().count;
 }
 
 /**

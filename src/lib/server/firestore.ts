@@ -114,6 +114,29 @@ export async function queryPublic(
   return rows.flatMap((row) => (row.document ? [fromRest(row.document)] : []));
 }
 
+/** The documents in a collection whose time field is at or after `since` (milliseconds). */
+export async function queryPublicSince(
+  collectionId: string,
+  field: string,
+  since: number,
+  limit: number,
+): Promise<PublicDocument[]> {
+  const rows = (await post(":runQuery", {
+    structuredQuery: {
+      from: [{ collectionId }],
+      where: {
+        fieldFilter: {
+          field: { fieldPath: field },
+          op: "GREATER_THAN_OR_EQUAL",
+          value: { timestampValue: new Date(since).toISOString() },
+        },
+      },
+      limit,
+    },
+  })) as { document?: RestDocument }[];
+  return rows.flatMap((row) => (row.document ? [fromRest(row.document)] : []));
+}
+
 /**
  * How many documents in a collection have fields equal to the given strings.
  * Firestore counts them without sending them: one read per 1,000 counted.

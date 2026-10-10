@@ -15,7 +15,7 @@ export default function PrivacyPage() {
     <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-6 sm:px-5 sm:py-12 text-ink">
       <h1 className="text-2xl font-extrabold text-brand-red sm:text-3xl">Privacy notice</h1>
       <p className="mt-2 text-sm text-ink-soft">
-        Draft for the pilot. Last updated 9 October 2026.
+        Draft for the pilot. Last updated 10 October 2026.
       </p>
 
       <div className="mt-8 space-y-6 leading-relaxed">
@@ -41,6 +41,7 @@ export default function PrivacyPage() {
             <li>Photos are resized on your phone and the location hidden inside them is removed before upload. They are stored privately with our image provider, Cloudinary, until they are approved.</li>
             <li>If you put a memory on the Hyderabad map, the 500-metre square of the city you tapped, never the exact spot.</li>
             <li>Which memories you like. Anyone can see who liked a memory, as on Instagram. Loves from before 9 October 2026, when likes started showing names, stay private: they count, but nobody can see who.</li>
+            <li>The places you save with the bookmark. Only you can see this.</li>
             <li>Comments you write under memories. Anyone who can see the memory can read them, with your name.</li>
             <li>Reports you send about a memory or a comment. Only moderators can read them.</li>
             <li>The invite links you make, and who joined through them. If you joined through a friend&apos;s invite link, who invited you and through which link.</li>
@@ -203,8 +204,8 @@ export default function PrivacyPage() {
           <p className="mt-2">
             You can see and edit your public details, and delete your account and everything
             linked to it (your memories and photos, your likes and comments, your invite links,
-            who you follow and who follows you, the people you blocked, the memories you loved
-            and the reports you sent), from <strong>Profile and settings</strong> on your profile at any time. You can also write to us to
+            who you follow and who follows you, the people you blocked, the memories you loved,
+            the places you saved and the reports you sent), from <strong>Profile and settings</strong> on your profile at any time. You can also write to us to
             access, correct or erase your data.
           </p>
         </section>

@@ -16,6 +16,7 @@ import { deleteMyInvites, type OpenInvite } from "./invites";
 import { deleteMyLikes } from "./likes";
 import { deleteMyReactions } from "./reactions";
 import { deleteMyReports } from "./reports";
+import { deleteMySaved } from "./saved";
 import { deleteAllMyStories } from "./stories";
 
 /** Public profile, readable by anyone: users/{uid}. */
@@ -126,14 +127,16 @@ export function signedInRecently(user: User) {
 
 /**
  * Deletes the person's stories and photos, takes back their likes and loves,
- * deletes their comments, reports and invites, ends every follow to and from
- * them and their blocks, deletes their profile, consent record, bell and the
- * record of the invite they joined through, and then the sign-in account.
+ * forgets their saved places, deletes their comments, reports and invites,
+ * ends every follow to and from them and their blocks, deletes their
+ * profile, consent record, bell and the record of the invite they joined
+ * through, and then the sign-in account.
  */
 export async function deleteAccount(user: User) {
   await deleteAllMyStories(user);
   await deleteMyLikes(user);
   await deleteMyReactions(user);
+  await deleteMySaved(user);
   await deleteMyComments(user);
   await deleteMyReports(user);
   await deleteMyCommentReports(user);

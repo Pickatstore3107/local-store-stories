@@ -34,6 +34,8 @@ export type WallMemory = {
   /** The middle of its pin's square on the map, if it has one. */
   pin: LatLng | null;
   likes: Likes;
+  /** Likes in the seven days before the copy was built, for what's trending. */
+  weekLikes: number;
   comments: number;
 };
 
@@ -55,7 +57,7 @@ export type PublicComment = {
 };
 
 /** Everything shown on a memory's own page. */
-export type Memory = Omit<WallMemory, "authorId" | "authorName" | "comments"> & {
+export type Memory = Omit<WallMemory, "authorId" | "authorName" | "comments" | "weekLikes"> & {
   ordered: string | null;
   visibility: Visibility;
   author: { uid: string; name: string; city: string } | null;

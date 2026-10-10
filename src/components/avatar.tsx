@@ -1,6 +1,8 @@
 import { initial } from "@/lib/people";
 
 const sizes = {
+  // The phone's bottom bar is sized in pixels, so it's the same on every phone.
+  bar: "h-[22px] w-[22px] text-[11px]",
   xxs: "h-6 w-6 text-xs",
   xs: "h-9 w-9 text-base",
   sm: "h-11 w-11 text-lg",

@@ -7,6 +7,7 @@ import { personPath } from "@/lib/people";
 import { useAuth } from "./auth-provider";
 import { Avatar } from "./avatar";
 import { BellLink } from "./bell";
+import { CityPicker } from "./city-picker";
 import { PersonIcon } from "./icons";
 
 const navLink =
@@ -15,7 +16,7 @@ const navLink =
 /**
  * The logo, and on a computer Home, Explore, the map, Share, the bell and
  * your profile. Phones get those in the bar at the bottom instead, and the
- * bell here. Visitors get Sign in, and people who signed in but haven't
+ * city here. Visitors get Sign in, and people who signed in but haven't
  * finished joining are sent to finish.
  */
 export function SiteHeader() {
@@ -32,15 +33,13 @@ export function SiteHeader() {
           width={900}
           height={419}
           priority
-          className="h-8 w-auto sm:h-11"
+          className="h-7 w-auto sm:h-11"
         />
       </Link>
-      {/* On a phone, the bell sits here, as on Instagram; the rest is in the bar at the bottom. */}
-      {!loading && me && (
-        <div className="sm:hidden">
-          <BellLink />
-        </div>
-      )}
+      {/* On a phone, the city sits here; the rest is in the bar at the bottom. */}
+      <div className="sm:hidden">
+        <CityPicker />
+      </div>
       <nav aria-label="Main" className="hidden items-center gap-2 sm:flex">
         <Link href="/" aria-current={pathname === "/" ? "page" : undefined} className={navLink}>
           Home

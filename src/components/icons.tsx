@@ -20,10 +20,13 @@ function Icon({ className = "h-6 w-6", children }: IconProps & { children: React
   );
 }
 
-export function HomeIcon(props: IconProps) {
+export function HomeIcon({ filled = false, ...props }: IconProps & { filled?: boolean }) {
   return (
     <Icon {...props}>
-      <path d="M4 10.5 12 4l8 6.5V19a1 1 0 0 1-1 1h-4.5v-5.5h-5V20H5a1 1 0 0 1-1-1v-8.5Z" />
+      <path
+        d="M4 10.5 12 4l8 6.5V19a1 1 0 0 1-1 1h-4.5v-5.5h-5V20H5a1 1 0 0 1-1-1v-8.5Z"
+        fill={filled ? "currentColor" : "none"}
+      />
     </Icon>
   );
 }
@@ -174,6 +177,80 @@ export function FlagIcon(props: IconProps) {
   return (
     <Icon {...props}>
       <path d="M5.5 21V4.5m0 0h11l-2.5 4.25 2.5 4.25h-11" />
+    </Icon>
+  );
+}
+
+export function BookmarkIcon({ filled = false, ...props }: IconProps & { filled?: boolean }) {
+  return (
+    <Icon {...props}>
+      <path d="M6.5 4.5h11v15.5L12 16.2 6.5 20V4.5Z" fill={filled ? "currentColor" : "none"} />
+    </Icon>
+  );
+}
+
+/** A flame, for what's trending. */
+export function FlameIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path
+        d="M12 21c-3.6 0-6.5-2.6-6.5-6.2 0-3.3 2.4-5.3 3.6-7.8.4 1.7 1.3 2.8 2.4 3.4C11.9 7.6 13 5 15.2 3c-.2 2.6.9 4.4 2 6 .9 1.4 1.3 2.7 1.3 4.2 0 4.6-2.9 7.8-6.5 7.8Z"
+        fill="currentColor"
+        stroke="none"
+      />
+      <path
+        d="M12 20.5c-1.8 0-3-1.2-3-2.9 0-1.6 1.2-2.6 1.9-3.8.3.9.8 1.4 1.4 1.7.2-1.3.8-2.4 1.8-3.3-.1 1.4.4 2.3.9 3.1.4.6.6 1.3.6 2 0 2-1.6 3.2-3.6 3.2Z"
+        fill="#ffc000"
+        stroke="none"
+      />
+    </Icon>
+  );
+}
+
+/** Four squares, for "All". */
+export function GridIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <rect x="4" y="4" width="7" height="7" rx="2" fill="currentColor" stroke="none" />
+      <rect x="13" y="4" width="7" height="7" rx="2" fill="currentColor" stroke="none" />
+      <rect x="4" y="13" width="7" height="7" rx="2" fill="currentColor" stroke="none" />
+      <rect x="13" y="13" width="7" height="7" rx="2" fill="currentColor" stroke="none" />
+    </Icon>
+  );
+}
+
+export function ChevronDownIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="m7 10 5 5 5-5" strokeWidth="2.2" />
+    </Icon>
+  );
+}
+
+export function ChevronRightIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="m10 7 5 5-5 5" strokeWidth="2.2" />
+    </Icon>
+  );
+}
+
+/** Two people, for followers. */
+export function PeopleIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <circle cx="9" cy="8.5" r="3.2" fill="currentColor" stroke="none" />
+      <path d="M3 19c.8-3.3 3.2-5 6-5s5.2 1.7 6 5H3Z" fill="currentColor" stroke="none" />
+      <circle cx="16.5" cy="9" r="2.6" fill="currentColor" stroke="none" opacity="0.7" />
+      <path d="M15.8 14.1c2.6-.3 4.6 1.3 5.2 4.9h-4.4c-.1-1.9-.4-3.4-.8-4.9Z" fill="currentColor" stroke="none" opacity="0.7" />
+    </Icon>
+  );
+}
+
+export function CheckIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="m5 12.5 4.5 4.5L19 7.5" strokeWidth="2.4" />
     </Icon>
   );
 }
