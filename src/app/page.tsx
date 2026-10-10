@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Form from "next/form";
+import { ColourDeck } from "@/components/home/colour-deck";
 import { HomeFeed } from "@/components/home/home-feed";
 import { HomeHero } from "@/components/home/home-hero";
 import { HomeMap } from "@/components/home/home-map";
@@ -25,6 +26,8 @@ export default async function Home() {
   const wall = await loadWall();
   const memories = wall?.memories ?? [];
   const builtAt = wall?.builtAt ?? 0;
+  // The newest posts, for the row of colour cards.
+  const fresh = [...memories].sort((a, b) => b.approvedAt - a.approvedAt).slice(0, 10);
 
   return (
     <main className="mx-auto w-full max-w-xl flex-1 px-4 pb-8 sm:px-5 sm:pb-12 sm:pt-2">
@@ -74,7 +77,10 @@ export default async function Home() {
         <>
           {/* The pile of covers on a band of yellow that fades into the page. */}
           <div className="-mx-4 mt-3 rounded-b-[2rem] bg-gradient-to-b from-brand-yellow/80 via-brand-yellow/30 to-transparent px-4 pb-3 pt-4 sm:-mx-5 sm:px-5">
-            <Trending memories={memories} />
+            <Trending memories={memories} alsoShown={fresh.map((m) => m.id)} />
+          </div>
+          <div className="mt-4">
+            <ColourDeck memories={fresh} />
           </div>
           <div className="mt-4">
             <HomeMap memories={memories} />

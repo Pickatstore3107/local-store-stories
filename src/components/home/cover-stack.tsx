@@ -23,7 +23,16 @@ const AWAY_MS = 280;
  * to see the next; it goes to the bottom of the pile. Tap a cover to open
  * the post, whose photo grows out of it. The arrows do the same as a swipe.
  */
-export function CoverStack({ memories, ranked }: { memories: WallMemory[]; ranked: boolean }) {
+export function CoverStack({
+  memories,
+  ranked,
+  shownElsewhere,
+}: {
+  memories: WallMemory[];
+  ranked: boolean;
+  /** Posts also on the page as colour cards, which grow into the post themselves. */
+  shownElsewhere: ReadonlySet<string>;
+}) {
   const count = memories.length;
   const [top, setTop] = useState(0);
   const [dx, setDx] = useState(0);
@@ -95,7 +104,13 @@ export function CoverStack({ memories, ranked }: { memories: WallMemory[]; ranke
                   }
                 }}
               >
-                <Cover memory={memory} rank={ranked ? ((top + k) % count) + 1 : undefined} eager={k < 2} />
+                <Cover
+                  memory={memory}
+                  rank={ranked ? ((top + k) % count) + 1 : undefined}
+                  eager={k < 2}
+                  // One photo per post may grow into the post's page.
+                  grows={onTop && !shownElsewhere.has(memory.id)}
+                />
               </div>
             );
           })
@@ -129,36 +144,52 @@ export function CoverStack({ memories, ranked }: { memories: WallMemory[]; ranke
 }
 
 /** One post as a magazine cover: the store's name across the top of the photo, its number at the bottom. */
-function Cover({ memory, rank, eager }: { memory: WallMemory; rank?: number; eager: boolean }) {
+function Cover({ memory, rank, eager, grows }: { memory: WallMemory; rank?: number; eager: boolean; grows: boolean }) {
   const where = memory.neighbourhood ?? memory.city;
+  const photo = (
+    <div className="absolute inset-0">
+      {memory.postPhotoUrl || memory.photoUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element -- a signed link from our image host, already sized
+        <img
+          src={memory.postPhotoUrl ?? memory.photoUrl ?? undefined}
+          alt=""
+          width={800}
+          height={1000}
+          draggable={false}
+          loading={eager ? "eager" : "lazy"}
+          decoding="async"
+          className="h-full w-full object-cover"
+        />
+      ) : (
+        <span aria-hidden="true" className="block h-full w-full bg-gradient-to-br from-brand-yellow to-brand-red" />
+      )}
+    </div>
+  );
   return (
     <article className="relative h-full overflow-hidden rounded-[0.9rem] bg-sand shadow-[0_18px_34px_rgb(43_29_26/0.32)] ring-1 ring-black/5">
-      <ViewTransition name={`photo-${memory.id}`} share="morph" default="none">
-        <div className="absolute inset-0">
-          {memory.postPhotoUrl || memory.photoUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element -- a signed link from our image host, already sized
-            <img
-              src={memory.postPhotoUrl ?? memory.photoUrl ?? undefined}
-              alt=""
-              width={800}
-              height={1000}
-              draggable={false}
-              loading={eager ? "eager" : "lazy"}
-              decoding="async"
-              className="h-full w-full object-cover"
-            />
-          ) : (
-            <span aria-hidden="true" className="block h-full w-full bg-gradient-to-br from-brand-yellow to-brand-red" />
-          )}
-        </div>
-      </ViewTransition>
+      {grows ? (
+        <ViewTransition name={`photo-${memory.id}`} share="morph" default="none">
+          {photo}
+        </ViewTransition>
+      ) : (
+        photo
+      )}
       <span aria-hidden="true" className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-black/60 to-transparent" />
       <span aria-hidden="true" className="absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-black/70 to-transparent" />
+      {/* The whole cover opens the post; the name below is the link screen readers use. */}
+      <Link
+        href={memoryPath(memory.id)}
+        transitionTypes={["open-post"]}
+        draggable={false}
+        tabIndex={-1}
+        aria-hidden="true"
+        className="absolute inset-0"
+      />
       <h3
         lang={textLang(memory.storeName)}
         className="absolute inset-x-3 top-2.5 line-clamp-2 font-serif text-[1.95rem] font-black uppercase leading-[0.92] tracking-[-0.01em] text-white [text-wrap:balance]"
       >
-        <Link href={memoryPath(memory.id)} transitionTypes={["open-post"]} draggable={false} className="after:absolute after:inset-0">
+        <Link href={memoryPath(memory.id)} transitionTypes={["open-post"]} draggable={false}>
           {memory.storeName}
         </Link>
       </h3>

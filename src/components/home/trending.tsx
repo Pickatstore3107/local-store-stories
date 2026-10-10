@@ -15,7 +15,7 @@ const byLikes = (a: WallMemory, b: WallMemory) => b.likes.count - a.likes.count 
  * or, before anyone has liked anything this week, the most liked of all
  * time, or else the newest. Only the kind picked above, if one is.
  */
-export function Trending({ memories }: { memories: WallMemory[] }) {
+export function Trending({ memories, alsoShown = [] }: { memories: WallMemory[]; alsoShown?: string[] }) {
   const { category } = useWallFilters();
   const kind = category ? memories.filter((m) => m.category === category) : memories;
 
@@ -51,7 +51,7 @@ export function Trending({ memories }: { memories: WallMemory[] }) {
         </Link>
       </div>
       <div className="mt-3">
-        <CoverStack key={category ?? "all"} memories={shown.slice(0, SHOWN)} ranked={ranked} />
+        <CoverStack key={category ?? "all"} memories={shown.slice(0, SHOWN)} ranked={ranked} shownElsewhere={new Set(alsoShown)} />
       </div>
     </section>
   );
