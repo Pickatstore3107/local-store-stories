@@ -284,6 +284,33 @@ html {
   }
 }
 
+/* A word coming into focus. */
+@keyframes blur-in {
+  from {
+    opacity: 0;
+    filter: blur(6px);
+    translate: 0 0.35em;
+  }
+}
+/* Stickers on the poster bobbing up and down. */
+@keyframes bob {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  50% {
+    translate: 0 -5px;
+  }
+}
+
+@utility anim-blur {
+  animation: blur-in 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) calc(var(--i, 0) * 75ms) both;
+}
+@utility anim-bob {
+  animation:
+    pop-in 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) calc(0.6s + var(--i, 0) * 150ms) both,
+    bob 3.2s ease-in-out calc(1.2s + var(--i, 0) * 700ms) infinite;
+}
 @utility anim-up {
   animation: up-in 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) calc(var(--i, 0) * 70ms) both;
 }
@@ -347,6 +374,7 @@ html {
   animation-duration: 0.6s;
 }
 
+:root[data-splash] main :is(.anim-blur, .anim-bob),
 :root[data-splash] :is(.anim-up, .anim-pop, .anim-slide, .anim-deal, .anim-nudge, .anim-sway, .anim-underline, .anim-flicker, .anim-ring),
 [data-reveal]:not([data-shown])
   :is(.anim-up, .anim-pop, .anim-slide, .anim-deal, .anim-nudge, .anim-flicker, .anim-ring, .lss-marker > span),
@@ -365,6 +393,8 @@ html {
     .anim-flicker,
     .anim-underline,
     .anim-ring,
+    .anim-blur,
+    .anim-bob,
     .anim-ticker
   ),
   .home-map .lss-marker > span {

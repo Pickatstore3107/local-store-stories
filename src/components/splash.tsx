@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
+import { useGreeting, Words } from "./greeting";
 
 const SEEN = "lss-splash-seen";
 
@@ -13,7 +14,7 @@ export const splashScript = `try{if(!sessionStorage.getItem("${SEEN}"))document.
 
 /**
  * The opening screen: a person walking with their shopping, on yellow,
- * while the site gets ready. It slides away once the page has loaded and
+ * with a hello for whoever is here under her, while the site gets ready. It slides away once the page has loaded and
  * has shown for a moment, or at once when tapped. Hidden by CSS unless
  * the script above asked for it.
  */
@@ -21,6 +22,7 @@ export function Splash() {
   const [leaving, setLeaving] = useState(false);
   const video = useRef<HTMLVideoElement>(null);
   const skip = useRef(() => {});
+  const greeting = useGreeting();
 
   useEffect(() => {
     const root = document.documentElement;
@@ -69,10 +71,20 @@ export function Splash() {
         <source src="/art/walking.webm" type="video/webm" />
         <source src="/art/walking.mp4" type="video/mp4" />
       </video>
-      <Image src="/brand/pas-logo-horizontal.webp" alt="" width={160} height={48} className="mt-5 h-9 w-auto" priority />
-      <p className="mt-2 font-serif text-[1.35rem] text-brand-red">
-        Local stores <span className="italic">and their stories</span>
-      </p>
+      {/* The same hello and line as at the top of Home. */}
+      <div className="mt-4 min-h-[4.6rem] max-w-[18rem] px-4 text-center font-serif">
+        {greeting && (
+          <>
+            <p className="text-[1.55rem] leading-tight text-brand-red">
+              <Words text={greeting.hello} delay={2} />
+            </p>
+            <p className="mt-1.5 text-[1rem] italic leading-snug text-ink">
+              <Words text={greeting.lines[0]} delay={6} />
+            </p>
+          </>
+        )}
+      </div>
+      <Image src="/brand/pas-logo-horizontal.webp" alt="" width={160} height={48} className="mt-5 h-8 w-auto" priority />
     </div>
   );
 }

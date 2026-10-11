@@ -74,7 +74,7 @@ export default async function Home() {
       ) : (
         <>
           {/* The pile of covers on a band of yellow that fades into the page. */}
-          <Reveal className="-mx-4 mt-3 rounded-b-[2rem] bg-gradient-to-b from-brand-yellow/80 via-brand-yellow/30 to-transparent px-4 pb-3 pt-4 sm:-mx-5 sm:px-5">
+          <Reveal className="-mx-4 mt-3 overflow-x-clip rounded-b-[2rem] bg-gradient-to-b from-brand-yellow/80 via-brand-yellow/30 to-transparent px-4 pb-3 pt-4 sm:-mx-5 sm:px-5">
             <Trending memories={memories} />
           </Reveal>
           <div className="mt-3">

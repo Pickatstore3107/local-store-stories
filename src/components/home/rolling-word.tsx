@@ -7,9 +7,10 @@ const WORDS = ["places", "cafes", "tea stalls", "bakeries", "kirana stores", "bo
 const EVERY_MS = 2200;
 
 /**
- * The last word of the Home title, changing every couple of seconds. Only
- * a picture of the title: screen readers read the whole title as written.
- * Without motion it stays on "places".
+ * The last word of the Home title, changing every couple of seconds, with
+ * a yellow highlighter stroke drawn under each new word. Only a picture of
+ * the title: screen readers read the whole title as written. Without
+ * motion it stays on "places".
  */
 export function RollingWord() {
   const [at, setAt] = useState(0);
@@ -23,8 +24,9 @@ export function RollingWord() {
     return () => clearInterval(timer);
   }, []);
   return (
-    <span key={at} className="anim-word inline-block">
-      {WORDS[at]}
+    <span key={at} className="relative isolate inline-block">
+      <span className="anim-underline absolute inset-x-[-0.1em] bottom-[0.06em] -z-10 h-[0.36em] -rotate-1 rounded-sm bg-brand-yellow/80" />
+      <span className="anim-word inline-block">{WORDS[at]}</span>
     </span>
   );
 }

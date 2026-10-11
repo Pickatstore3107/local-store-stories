@@ -60,8 +60,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <Script id="lss-splash" strategy="beforeInteractive">
           {splashScript}
         </Script>
-        <Splash />
         <AuthProvider>
+          <Splash />
           <SiteHeader />
           {children}
           <SiteFooter />
