@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { ViewTransition, useRef, useState, type CSSProperties, type PointerEvent } from "react";
+import { useRef, useState, type CSSProperties, type MouseEvent, type PointerEvent } from "react";
 import { anton } from "@/lib/anton";
 import { memoryPath, textLang, type WallMemory } from "@/lib/memories";
 import { ArrowIcon, HeartIcon } from "../icons";
+import { openingFrom } from "../post/grow-photo";
 import { SaveButton } from "../post/save-button";
 
 // Where the covers under the top one sit: fanned out, a little smaller.
@@ -25,16 +26,7 @@ const AWAY_MS = 280;
  * The covers are dealt onto the pile as it comes on screen, and the top one
  * moves a little either way, until it is first touched, to show it swipes.
  */
-export function CoverStack({
-  memories,
-  ranked,
-  shownElsewhere,
-}: {
-  memories: WallMemory[];
-  ranked: boolean;
-  /** Posts also on the page as colour cards, which grow into the post themselves. */
-  shownElsewhere: ReadonlySet<string>;
-}) {
+export function CoverStack({ memories, ranked }: { memories: WallMemory[]; ranked: boolean }) {
   const count = memories.length;
   const [top, setTop] = useState(0);
   const [dx, setDx] = useState(0);
@@ -76,54 +68,57 @@ export function CoverStack({
     else setDx(0);
   };
 
-  const shown = Array.from({ length: Math.min(count, FAN.length) }, (_, k) => memories[(top + k) % count]);
+  // The covers on the pile, k = 0 on top. They stay in the page in the
+  // posts' own order, whichever is on top, so turning one doesn't move the
+  // others around the page, which would load them again and restart them.
+  const shown = Array.from({ length: Math.min(count, FAN.length) }, (_, k) => ({ k, at: (top + k) % count })).sort(
+    (a, b) => a.at - b.at,
+  );
 
   return (
     <div>
       <div className="relative mx-auto aspect-[4/5] w-[min(70vw,16.5rem)]">
-        {shown
-          .map((memory, k) => {
-            const onTop = k === 0;
-            const transform = onTop
-              ? away
-                ? `translate(${away * 135}%, 4%) rotate(${away * 24}deg)`
-                : `translate(${dx}px, 0) rotate(${-2 + dx / 16}deg)`
-              : FAN[k];
-            return (
-              <div
-                key={memory.id}
-                aria-hidden={!onTop}
-                inert={!onTop}
-                className={`absolute inset-0 touch-pan-y select-none ${dx && onTop && !away ? "" : "transition-[transform,opacity] duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)] motion-reduce:transition-none"}`}
-                style={{ transform, opacity: onTop && away ? 0 : 1, zIndex: FAN.length - k }}
-                onPointerDown={onTop ? down : undefined}
-                onPointerMove={onTop ? move : undefined}
-                onPointerUp={onTop ? up : undefined}
-                onPointerCancel={onTop ? up : undefined}
-                onClickCapture={(e) => {
-                  // A swipe isn't a tap: don't open the post at the end of one.
-                  if (dragged.current) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    dragged.current = false;
-                  }
-                }}
-              >
-                <div className="anim-deal h-full" style={{ "--i": FAN.length - 1 - k } as CSSProperties}>
-                  <div className={`h-full ${onTop && !touched && count > 1 ? "anim-nudge" : ""}`}>
-                    <Cover
-                      memory={memory}
-                      rank={ranked ? ((top + k) % count) + 1 : undefined}
-                      eager={k < 2}
-                      // One photo per post may grow into the post's page.
-                      grows={onTop && !shownElsewhere.has(memory.id)}
-                    />
-                  </div>
+        {shown.map(({ k, at }) => {
+          const memory = memories[at];
+          const onTop = k === 0;
+          const transform = onTop
+            ? away
+              ? `translate(${away * 135}%, 4%) rotate(${away * 24}deg)`
+              : `translate(${dx}px, 0) rotate(${-2 + dx / 16}deg)`
+            : FAN[k];
+          return (
+            <div
+              key={memory.id}
+              aria-hidden={!onTop}
+              inert={!onTop}
+              className={`absolute inset-0 touch-pan-y select-none ${dx && onTop && !away ? "" : "transition-[transform,opacity] duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)] motion-reduce:transition-none"}`}
+              style={{ transform, opacity: onTop && away ? 0 : 1, zIndex: FAN.length - k }}
+              onPointerDown={onTop ? down : undefined}
+              onPointerMove={onTop ? move : undefined}
+              onPointerUp={onTop ? up : undefined}
+              onPointerCancel={onTop ? up : undefined}
+              onClickCapture={(e) => {
+                // A swipe isn't a tap: don't open the post at the end of one.
+                if (dragged.current) {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  dragged.current = false;
+                }
+              }}
+            >
+              {/* Dealt onto the pile once, as it comes on screen; not again after a swipe. */}
+              <div className={touched ? "h-full" : "anim-deal h-full"} style={{ "--i": FAN.length - 1 - k } as CSSProperties}>
+                <div className={`h-full ${onTop && !touched && count > 1 ? "anim-nudge" : ""}`}>
+                  <Cover
+                    memory={memory}
+                    rank={ranked ? at + 1 : undefined}
+                    eager={k < 2}
+                  />
                 </div>
               </div>
-            );
-          })
-          .reverse()}
+            </div>
+          );
+        })}
       </div>
       {count > 1 && (
         <div className="mt-4 flex items-center justify-center gap-4">
@@ -153,42 +148,36 @@ export function CoverStack({
 }
 
 /** One post as a magazine cover: the store's name across the top of the photo, its number at the bottom. */
-function Cover({ memory, rank, eager, grows }: { memory: WallMemory; rank?: number; eager: boolean; grows: boolean }) {
+function Cover({ memory, rank, eager }: { memory: WallMemory; rank?: number; eager: boolean }) {
   const where = memory.neighbourhood ?? memory.city;
-  const photo = (
-    <div className="absolute inset-0">
-      {memory.postPhotoUrl || memory.photoUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element -- a signed link from our image host, already sized
-        <img
-          src={memory.postPhotoUrl ?? memory.photoUrl ?? undefined}
-          alt=""
-          width={800}
-          height={1000}
-          draggable={false}
-          loading={eager ? "eager" : "lazy"}
-          decoding="async"
-          className="h-full w-full object-cover"
-        />
-      ) : (
-        <span aria-hidden="true" className="block h-full w-full bg-gradient-to-br from-brand-yellow to-brand-red" />
-      )}
-    </div>
-  );
+  const url = memory.postPhotoUrl ?? memory.photoUrl;
+  const open = (e: MouseEvent) => openingFrom(e, memory.id, "cover", url);
   return (
     <article className="relative h-full overflow-hidden rounded-[0.9rem] bg-sand shadow-[0_18px_34px_rgb(43_29_26/0.32)] ring-1 ring-black/5">
-      {grows ? (
-        <ViewTransition name={`photo-${memory.id}`} share="morph" default="none">
-          {photo}
-        </ViewTransition>
-      ) : (
-        photo
-      )}
+      <div data-photo-of={memory.id} data-photo-from="cover" className="absolute inset-0 overflow-hidden rounded-[0.9rem]">
+        {url ? (
+          // eslint-disable-next-line @next/next/no-img-element -- a signed link from our image host, already sized
+          <img
+            src={url}
+            alt=""
+            width={800}
+            height={1000}
+            draggable={false}
+            loading={eager ? "eager" : "lazy"}
+            decoding="async"
+            className="h-full w-full object-cover"
+          />
+        ) : (
+          <span aria-hidden="true" className="block h-full w-full bg-gradient-to-br from-brand-yellow to-brand-red" />
+        )}
+      </div>
       <span aria-hidden="true" className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-black/60 to-transparent" />
       <span aria-hidden="true" className="absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-black/70 to-transparent" />
       {/* The whole cover opens the post; the name below is the link screen readers use. */}
       <Link
         href={memoryPath(memory.id)}
         transitionTypes={["open-post"]}
+        onClick={open}
         draggable={false}
         tabIndex={-1}
         aria-hidden="true"
@@ -198,7 +187,7 @@ function Cover({ memory, rank, eager, grows }: { memory: WallMemory; rank?: numb
         lang={textLang(memory.storeName)}
         className="absolute inset-x-3 top-2.5 line-clamp-2 font-serif text-[1.95rem] font-black uppercase leading-[0.92] tracking-[-0.01em] text-white [text-wrap:balance]"
       >
-        <Link href={memoryPath(memory.id)} transitionTypes={["open-post"]} draggable={false}>
+        <Link href={memoryPath(memory.id)} transitionTypes={["open-post"]} onClick={open} draggable={false}>
           {memory.storeName}
         </Link>
       </h3>
