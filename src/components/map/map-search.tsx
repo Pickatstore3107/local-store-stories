@@ -1,9 +1,8 @@
 "use client";
 
 import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent } from "react";
-import { CloseIcon, PlaceIcon, SearchIcon, StoreIcon } from "@/components/icons";
+import { PlaceIcon, StoreIcon } from "@/components/icons";
 import { memoryMatches, placeLine, searchWords, textLang } from "@/lib/memories";
-import { MemoryThumb } from "./map-cards";
 import type { PinnedMemory } from "./memory-map";
 import { searchPlaces, type Place } from "./place-search";
 
@@ -101,9 +100,9 @@ export function MapSearch({
           event.preventDefault();
           pick(options[current]);
         }}
-        className="flex h-11 items-center gap-2 rounded-full bg-white pl-3.5 pr-1 shadow-[0_4px_16px_-6px_rgba(43,29,26,0.45)] focus-within:ring-2 focus-within:ring-brand-red/40"
+        style={{ display: "flex", alignItems: "center", gap: 10, height: 46, padding: "0 16px", borderRadius: 999, background: "#fff", boxShadow: "0 8px 22px rgb(120 70 30 / .14)", color: "#6E5A55" }}
       >
-        <SearchIcon className="h-[1.1rem] w-[1.1rem] shrink-0 text-ink-soft" />
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" aria-hidden="true" style={{ flex: "none" }}><circle cx="11" cy="11" r="6.5"></circle><path d="m16 16 4 4"></path></svg>
         <label htmlFor={`${id}-input`} className="sr-only">
           Search stores and places in Hyderabad
         </label>
@@ -127,22 +126,10 @@ export function MapSearch({
           onFocus={() => setOpen(true)}
           onBlur={() => setOpen(false)}
           onKeyDown={keys}
-          placeholder="Search Hyderabad"
-          className="min-w-0 flex-1 bg-transparent py-2 text-ink outline-none placeholder:text-ink-soft [&::-webkit-search-cancel-button]:hidden"
+          placeholder="Search a store or an area"
+          className="[&::-webkit-search-cancel-button]:hidden"
+          style={{ flex: 1, border: 0, outline: "none", background: "transparent", font: "500 14px 'Plus Jakarta Sans'", minWidth: 0 }}
         />
-        {query && (
-          <button
-            type="button"
-            onClick={() => {
-              setQuery("");
-              input.current?.focus();
-            }}
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-ink-soft hover:bg-paper hover:text-ink"
-          >
-            <CloseIcon className="h-4 w-4" />
-            <span className="sr-only">Clear the search</span>
-          </button>
-        )}
       </form>
 
       {showing && (
@@ -210,5 +197,29 @@ function PlaceOption({ place }: { place: Place }) {
         {place.detail && <span className="block truncate text-[0.8rem] text-ink-soft">{place.detail}</span>}
       </span>
     </>
+  );
+}
+
+/** A memory's photo, small, beside its name. */
+export function MemoryThumb({ memory, className = "w-10" }: { memory: PinnedMemory; className?: string }) {
+  return (
+    <span className={`block shrink-0 overflow-hidden rounded-lg ${className}`}>
+      {memory.photoUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element -- a signed link from our image host, already sized
+        <img
+          src={memory.photoUrl}
+          alt=""
+          width={120}
+          height={120}
+          loading="lazy"
+          decoding="async"
+          className="aspect-square w-full bg-sand object-cover"
+        />
+      ) : (
+        <span className="flex aspect-square w-full items-center justify-center bg-gradient-to-br from-[#ffe7a0] to-[#ffd2c4] font-hand text-lg font-bold text-brand-red">
+          {memory.storeName.charAt(0)}
+        </span>
+      )}
+    </span>
   );
 }
