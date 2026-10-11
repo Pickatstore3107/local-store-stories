@@ -29,7 +29,7 @@ export function SiteHeader() {
 
   return (
     <>
-      <PhoneHeader />
+      <PhoneHeader pathname={pathname} />
       <header style={{ viewTransitionName: "site-header" }} className="hidden h-(--header-h) shrink-0 items-center justify-between gap-3 px-8 sm:flex">
       <Link href="/" aria-label="Local Stores & Their Stories home">
         <Image
@@ -97,9 +97,11 @@ export function SiteHeader() {
  * The phone's header, copied from the prototype: the logo, the city and
  * the bell on a 52px blurred white strip that stays at the top.
  */
-function PhoneHeader() {
+function PhoneHeader({ pathname }: { pathname: string }) {
   const bell = useBell();
   const unseen = !!bell && bell.ringAt > bell.seenAt;
+  // A post's page has its own back button over its photos instead.
+  if (pathname.startsWith("/memories/")) return null;
   return (
     <header
       className="sm:hidden"

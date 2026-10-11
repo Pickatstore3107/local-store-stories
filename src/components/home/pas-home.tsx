@@ -1,18 +1,13 @@
 "use client";
 
-import { FirebaseError } from "firebase/app";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { friendlyError } from "@/lib/auth-errors";
-import { follow, unfollow } from "@/lib/follows";
 import { memoryPath, type WallMemory } from "@/lib/memories";
-import { useAuth } from "../auth-provider";
 import { usePasGreeting } from "../greeting";
+import { DOUBLE_TAP_MS, HEART, sharePost, useAskToJoin, useFollowAuthor } from "../pas/actions";
 import { flash } from "../pas/toast";
 import { Walker } from "../pas/walker";
 import { useLike } from "../post/use-likes";
-import { setReturnPath } from "../require-account";
-import { useMyFollows } from "../use-my-follows";
 import { useSave } from "../use-saved";
 
 // Home, copied from the prototype (docs/design_handoff_pas_redesign): the
@@ -24,24 +19,8 @@ const RED = "#A3171B", INK = "#2B1D1A", SOFT = "#6E5A55";
 const KINDS = ["All", "Cafes", "Tea Stalls", "Bakeries", "Restaurants", "Kirana Stores", "Bookstores"] as const;
 type Kind = (typeof KINDS)[number];
 const WORD: Record<Kind, string> = { All: "places", Cafes: "cafes", "Tea Stalls": "tea stalls", Bakeries: "bakeries", Restaurants: "restaurants", "Kirana Stores": "kirana stores", Bookstores: "bookstores" };
-const HEART = "M12 20s-7.5-4.6-7.5-10.1A4.2 4.2 0 0 1 12 7.4a4.2 4.2 0 0 1 7.5 2.5C19.5 15.4 12 20 12 20Z";
-const DOUBLE_TAP_MS = 280;
 
 const areaOf = (m: WallMemory) => m.neighbourhood ?? m.city;
-
-/** Visitors, and people who haven't finished joining, go to do that and come back. */
-function useAskToJoin() {
-  const { user, consent } = useAuth();
-  const router = useRouter();
-  const member = user && consent ? user : null;
-  return {
-    member,
-    ask: () => {
-      setReturnPath(window.location.pathname);
-      router.push(user ? "/welcome" : "/signin");
-    },
-  };
-}
 
 export function PasHome({ memories, builtAt }: { memories: WallMemory[]; builtAt: number }) {
   const greeting = usePasGreeting();
@@ -178,8 +157,6 @@ function FeedPost({ p, builtAt, onOpen, onCount }: { p: WallMemory; builtAt: num
   const { member, ask } = useAskToJoin();
   const like = useLike(p.id, p.likes, builtAt);
   const save = useSave(p.id);
-  const follows = useMyFollows();
-  const [followBusy, setFollowBusy] = useState(false);
   const lastTap = useRef(0);
   const pending = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
@@ -193,9 +170,8 @@ function FeedPost({ p, builtAt, onOpen, onCount }: { p: WallMemory; builtAt: num
     report.current(likes);
   }, [likes]);
   const liked = like.liked === true, saved = save.saved === true;
-  const mine = member?.uid === p.authorId;
-  const fol = follows.following.has(p.authorId);
   const author = p.authorName ?? "A member";
+  const fol = useFollowAuthor(p.authorId, author);
   const year = p.year;
 
   const onLike = () => {
@@ -209,37 +185,7 @@ function FeedPost({ p, builtAt, onOpen, onCount }: { p: WallMemory; builtAt: num
     await save.toggle();
     flash(was ? "Removed from Saved" : "Saved. Only you can see it.");
   };
-  const onFollow = async () => {
-    if (mine) return;
-    if (!member) return ask();
-    if (!follows.ready || followBusy) return;
-    setFollowBusy(true);
-    try {
-      if (fol) await unfollow(member, p.authorId);
-      else await follow(member, p.authorId);
-    } catch (e) {
-      flash(e instanceof FirebaseError && e.code === "permission-denied" ? `You can't follow ${author} right now.` : friendlyError(e));
-    } finally {
-      setFollowBusy(false);
-    }
-  };
-  const onShare = async () => {
-    const url = `${window.location.origin}${memoryPath(p.id)}`;
-    if (typeof navigator.share === "function") {
-      try {
-        await navigator.share({ title: `A post about ${p.storeName}, ${p.city}`, url });
-        return;
-      } catch (error) {
-        if (error instanceof DOMException && error.name === "AbortError") return;
-      }
-    }
-    try {
-      await navigator.clipboard.writeText(url);
-      flash("Link copied");
-    } catch {
-      // Copying isn't allowed here; nothing to show.
-    }
-  };
+  const onShare = () => sharePost(memoryPath(p.id), `A post about ${p.storeName}, ${p.city}`);
   // One tap opens the post; two taps like it, as the prototype's double-click does.
   const onPhoto = () => {
     const now = Date.now();
@@ -253,8 +199,7 @@ function FeedPost({ p, builtAt, onOpen, onCount }: { p: WallMemory; builtAt: num
     pending.current = setTimeout(onOpen, DOUBLE_TAP_MS);
   };
 
-  const followText = mine ? "You" : fol ? "Following" : "Follow";
-  const quiet = mine || fol;
+  const quiet = fol.mine || fol.following;
   return (
     <article style={{ padding: "14px 0 18px", borderBottom: "1px solid #F1E6E2" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "0 18px 10px" }}>
@@ -263,7 +208,7 @@ function FeedPost({ p, builtAt, onOpen, onCount }: { p: WallMemory; builtAt: num
           <span style={{ font: "700 13.5px 'Plus Jakarta Sans'", color: "#2B1D1A" }}>{author}</span>
           <span style={{ font: "500 11.5px 'Plus Jakarta Sans'", color: "#6E5A55" }}>{p.category}</span>
         </div>
-        <button type="button" onClick={onFollow} disabled={followBusy} style={{ height: 30, padding: "0 14px", borderRadius: 999, border: `1.5px solid ${quiet ? "#E7D9D4" : RED}`, background: quiet ? "transparent" : RED, color: quiet ? SOFT : "#fff", font: "700 12px 'Plus Jakarta Sans'" }}>{followText}</button>
+        <button type="button" onClick={fol.toggle} disabled={fol.busy} style={{ height: 30, padding: "0 14px", borderRadius: 999, border: `1.5px solid ${quiet ? "#E7D9D4" : RED}`, background: quiet ? "transparent" : RED, color: quiet ? SOFT : "#fff", font: "700 12px 'Plus Jakarta Sans'" }}>{fol.text}</button>
       </div>
       <div onClick={onPhoto} style={{ margin: "0 12px", aspectRatio: "4/5", borderRadius: 16, overflow: "hidden", position: "relative", cursor: "pointer", background: "#F7F2EF" }}>
         {p.postPhotoUrl && (

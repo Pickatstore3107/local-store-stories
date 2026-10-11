@@ -1,10 +1,11 @@
 "use client";
 
 import { FirebaseError } from "firebase/app";
+import type { User } from "firebase/auth";
 import Link from "next/link";
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState, type FormEvent, type RefObject } from "react";
 import { useAuth } from "@/components/auth-provider";
-import { Avatar } from "@/components/avatar";
 import { setReturnPath } from "@/components/require-account";
 import { input } from "@/components/ui";
 import { friendlyError } from "@/lib/auth-errors";
@@ -18,7 +19,7 @@ import {
   reportComment,
   type CommentReportReason,
 } from "@/lib/comments";
-import { memoryPath, postDate, textLang, type PublicComment } from "@/lib/memories";
+import { memoryPath, textLang, type PublicComment } from "@/lib/memories";
 import { isModerator } from "@/lib/moderation";
 import { personPath, photoOf } from "@/lib/people";
 import { REPORT_DETAILS_MAX, REPORT_DETAILS_MIN } from "@/lib/reports";
@@ -34,21 +35,26 @@ function checkModerator(uid: string) {
   return answer;
 }
 
+const INK = "#2B1D1A", SOFT = "#6E5A55";
+const small = { border: 0, background: "transparent", padding: 0, font: "600 11.5px 'Plus Jakarta Sans'", color: SOFT } as const;
+const errorText = { margin: 0, font: "500 12.5px 'Plus Jakarta Sans'", color: "#7D1114" } as const;
+
 /**
- * The comments under a memory, the oldest first, and a box to add one.
- * They show to everyone at once. People can delete their own, the memory's
- * author and moderators can delete any, and anyone signed in can report one.
+ * The comments under a memory, the oldest first, as the prototype's bubbles,
+ * and a box to add one. They show to everyone at once. People can delete
+ * their own, the memory's author and moderators can delete any, and anyone
+ * signed in can report one.
  */
 export function Comments({
   storyId,
   storyAuthorId,
   comments,
-  builtAt,
+  inputRef,
 }: {
   storyId: string;
   storyAuthorId: string | null;
   comments: PublicComment[];
-  builtAt: number;
+  inputRef: RefObject<HTMLInputElement | null>;
 }) {
   const { user, profile, consent } = useAuth();
   const member = user && consent && profile ? user : null;
@@ -73,47 +79,27 @@ export function Comments({
     !!member && (comment.authorId === member.uid || storyAuthorId === member.uid || isModeratorNow);
 
   return (
-    <section id="comments" aria-labelledby="comments-heading" className="scroll-mt-24">
-      <h2 id="comments-heading" className="text-[1.05rem] font-bold text-ink">
-        Comments{shown.length > 0 && <span className="font-bold text-ink-soft"> ({shown.length})</span>}
-      </h2>
-
-      {shown.length === 0 ? (
-        <p className="mt-2 text-ink-soft">No comments yet. Say something kind about this post.</p>
-      ) : (
-        <ul className="mt-2 divide-y divide-ink/5">
-          {shown.map((comment) => (
-            <CommentItem
-              key={comment.id}
-              comment={comment}
-              storyId={storyId}
-              builtAt={builtAt}
-              canDelete={mayDelete(comment)}
-              canReport={!!member && comment.authorId !== member.uid}
-              onDeleted={() => setRemoved((was) => new Set([...was, comment.id]))}
-            />
-          ))}
-        </ul>
-      )}
-
-      {member ? (
-        <CommentBox
+    <section id="comments" aria-labelledby="comments-heading" style={{ borderTop: "2px solid #2B1D1A", paddingTop: 16, display: "flex", flexDirection: "column", gap: 14, scrollMarginTop: 24 }}>
+      <h2 id="comments-heading" style={{ margin: 0, font: "600 20px 'Playfair Display'" }}>Comments <span style={{ font: "400 20px 'Anton'", color: "#A3171B" }}>{shown.length || ""}</span></h2>
+      {shown.map((comment) => (
+        <CommentItem
+          key={comment.id}
+          comment={comment}
           storyId={storyId}
-          onAdded={(comment) => setAdded((was) => [...was, comment])}
-          authorName={profile?.displayName ?? null}
-          authorPhoto={photoOf(profile)?.small ?? null}
+          canDelete={mayDelete(comment)}
+          canReport={!!member && comment.authorId !== member.uid}
+          onDeleted={() => setRemoved((was) => new Set([...was, comment.id]))}
         />
-      ) : (
-        <p className="mt-4">
-          <Link
-            href={user ? "/welcome" : "/signin"}
-            onClick={() => setReturnPath(`${memoryPath(storyId)}#comments`)}
-            className="font-bold text-brand-red underline underline-offset-4"
-          >
-            {user ? "Finish joining to comment" : "Sign in to comment"}
-          </Link>
-        </p>
-      )}
+      ))}
+      {shown.length === 0 && <p style={{ margin: 0, font: "400 18px 'Kalam'", color: "#6E5A55" }}>Be the first to remember something here.</p>}
+      <CommentBox
+        storyId={storyId}
+        inputRef={inputRef}
+        member={member}
+        onAdded={(comment) => setAdded((was) => [...was, comment])}
+        authorName={profile?.displayName ?? null}
+        authorPhoto={photoOf(profile)?.small ?? null}
+      />
     </section>
   );
 }
@@ -121,14 +107,12 @@ export function Comments({
 function CommentItem({
   comment,
   storyId,
-  builtAt,
   canDelete,
   canReport,
   onDeleted,
 }: {
   comment: PublicComment;
   storyId: string;
-  builtAt: number;
   canDelete: boolean;
   canReport: boolean;
   onDeleted: () => void;
@@ -155,99 +139,71 @@ function CommentItem({
   }
 
   return (
-    <li className="flex gap-3 py-3">
-      <span className="pt-0.5">
-        <Avatar name={name} photo={comment.authorPhoto} size="xxs" />
-      </span>
-      <div className="min-w-0 flex-1">
-        <p className="break-words text-[0.95rem] leading-snug text-ink">
+    <div style={{ display: "flex", gap: 10 }}>
+      <div style={{ width: 32, height: 32, borderRadius: "50%", background: "#FFC000", color: "#2B1D1A", display: "grid", placeItems: "center", font: "700 12px 'Plus Jakarta Sans'", flex: "none" }}>{name[0]}</div>
+      {/* The bubble, and under it Delete and Report where they're allowed. */}
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 4, minWidth: 0 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 2, padding: "8px 12px", borderRadius: "4px 16px 16px 16px", background: "#F7F2EF", maxWidth: "100%" }}>
           {comment.authorName ? (
-            <Link
-              href={personPath(comment.authorId)}
-              prefetch={false}
-              lang={textLang(comment.authorName)}
-              className="mr-1.5 font-bold hover:text-brand-red"
-            >
-              {comment.authorName}
-            </Link>
+            <Link href={personPath(comment.authorId)} prefetch={false} lang={textLang(comment.authorName)} style={{ font: "700 12.5px 'Plus Jakarta Sans'", color: INK }}>{comment.authorName}</Link>
           ) : (
-            <span className="mr-1.5 font-bold text-ink-soft">{name}</span>
+            <span style={{ font: "700 12.5px 'Plus Jakarta Sans'" }}>{name}</span>
           )}
-          <span lang={textLang(comment.text)} className="whitespace-pre-line">
-            {comment.text}
-          </span>
-        </p>
-        <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-ink-soft">
-          <span>{postDate(comment.createdAt, builtAt)}</span>
-          {canDelete &&
-            (confirming ? (
-              <>
-                <button type="button" onClick={remove} disabled={busy} className="font-bold text-brand-red-deep">
-                  {busy ? "Deleting…" : "Yes, delete"}
-                </button>
-                <button type="button" onClick={() => setConfirming(false)} disabled={busy} className="font-bold">
-                  Keep it
-                </button>
-              </>
-            ) : (
-              <button type="button" onClick={() => setConfirming(true)} className="font-bold hover:text-ink">
-                Delete
-              </button>
-            ))}
-          {canReport && !reporting && (
-            <button type="button" onClick={() => setReporting(true)} className="font-bold hover:text-ink">
-              Report
-            </button>
-          )}
-        </p>
-        {error && (
-          <p role="alert" className="mt-1 text-sm text-brand-red-deep">
-            {error}
-          </p>
+          <span lang={textLang(comment.text)} style={{ font: "400 14px/1.4 'Plus Jakarta Sans'", color: "#2B1D1A", whiteSpace: "pre-line", overflowWrap: "anywhere" }}>{comment.text}</span>
+        </div>
+        {(canDelete || (canReport && !reporting)) && (
+          <div style={{ display: "flex", gap: 12, padding: "0 12px" }}>
+            {canDelete &&
+              (confirming ? (
+                <>
+                  <button type="button" onClick={remove} disabled={busy} style={{ ...small, color: "#7D1114" }}>{busy ? "Deleting…" : "Yes, delete"}</button>
+                  <button type="button" onClick={() => setConfirming(false)} disabled={busy} style={small}>Keep it</button>
+                </>
+              ) : (
+                <button type="button" onClick={() => setConfirming(true)} style={small}>Delete</button>
+              ))}
+            {canReport && !reporting && <button type="button" onClick={() => setReporting(true)} style={small}>Report</button>}
+          </div>
         )}
-        {reporting && (
-          <ReportCommentForm
-            comment={comment}
-            storyId={storyId}
-            onClose={() => setReporting(false)}
-          />
-        )}
+        {error && <p role="alert" style={{ ...errorText, padding: "0 12px" }}>{error}</p>}
+        {reporting && <ReportCommentForm comment={comment} storyId={storyId} onClose={() => setReporting(false)} />}
       </div>
-    </li>
+    </div>
   );
 }
 
-/** The box for a new comment. It grows as they type. */
+/** The box for a new comment. Visitors who try to post are asked to sign in first. */
 function CommentBox({
   storyId,
+  inputRef,
+  member,
   authorName,
   authorPhoto,
   onAdded,
 }: {
   storyId: string;
+  inputRef: RefObject<HTMLInputElement | null>;
+  member: User | null;
   authorName: string | null;
   authorPhoto: string | null;
   onAdded: (comment: PublicComment) => void;
 }) {
   const { user } = useAuth();
-  const [text, setText] = useState("");
+  const router = useRouter();
+  const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const box = useRef<HTMLTextAreaElement>(null);
+  const typed = !!draft.trim();
 
-  // Taller as they type, up to a few lines.
-  useEffect(() => {
-    const area = box.current;
-    if (!area) return;
-    area.style.height = "auto";
-    area.style.height = `${Math.min(area.scrollHeight, 160)}px`;
-  }, [text]);
-
-  async function submit(event: FormEvent) {
-    event.preventDefault();
-    if (!user || busy) return;
-    const clean = text.trim();
+  async function send() {
+    if (busy) return;
+    const clean = draft.trim();
     if (!clean) return;
+    if (!member) {
+      setReturnPath(`${memoryPath(storyId)}#comments`);
+      router.push(user ? "/welcome" : "/signin");
+      return;
+    }
     if (hasLink(clean)) {
       setError("Comments can't have links in them.");
       return;
@@ -255,10 +211,10 @@ function CommentBox({
     setError(null);
     setBusy(true);
     try {
-      const id = await addComment(user, storyId, clean);
-      onAdded({ id, authorId: user.uid, authorName, authorPhoto, text: clean, createdAt: Date.now() });
-      setText("");
-      await refreshComments(user, storyId);
+      const id = await addComment(member, storyId, clean);
+      onAdded({ id, authorId: member.uid, authorName, authorPhoto, text: clean, createdAt: Date.now() });
+      setDraft("");
+      await refreshComments(member, storyId);
     } catch (e) {
       setError(
         e instanceof FirebaseError && e.code === "permission-denied"
@@ -271,50 +227,28 @@ function CommentBox({
   }
 
   return (
-    <form onSubmit={submit} className="mt-4">
-      <div className="flex items-end gap-2 rounded-3xl bg-white p-1.5 pl-4 ring-1 ring-ink/10 focus-within:ring-2 focus-within:ring-brand-red/40">
-        <label htmlFor="comment-text" className="sr-only">
-          Add a comment
-        </label>
-        <textarea
+    <>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, height: 48, padding: "0 6px 0 16px", borderRadius: 999, background: "#F7F2EF", border: `1.5px solid ${typed ? "#A3171B" : "transparent"}`, transition: "border-color .2s" }}>
+        <input
           id="comment-text"
-          ref={box}
-          rows={1}
-          value={text}
+          ref={inputRef}
+          value={draft}
           maxLength={COMMENT_MAX}
+          aria-label="Add a memory or a comment"
           onChange={(event) => {
-            setText(event.target.value);
+            setDraft(event.target.value);
             setError(null);
           }}
           onKeyDown={(event) => {
-            // Enter posts on a computer; Shift and Enter starts a new line.
-            if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing && window.matchMedia("(hover: hover)").matches) {
-              event.preventDefault();
-              event.currentTarget.form?.requestSubmit();
-            }
+            if (event.key === "Enter" && !event.nativeEvent.isComposing) void send();
           }}
-          placeholder="Add a comment…"
-          className="min-h-10 flex-1 resize-none border-0 bg-transparent py-2 text-base text-ink outline-none placeholder:text-ink-soft/85"
+          placeholder="Add a memory or a comment"
+          style={{ flex: 1, minWidth: 0, border: 0, background: "transparent", outline: "none", font: "500 14px 'Plus Jakarta Sans'", color: "#2B1D1A" }}
         />
-        <button
-          type="submit"
-          disabled={busy || !text.trim()}
-          className="shrink-0 rounded-full bg-brand-red px-4 py-2 text-sm font-bold text-white transition hover:bg-brand-red-deep disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          {busy ? "Posting…" : "Post"}
-        </button>
+        <button type="button" onClick={() => void send()} disabled={busy} style={{ height: 36, padding: "0 16px", border: 0, borderRadius: 999, background: "#A3171B", color: "#fff", font: "700 12.5px 'Plus Jakarta Sans'", opacity: typed ? 1 : 0.4, transform: typed ? "scale(1)" : "scale(.92)", transition: "opacity .2s,transform .25s cubic-bezier(.3,1.6,.5,1)" }}>Post</button>
       </div>
-      {error ? (
-        <p role="alert" className="mt-2 text-sm text-brand-red-deep">
-          {error}
-        </p>
-      ) : (
-        <p className="mt-2 text-xs text-ink-soft">
-          Comments show to everyone at once, with your name. Please be kind. Links aren&apos;t allowed.
-          {text.length > COMMENT_MAX - 50 && ` ${COMMENT_MAX - text.length} characters left.`}
-        </p>
-      )}
-    </form>
+      {error && <p role="alert" style={errorText}>{error}</p>}
+    </>
   );
 }
 
