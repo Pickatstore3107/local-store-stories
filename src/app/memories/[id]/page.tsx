@@ -1,17 +1,10 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import { StarIcon } from "@/components/icons";
-import { excerpt, placeLine, shortDate, textLang } from "@/lib/memories";
-import { mapPath } from "@/lib/pins";
-import { loadMemory } from "@/lib/server/wall";
-import { Comments } from "./comments";
-import { MemoryActions } from "./memory-actions";
-import { MemoryPost } from "./memory-post";
-import { OpeningPhoto, PostBackLink } from "./post-opening";
-import { anton } from "@/lib/anton";
-
+import { excerpt, type Memory, type WallMemory } from "@/lib/memories";
+import { metresBetween } from "@/lib/nearby";
+import { loadMemory, loadWall } from "@/lib/server/wall";
+import { PasPost, type NearbyPost } from "./memory-post";
 
 const SITE = "Local Stores & Their Stories";
 
@@ -54,8 +47,7 @@ export async function generateMetadata({ params }: PageProps<"/memories/[id]">):
 
 export default function MemoryPage({ params }: PageProps<"/memories/[id]">) {
   return (
-    <main className="mx-auto w-full max-w-xl flex-1 px-4 py-3 sm:px-5 sm:py-8">
-      <PostBackLink />
+    <main style={{ flex: 1, width: "100%", maxWidth: 560, margin: "0 auto" }}>
       <Suspense fallback={<MemorySkeleton />}>
         {params.then(({ id }) => (
           <MemoryContent id={id} />
@@ -66,7 +58,7 @@ export default function MemoryPage({ params }: PageProps<"/memories/[id]">) {
 }
 
 async function MemoryContent({ id }: { id: string }) {
-  const result = await loadMemory(id);
+  const [result, wall] = await Promise.all([loadMemory(id), loadWall()]);
   if (result.status === "missing") notFound();
   if (result.status === "error") {
     return (
@@ -76,111 +68,35 @@ async function MemoryContent({ id }: { id: string }) {
     );
   }
   const { memory } = result;
+  return <PasPost memory={memory} nearby={nearbyPosts(memory, wall?.memories ?? [])} />;
+}
 
-  return (
-    <article className="mt-3">
-      <MemoryPost
-        memory={memory}
-        title={
-          <>
-            {memory.year && (
-              <p aria-hidden="true" className={`${anton.className} text-[4.6rem] leading-[0.82] text-ink sm:text-[5.5rem]`}>
-                {memory.year}
-              </p>
-            )}
-            <h1
-              lang={textLang(memory.storeName)}
-              className="mt-1.5 font-serif text-[1.55rem] font-bold uppercase leading-[1.02] tracking-[0.01em] text-ink [text-wrap:balance] sm:text-[2rem]"
-            >
-              {memory.storeName}
-            </h1>
-            <p className="mt-0.5 text-[0.85rem] text-ink-soft">{placeLine(memory)}</p>
-          </>
-        }
-      >
-        <p
-          lang={textLang(memory.caption)}
-          className="whitespace-pre-line font-hand text-[1.4rem] leading-snug text-ink sm:text-[1.6rem]"
-        >
-          {memory.caption}
-        </p>
-        {memory.ordered && (
-          <p className="mt-2.5 text-[0.9rem] text-ink">
-            <span className="font-bold">What I always ordered:</span>{" "}
-            <span lang={textLang(memory.ordered)}>{memory.ordered}</span>
-          </p>
-        )}
-        <p className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[0.8rem] text-ink-soft">
-          <span>Shared on {shortDate(memory.sharedAt)}</span>
-          {memory.featuredAt && (
-            <span className="flex items-center gap-1 font-bold text-brand-red-deep">
-              <StarIcon className="h-4 w-4" />
-              Featured
-            </span>
-          )}
-          {memory.pin && memory.visibility === "public" && (
-            <Link
-              href={mapPath(memory.id)}
-              className="font-bold text-brand-red underline underline-offset-4"
-            >
-              See it on the map
-            </Link>
-          )}
-        </p>
-      </MemoryPost>
-
-      <div className="mt-5 px-1">
-        {memory.visibility === "link" && (
-          <p className="mb-5 rounded-xl bg-brand-yellow/20 px-3 py-2 text-[0.85rem] text-ink">
-            Its author shared this post only with people who have the link. It isn&apos;t on
-            Home or their profile.
-          </p>
-        )}
-
-        <Comments
-          storyId={memory.id}
-          storyAuthorId={memory.author?.uid ?? null}
-          comments={memory.comments}
-          builtAt={memory.builtAt}
-        />
-
-        <Suspense fallback={<div className="mt-8 h-12 border-t border-ink/10" />}>
-          <MemoryActions id={memory.id} />
-        </Suspense>
-
-        {memory.visibility === "public" && (
-          <p className="mt-8 text-center text-[0.9rem]">
-            <Link
-              href={`/explore?category=${encodeURIComponent(memory.category)}`}
-              className="font-bold text-brand-red underline underline-offset-4"
-            >
-              More {memory.category} posts
-            </Link>
-          </p>
-        )}
-      </div>
-    </article>
-  );
+/**
+ * "More stories nearby": the five other posts with pins closest to this
+ * one's. A post without a pin shows others from its area, then the newest.
+ */
+function nearbyPosts(memory: Memory, all: WallMemory[]): NearbyPost[] {
+  const others = all.filter((m) => m.id !== memory.id);
+  const { pin } = memory;
+  const ranked = pin
+    ? others
+        .filter((m) => m.pin)
+        .map((m) => ({ m, d: metresBetween(pin, m.pin!) }))
+        .sort((a, b) => a.d - b.d)
+        .map(({ m }) => m)
+    : [
+        ...others.filter((m) => memory.neighbourhood && m.neighbourhood === memory.neighbourhood),
+        ...others.filter((m) => !memory.neighbourhood || m.neighbourhood !== memory.neighbourhood),
+      ];
+  return ranked
+    .slice(0, 5)
+    .map((m) => ({ id: m.id, storeName: m.storeName, year: m.year, photo: m.postPhotoUrl }));
 }
 
 function MemorySkeleton() {
   return (
-    <div className="mt-3" role="status">
+    <div role="status" style={{ aspectRatio: "4/5", background: "#2B1D1A" }}>
       <span className="sr-only">Loading the post…</span>
-      {/* Laid out like the post, so a photo tapped on Home grows straight to where the post's will be. */}
-      <div className="overflow-hidden rounded-[1.6rem] bg-white pb-4 ring-1 ring-ink/[0.06]">
-        <div className="flex animate-pulse items-center gap-2.5 px-3.5 py-2.5">
-          <div className="h-9 w-9 rounded-full bg-sand" />
-          <div className="h-4 w-1/3 rounded bg-sand" />
-        </div>
-        <div className="px-5 pt-4">
-          <OpeningPhoto />
-        </div>
-        <div className="animate-pulse">
-          <div className="mx-3.5 mt-4 h-5 w-1/4 rounded bg-sand" />
-          <div className="mx-3.5 mt-3 h-6 w-2/3 rounded bg-sand" />
-        </div>
-      </div>
     </div>
   );
 }

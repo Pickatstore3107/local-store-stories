@@ -20,7 +20,7 @@ import {
 } from "@/lib/reports";
 import { GRIEVANCE_EMAIL } from "@/lib/site";
 
-/** Reporting the memory, under its comments. */
+/** Reporting the memory, under its comments. The prototype has no report link, so it stays small. */
 export function MemoryActions({ id }: { id: string }) {
   const { user, consent } = useAuth();
 
@@ -30,7 +30,7 @@ export function MemoryActions({ id }: { id: string }) {
   }, [user, consent]);
 
   return (
-    <div className="mt-8 border-t border-ink/10 pt-4">
+    <div>
       <ReportPanel id={id} />
     </div>
   );
@@ -137,7 +137,7 @@ function ReportPanel({ id }: { id: string }) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-2 text-sm font-bold text-ink-soft underline underline-offset-4 hover:text-brand-red"
+        style={{ display: "inline-flex", alignItems: "center", gap: 6, border: 0, background: "transparent", padding: 0, font: "600 11.5px 'Plus Jakarta Sans'", color: "#6E5A55" }}
       >
         <FlagIcon />
         Report this post
