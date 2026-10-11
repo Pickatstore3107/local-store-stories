@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 
 export default function ActivityPage() {
   return (
-    <main className="mx-auto flex w-full max-w-lg flex-1 flex-col px-4 py-6 sm:px-5 sm:py-12">
+    <main style={{ flex: 1, width: "100%", maxWidth: 560, margin: "0 auto" }}>
       <RequireAccount>
         <ActivityList />
       </RequireAccount>

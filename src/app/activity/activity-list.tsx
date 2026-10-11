@@ -3,29 +3,14 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/components/auth-provider";
-import { Avatar } from "@/components/avatar";
-import { FollowButton } from "@/components/follow-button";
-import { pageLead, pageTitle, primaryButton } from "@/components/ui";
 import { friendlyError } from "@/lib/auth-errors";
 import { loadActivity, markBellSeen, type Activity } from "@/lib/follows";
-import { shortDate, textLang } from "@/lib/memories";
-import { personPath } from "@/lib/people";
-import { Illustration } from "@/components/illustration";
+import { textLang } from "@/lib/memories";
+import { initial, personPath } from "@/lib/people";
 
-const relative = new Intl.RelativeTimeFormat("en-IN", { numeric: "always" });
+const note = { margin: 0, font: "500 13px 'Plus Jakarta Sans'", color: "#6E5A55" } as const;
 
-/** "5 minutes ago", "3 hours ago", "2 days ago", then the date. */
-function ago(at: number, now: number) {
-  const minutes = Math.round((now - at) / 60_000);
-  if (minutes < 1) return "just now";
-  if (minutes < 60) return relative.format(-minutes, "minute");
-  const hours = Math.round(minutes / 60);
-  if (hours < 24) return relative.format(-hours, "hour");
-  const days = Math.round(hours / 24);
-  return days < 7 ? relative.format(-days, "day") : shortDate(at);
-}
-
-type Loaded = { uid: string; items: Activity[]; seenAt: number; now: number };
+type Loaded = { uid: string; items: Activity[]; seenAt: number };
 
 /** Who followed you, and who joined through your invite links, newest first. */
 export function ActivityList() {
@@ -37,7 +22,7 @@ export function ActivityList() {
     if (!user) return;
     let current = true;
     loadActivity(user)
-      .then((result) => current && setLoaded({ uid: user.uid, ...result, now: Date.now() }))
+      .then((result) => current && setLoaded({ uid: user.uid, ...result }))
       .catch((e) => current && setError(friendlyError(e)));
     return () => {
       current = false;
@@ -52,83 +37,41 @@ export function ActivityList() {
 
   const items = loaded && user && loaded.uid === user.uid ? loaded : null;
 
-  return (
-    <section className="w-full">
-      <h1 className={pageTitle}>Activity</h1>
-      <p className={pageLead}>
-        When someone follows you, or a friend joins through one of your invite links, it shows
-        here. Only you can see this page.
-      </p>
+  const shown = items ? items.items.filter((item): item is Activity & { name: string } => !!item.name) : null;
 
+  return (
+    <div style={{ padding: "14px 18px 26px", display: "flex", flexDirection: "column", gap: 4 }}>
+      <h1 style={{ margin: "0 0 10px", font: "600 30px 'Playfair Display'" }}>Activity</h1>
       {error ? (
-        <p role="alert" className="mt-6 rounded-xl bg-brand-red/10 px-4 py-3 text-sm text-brand-red-deep">
-          {error}
-        </p>
-      ) : !items ? (
-        <p role="status" className="mt-6 text-ink-soft">
-          Loading…
-        </p>
-      ) : items.items.every((item) => !item.name) ? (
-        <div className="mt-6 text-center">
-          <Illustration name="share" />
-          <p className="mt-3 font-hand text-xl text-ink">Nothing here yet.</p>
-          <p className="mt-2 text-sm text-ink-soft">
-            Share a post, then send its invite link to a friend who remembers the same stores.
-          </p>
-          <Link href="/share" className={`${primaryButton} mt-5`}>
-            Share a post
-          </Link>
-        </div>
+        <p role="alert" style={{ ...note, color: "#7D1114" }}>{error}</p>
+      ) : !shown ? (
+        <p role="status" style={note}>Loading…</p>
+      ) : shown.length === 0 ? (
+        <p style={note}>When someone follows you, or a friend joins through your invite link, it shows here.</p>
       ) : (
-        <ul className="mt-4 divide-y divide-ink/10">
-          {items.items.map((item) =>
-            item.name ? (
-              <ActivityRow
-                key={item.uid}
-                item={{ ...item, name: item.name }}
-                isNew={item.at > items.seenAt}
-                now={items.now}
-              />
-            ) : null,
-          )}
-        </ul>
+        shown.map((item) => <ActivityRow key={item.uid} item={item} />)
       )}
-    </section>
+    </div>
   );
 }
 
-function ActivityRow({
-  item,
-  isNew,
-  now,
-}: {
-  item: Activity & { name: string };
-  isNew: boolean;
-  now: number;
-}) {
+/** One row, copied from the prototype: their initial, what they did; tapping opens their profile. */
+function ActivityRow({ item }: { item: Activity & { name: string } }) {
   const what = item.joined
     ? item.followsYou
       ? "joined through your invite link and follows you."
       : "joined through your invite link."
-    : "followed you.";
+    : "started following you.";
   return (
-    <li className={`-mx-3 flex items-center gap-3 rounded-2xl px-3 py-3 ${isNew ? "bg-brand-yellow/15" : ""}`}>
-      <Avatar name={item.name} photo={item.photo} />
-      <div className="min-w-0 flex-1 text-sm leading-snug text-ink">
-        <p>
-          {isNew && <span className="sr-only">New: </span>}
-          <Link
-            href={personPath(item.uid)}
-            lang={textLang(item.name)}
-            className="font-bold text-ink hover:text-brand-red"
-          >
-            {item.name}
-          </Link>{" "}
-          {what}
-        </p>
-        <p className="mt-0.5 text-ink-soft">{ago(item.at, now)}</p>
+    <Link href={personPath(item.uid)} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 0", borderBottom: "1px solid #F1E6E2", cursor: "pointer" }}>
+      <div aria-hidden="true" style={{ width: 40, height: 40, borderRadius: "50%", background: "#FFC000", display: "grid", placeItems: "center", font: "700 15px 'Plus Jakarta Sans'", flex: "none", position: "relative", overflow: "hidden", color: "#2B1D1A" }}>
+        {initial(item.name)}
+        {item.photo && (
+          // eslint-disable-next-line @next/next/no-img-element -- a signed link from our image host, already sized
+          <img src={item.photo} alt="" width={96} height={96} loading="lazy" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
+        )}
       </div>
-      <FollowButton uid={item.uid} name={item.name} compact />
-    </li>
+      <span style={{ flex: 1, font: "500 13.5px/1.4 'Plus Jakarta Sans'", color: "#2B1D1A" }}><b lang={textLang(item.name)}>{item.name}</b> {what}</span>
+    </Link>
   );
 }

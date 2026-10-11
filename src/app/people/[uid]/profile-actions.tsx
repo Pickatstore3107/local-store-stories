@@ -5,19 +5,23 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/components/auth-provider";
 import { FollowButton } from "@/components/follow-button";
-import { BookmarkIcon } from "@/components/icons";
+import { sharePost } from "@/components/pas/actions";
 import { setReturnPath } from "@/components/require-account";
 import { useMyFollows } from "@/components/use-my-follows";
 import { friendlyError } from "@/lib/auth-errors";
 import { block } from "@/lib/follows";
+import { personPath } from "@/lib/people";
 import { ReportProfileForm } from "./report-profile";
 
-const small =
-  "inline-flex h-9 items-center justify-center rounded-full px-4 text-[0.85rem] font-bold transition";
-const note = "mt-2.5 text-[0.8rem] text-ink-soft";
-const quietLink = "text-sm font-bold text-ink-soft underline underline-offset-4 hover:text-brand-red";
+const button = { height: 40, border: 0, borderRadius: 999, background: "#F7F2EF", font: "700 13px 'Plus Jakarta Sans'", color: "#2B1D1A", display: "grid", placeItems: "center" } as const;
+const note = { gridColumn: "1 / -1", margin: 0, font: "500 12px/1.5 'Plus Jakarta Sans'", color: "#6E5A55" } as const;
+const quiet = { padding: 0, border: 0, background: "transparent", font: "600 11.5px 'Plus Jakarta Sans'", color: "#6E5A55" } as const;
+const row = { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, padding: "14px 18px 0" } as const;
 
-/** Follow, Block and Report on someone's profile, or Edit, Saved and Share on your own. */
+/**
+ * The prototype's two buttons: Edit profile and Invite friends on your own
+ * profile; Follow and Share on someone else's, with Block and Report under.
+ */
 export function ProfileActions({ uid, name }: { uid: string; name: string }) {
   const { loading, user, consent } = useAuth();
   const { blocked } = useMyFollows();
@@ -32,24 +36,14 @@ export function ProfileActions({ uid, name }: { uid: string; name: string }) {
     if (user && consent) setReturnPath(null);
   }, [user, consent]);
 
-  if (loading) return <div className="h-11" />;
+  if (loading) return <div style={{ ...row, height: 54 }} />;
 
   if (user?.uid === uid) {
     return (
-      <div className="flex flex-col items-start">
-        <div className="flex w-full gap-2 sm:w-auto">
-          <Link href="/account" className={`${small} flex-1 bg-white text-ink ring-1 ring-ink/20 hover:bg-paper sm:flex-none`}>
-            Edit profile
-          </Link>
-          <Link href="/saved" className={`${small} flex-1 gap-1.5 bg-white text-ink ring-1 ring-ink/20 hover:bg-paper sm:flex-none`}>
-            <BookmarkIcon filled className="h-4 w-4 text-brand-red" />
-            Saved
-          </Link>
-          <Link href="/share" className={`${small} flex-1 bg-brand-red text-white hover:bg-brand-red-deep sm:flex-none`}>
-            Share a post
-          </Link>
-        </div>
-        <p className={note}>Anyone can see your profile, your followers and who you follow.</p>
+      <div style={row}>
+        <Link href="/account" style={button}>Edit profile</Link>
+        <button type="button" onClick={() => sharePost(personPath(uid), `${name} on Local Stores & Their Stories`)} style={button}>Invite friends</button>
+        <p style={note}>Anyone can see your profile, your followers and who you follow.</p>
       </div>
     );
   }
@@ -73,56 +67,48 @@ export function ProfileActions({ uid, name }: { uid: string; name: string }) {
   }
 
   return (
-    <div className="flex flex-col items-start">
-      <FollowButton uid={uid} name={name} />
-      <p className={note}>
+    <div style={row}>
+      <FollowButton uid={uid} name={name} pas />
+      <button type="button" onClick={() => sharePost(personPath(uid), `${name} on Local Stores & Their Stories`)} style={button}>Share</button>
+      <p style={note}>
         {isBlocked
           ? `You blocked ${name}. They can't follow you, and they weren't told.`
           : "Anyone can see who you follow."}
       </p>
-
       {member && !confirming && !reporting && (
-        <div className="mt-2 flex gap-4">
+        <div style={{ gridColumn: "1 / -1", display: "flex", gap: 14 }}>
           {!isBlocked && (
-            <button type="button" onClick={() => setConfirming(true)} className={quietLink}>
+            <button type="button" onClick={() => setConfirming(true)} style={quiet}>
               Block
             </button>
           )}
-          <button type="button" onClick={() => setReporting(true)} className={quietLink}>
+          <button type="button" onClick={() => setReporting(true)} style={quiet}>
             Report
           </button>
         </div>
       )}
       {member && reporting && (
-        <ReportProfileForm uid={uid} name={name} onClose={() => setReporting(false)} />
+        <div style={{ gridColumn: "1 / -1" }}>
+          <ReportProfileForm uid={uid} name={name} onClose={() => setReporting(false)} />
+        </div>
       )}
       {member && !isBlocked && confirming && (
-        <div className="mt-4 max-w-sm rounded-2xl bg-white p-4 text-left text-sm text-ink shadow-sm ring-1 ring-ink/10">
-          <p>
-            <strong>Block {name}?</strong> You&apos;ll stop following each other, and they
-            won&apos;t be able to follow you. They won&apos;t be told.
+        <div style={{ gridColumn: "1 / -1", display: "flex", flexDirection: "column", gap: 10 }}>
+          <p style={{ margin: 0, font: "500 13px/1.45 'Plus Jakarta Sans'", color: "#2B1D1A" }}>
+            <b>Block {name}?</b> You&apos;ll stop following each other, and they won&apos;t be able to follow you. They won&apos;t be told.
           </p>
-          <div className="mt-3 flex gap-3">
-            <button
-              type="button"
-              onClick={blockThem}
-              disabled={busy}
-              className={`${small} bg-brand-red text-white hover:bg-brand-red-deep disabled:opacity-50`}
-            >
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+            <button type="button" onClick={blockThem} disabled={busy} style={{ ...button, background: "#A3171B", color: "#fff" }}>
               {busy ? "Blocking…" : "Block"}
             </button>
-            <button
-              type="button"
-              onClick={() => setConfirming(false)}
-              className={`${small} bg-white text-ink ring-1 ring-ink/20 hover:bg-paper`}
-            >
+            <button type="button" onClick={() => setConfirming(false)} style={button}>
               Cancel
             </button>
           </div>
         </div>
       )}
       {error && (
-        <p role="alert" className="mt-3 rounded-xl bg-brand-red/10 px-4 py-3 text-sm text-brand-red-deep">
+        <p role="alert" style={{ ...note, color: "#7D1114" }}>
           {error}
         </p>
       )}

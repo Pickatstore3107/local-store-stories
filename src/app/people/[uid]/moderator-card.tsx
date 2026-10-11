@@ -3,22 +3,17 @@
 import Link from "next/link";
 import type { User } from "firebase/auth";
 import { useEffect, useState } from "react";
-import { card, primaryButton } from "@/components/ui";
 import { countOpenReports, countWaiting, isModerator } from "@/lib/moderation";
 
-function describe(waiting: number, reported: number) {
-  const queue =
-    waiting === 0
-      ? "Nothing is waiting for review"
-      : waiting === 1
-        ? "1 post is waiting for review"
-        : `${waiting} posts are waiting for review`;
-  if (!reported) return `${queue}.`;
-  return `${queue}, and ${reported === 1 ? "1 report is open" : `${reported} reports are open`}.`;
+export const rowStyle = { display: "flex", justifyContent: "space-between", alignItems: "center", height: 48, border: 0, borderTop: "1px solid #F1E6E2", background: "transparent", padding: 0, font: "600 14px 'Plus Jakarta Sans'", color: "#2B1D1A", width: "100%" } as const;
+
+function waitingText(waiting: number, reported: number) {
+  const total = waiting + reported;
+  return total === 0 ? "Nothing waiting" : `${total} waiting`;
 }
 
-/** Shown only to moderators, with how much is waiting for them. */
-export function ModeratorCard({ user }: { user: User }) {
+/** The prototype's "Moderator queue" row, shown only to moderators. */
+export function ModeratorRow({ user }: { user: User }) {
   const [moderator, setModerator] = useState(false);
   const [counts, setCounts] = useState<{ waiting: number; reported: number } | null>(null);
 
@@ -38,14 +33,9 @@ export function ModeratorCard({ user }: { user: User }) {
   if (!moderator) return null;
 
   return (
-    <section className={card}>
-      <h2 className="text-[1.05rem] font-bold text-ink">Moderator</h2>
-      <p className="mt-2 text-sm text-ink-soft">
-        {counts === null ? "Checking what's waiting…" : describe(counts.waiting, counts.reported)}
-      </p>
-      <Link href="/moderate" className={`${primaryButton} mt-4`}>
-        Review posts
-      </Link>
-    </section>
+    <Link href="/moderate" style={rowStyle}>
+      Moderator queue
+      <span style={{ font: "600 12px 'Plus Jakarta Sans'", color: "#6E5A55" }}>{counts ? waitingText(counts.waiting, counts.reported) : ""}</span>
+    </Link>
   );
 }
