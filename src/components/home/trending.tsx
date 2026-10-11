@@ -2,8 +2,10 @@
 
 import Link from "next/link";
 import type { WallMemory } from "@/lib/memories";
+import { Illustration } from "../illustration";
 import { ArrowIcon, FlameIcon, HeartIcon } from "../icons";
 import { useWallFilters } from "../use-wall-filters";
+import { newest } from "./colour-deck";
 import { CoverStack } from "./cover-stack";
 
 const SHOWN = 10;
@@ -15,7 +17,7 @@ const byLikes = (a: WallMemory, b: WallMemory) => b.likes.count - a.likes.count 
  * or, before anyone has liked anything this week, the most liked of all
  * time, or else the newest. Only the kind picked above, if one is.
  */
-export function Trending({ memories, alsoShown = [] }: { memories: WallMemory[]; alsoShown?: string[] }) {
+export function Trending({ memories }: { memories: WallMemory[] }) {
   const { category } = useWallFilters();
   const kind = category ? memories.filter((m) => m.category === category) : memories;
 
@@ -27,9 +29,22 @@ export function Trending({ memories, alsoShown = [] }: { memories: WallMemory[];
     ? (["Trending this week", true, week] as const)
     : loved.length
       ? (["Most loved", true, loved] as const)
-      : (["Just shared", false, kind] as const);
+      : (["Swipe through", false, kind] as const);
 
-  if (!shown.length) return null;
+  if (!shown.length) {
+    // Nothing of the kind picked yet.
+    return (
+      <div className="py-4 text-center">
+        <Illustration name="share" />
+        <p className="mt-2 font-bold text-ink">No {category} posts yet.</p>
+        <Link href="/share" className="mt-1 inline-block text-[0.9rem] font-bold text-brand-red hover:text-brand-red-deep">
+          Share the first one
+        </Link>
+      </div>
+    );
+  }
+  // The newest posts are also on the page as colour cards.
+  const alsoShown = new Set(newest(memories, category).map((m) => m.id));
 
   return (
     <section aria-labelledby="trending-heading">
@@ -37,7 +52,7 @@ export function Trending({ memories, alsoShown = [] }: { memories: WallMemory[];
         <h2 id="trending-heading" className="flex items-center gap-1 text-[1.15rem] font-extrabold tracking-tight text-ink">
           {title}
           {title === "Trending this week" ? (
-            <FlameIcon className="h-5 w-5 text-[#e5501b]" />
+            <FlameIcon className="anim-flicker h-5 w-5 text-[#e5501b]" />
           ) : title === "Most loved" ? (
             <HeartIcon filled className="h-[1.1rem] w-[1.1rem] text-brand-red" />
           ) : null}
@@ -51,7 +66,7 @@ export function Trending({ memories, alsoShown = [] }: { memories: WallMemory[];
         </Link>
       </div>
       <div className="mt-3">
-        <CoverStack key={category ?? "all"} memories={shown.slice(0, SHOWN)} ranked={ranked} shownElsewhere={new Set(alsoShown)} />
+        <CoverStack key={category ?? "all"} memories={shown.slice(0, SHOWN)} ranked={ranked} shownElsewhere={alsoShown} />
       </div>
     </section>
   );

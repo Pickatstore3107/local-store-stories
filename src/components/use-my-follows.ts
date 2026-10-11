@@ -5,7 +5,7 @@ import { watchMyFollows, type MyFollows } from "@/lib/follows";
 import { useAuth } from "./auth-provider";
 
 // Who the signed-in person follows and has blocked, kept live for every
-// Follow button and the Wall's Following tab. One listener serves the whole
+// Follow button and Explore's Following switch. One listener serves the whole
 // page, and it keeps going for a minute after the last button goes, so
 // moving between pages doesn't reload the lists.
 

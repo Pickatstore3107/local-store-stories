@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ViewTransition, useRef, useState, type PointerEvent } from "react";
+import { ViewTransition, useRef, useState, type CSSProperties, type PointerEvent } from "react";
 import { anton } from "@/lib/anton";
 import { memoryPath, textLang, type WallMemory } from "@/lib/memories";
 import { ArrowIcon, HeartIcon } from "../icons";
@@ -22,6 +22,8 @@ const AWAY_MS = 280;
  * Posts as a pile of magazine covers. Swipe the top one away, either way,
  * to see the next; it goes to the bottom of the pile. Tap a cover to open
  * the post, whose photo grows out of it. The arrows do the same as a swipe.
+ * The covers are dealt onto the pile as it comes on screen, and the top one
+ * moves a little either way, until it is first touched, to show it swipes.
  */
 export function CoverStack({
   memories,
@@ -37,11 +39,13 @@ export function CoverStack({
   const [top, setTop] = useState(0);
   const [dx, setDx] = useState(0);
   const [away, setAway] = useState<-1 | 0 | 1>(0);
+  const [touched, setTouched] = useState(false);
   const press = useRef<{ x: number; y: number } | null>(null);
   const dragged = useRef(false);
 
   const turn = (by: 1 | -1, dir: -1 | 1 = by === 1 ? -1 : 1) => {
     if (away || count < 2) return;
+    setTouched(true);
     setAway(dir);
     setTimeout(() => {
       setTop((at) => (at + by + count) % count);
@@ -54,6 +58,7 @@ export function CoverStack({
     if (away || e.button !== 0) return;
     press.current = { x: e.clientX, y: e.clientY };
     dragged.current = false;
+    setTouched(true);
   };
   const move = (e: PointerEvent) => {
     if (!press.current) return;
@@ -104,13 +109,17 @@ export function CoverStack({
                   }
                 }}
               >
-                <Cover
-                  memory={memory}
-                  rank={ranked ? ((top + k) % count) + 1 : undefined}
-                  eager={k < 2}
-                  // One photo per post may grow into the post's page.
-                  grows={onTop && !shownElsewhere.has(memory.id)}
-                />
+                <div className="anim-deal h-full" style={{ "--i": FAN.length - 1 - k } as CSSProperties}>
+                  <div className={`h-full ${onTop && !touched && count > 1 ? "anim-nudge" : ""}`}>
+                    <Cover
+                      memory={memory}
+                      rank={ranked ? ((top + k) % count) + 1 : undefined}
+                      eager={k < 2}
+                      // One photo per post may grow into the post's page.
+                      grows={onTop && !shownElsewhere.has(memory.id)}
+                    />
+                  </div>
+                </div>
               </div>
             );
           })

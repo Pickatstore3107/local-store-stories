@@ -52,7 +52,7 @@ export function StreakNudge({ memories }: { memories: WallMemory[] }) {
       href="/share"
       className="flex items-center gap-3 rounded-[1.1rem] bg-brand-yellow px-3.5 py-2.5 text-ink transition hover:-translate-y-0.5"
     >
-      <FlameIcon className="h-7 w-7 shrink-0 text-brand-red" />
+      <FlameIcon className="anim-flicker h-7 w-7 shrink-0 text-brand-red" />
       <span className="min-w-0 flex-1 text-[0.88rem] leading-snug">
         <span className="block font-bold">Post today to keep your {days}-day streak</span>
         <span className="block text-ink/70">Miss a day and it starts again from 0.</span>

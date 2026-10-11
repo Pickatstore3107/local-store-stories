@@ -355,7 +355,7 @@ function StoryForm({
             <div className="mt-1.5 grid grid-cols-2 gap-2">
               {(
                 [
-                  ["public", "Everyone", "On Home, my profile and the map"],
+                  ["public", "Everyone", "On Home, Explore, my profile and the map"],
                   ["link", "Only with the link", "Not on Home, my profile or the map"],
                 ] as const
               ).map(([value, title, detail]) => (
