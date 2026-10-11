@@ -18,18 +18,22 @@ const SETTLE_MS = 700;
 type Opening = { id: string; from: string; photo: string | null };
 let opening: Opening | null = null;
 const named = new Set<HTMLElement>();
+let later: ReturnType<typeof setTimeout> | undefined;
 
 function name(el: HTMLElement) {
   el.style.viewTransitionName = NAME;
   named.add(el);
 }
 
+function unname() {
+  for (const el of named) el.style.viewTransitionName = "";
+  named.clear();
+}
+
 /** Takes the shared name off again once the move is over. */
-function unnameSoon() {
-  setTimeout(() => {
-    for (const el of named) el.style.viewTransitionName = "";
-    named.clear();
-  }, SETTLE_MS);
+function unnameSoon(ms = SETTLE_MS) {
+  clearTimeout(later);
+  later = setTimeout(unname, ms);
 }
 
 function canMove() {
@@ -55,7 +59,10 @@ export function openingFrom(event: MouseEvent, id: string, from: string, photo: 
   opening = { id, from, photo };
   if (!canMove()) return;
   const el = photoOf(id, from);
-  if (el && onScreen(el)) name(el);
+  if (!el || !onScreen(el)) return;
+  name(el);
+  // In case the post never opens, the photo doesn't keep the name.
+  unnameSoon(3000);
 }
 
 /** Whether this post was opened from a photo on this site. */
@@ -93,6 +100,8 @@ export function useClosePost(id: string) {
       router.back();
       return;
     }
+    clearTimeout(later);
+    unname();
     name(post);
     const move = document.startViewTransition(async () => {
       post.style.viewTransitionName = "";
@@ -106,8 +115,7 @@ export function useClosePost(id: string) {
       name(back);
     });
     move.finished.finally(() => {
-      for (const el of named) el.style.viewTransitionName = "";
-      named.clear();
+      unname();
       opening = null;
     });
   };
