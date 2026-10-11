@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { CheckIcon, ChevronDownIcon, PlaceIcon } from "./icons";
+import { CheckIcon } from "./icons";
 
 /**
  * The city at the top of the page. During the pilot there's only Hyderabad;
@@ -33,11 +33,9 @@ export function CityPicker() {
         aria-expanded={open}
         aria-controls="city-menu"
         onClick={() => setOpen((o) => !o)}
-        className="flex h-8 items-center gap-1 rounded-full bg-white pl-2 pr-2 text-[0.8rem] font-bold text-ink lift-sm ring-1 ring-ink/5 transition hover:text-brand-red"
+        style={{ display: "flex", alignItems: "center", gap: 5, height: 32, padding: "0 12px", border: 0, borderRadius: 999, background: "#FFF3D1", font: "600 12.5px 'Plus Jakarta Sans'", color: "#2B1D1A" }}
       >
-        <PlaceIcon className="h-4 w-4 text-brand-red" />
-        Hyderabad
-        <ChevronDownIcon className={`h-3.5 w-3.5 transition ${open ? "rotate-180" : ""}`} />
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#A3171B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 21s-6.5-6.2-6.5-11.2a6.5 6.5 0 0 1 13 0C18.5 14.8 12 21 12 21Z"></path></svg>Hyderabad
         <span className="sr-only">, choose a city</span>
       </button>
       {open && (

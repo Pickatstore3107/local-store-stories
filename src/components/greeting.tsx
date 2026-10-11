@@ -1,7 +1,7 @@
 "use client";
 
 import { useSyncExternalStore, type CSSProperties } from "react";
-import { firstName, greeting } from "@/lib/greeting";
+import { firstName, greeting, pasGreeting } from "@/lib/greeting";
 import { useAuth } from "./auth-provider";
 
 const SEED = "lss-greeting";
@@ -38,6 +38,17 @@ export function useGreeting() {
   if (visit === null || hour === null || (loading && !user)) return null;
   const name = user ? firstName(profile?.displayName ?? user.displayName) : null;
   return greeting({ name, hour, seed: visit });
+}
+
+/**
+ * The redesign's hello for whoever is here, or null while the page is
+ * first built and until we know whether someone is signed in.
+ */
+export function usePasGreeting() {
+  const { loading, user, profile } = useAuth();
+  const hour = useSyncExternalStore(everyMinute, () => new Date().getHours(), () => null);
+  if (hour === null || (loading && !user)) return null;
+  return pasGreeting(user ? firstName(profile?.displayName ?? user.displayName) : null, hour);
 }
 
 /** Words arriving one after another, out of a blur. */

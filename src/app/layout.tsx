@@ -7,6 +7,7 @@ import { BottomBar } from "@/components/bottom-bar";
 import { CookieBanner } from "@/components/cookie-choice";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
+import { Toast } from "@/components/pas/toast";
 import { Splash, splashScript } from "@/components/splash";
 import { anton } from "@/lib/anton";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/site";
@@ -73,6 +74,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           </div>
           <BottomBar />
           <CookieBanner />
+          <Toast />
         </AuthProvider>
         {/* Counts visits without cookies or anything that identifies a person. */}
         <Analytics />
