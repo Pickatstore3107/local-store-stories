@@ -23,10 +23,13 @@ export function FollowButton({
   uid,
   name,
   compact = false,
+  pas = false,
 }: {
   uid: string;
   name: string;
   compact?: boolean;
+  /** The prototype's profile button: 40px, red to follow, grey once following. */
+  pas?: boolean;
 }) {
   const { loading, user, consent } = useAuth();
   const { ready, following, blocked } = useMyFollows();
@@ -66,6 +69,28 @@ export function FollowButton({
   }
 
   const label = isBlocked ? "Unblock" : isFollowing ? "Following" : "Follow";
+  if (pas) {
+    const quietOne = isFollowing || isBlocked;
+    return (
+      <>
+        <button
+          type="button"
+          onClick={act}
+          disabled={loading || busy || (!!member && !ready)}
+          title={isFollowing ? `Tap to unfollow ${name}` : undefined}
+          style={{ height: 40, border: 0, borderRadius: 999, background: quietOne ? "#F7F2EF" : "#A3171B", font: "700 13px 'Plus Jakarta Sans'", color: quietOne ? "#2B1D1A" : "#fff" }}
+        >
+          {label}
+          <span className="sr-only"> {name}</span>
+        </button>
+        {error && (
+          <p role="alert" style={{ gridColumn: "1 / -1", margin: 0, font: "500 12.5px/1.5 'Plus Jakarta Sans'", color: "#7D1114" }}>
+            {error}
+          </p>
+        )}
+      </>
+    );
+  }
   return (
     <div className={compact ? "flex flex-col items-end" : "flex flex-col items-start"}>
       <button
