@@ -5,7 +5,6 @@ import type { WallMemory } from "@/lib/memories";
 import { Illustration } from "../illustration";
 import { ArrowIcon, FlameIcon, HeartIcon } from "../icons";
 import { useWallFilters } from "../use-wall-filters";
-import { newest } from "./colour-deck";
 import { CoverStack } from "./cover-stack";
 
 const SHOWN = 10;
@@ -43,9 +42,6 @@ export function Trending({ memories }: { memories: WallMemory[] }) {
       </div>
     );
   }
-  // The newest posts are also on the page as colour cards.
-  const alsoShown = new Set(newest(memories, category).map((m) => m.id));
-
   return (
     <section aria-labelledby="trending-heading">
       <div className="flex items-center justify-between gap-3">
@@ -66,7 +62,7 @@ export function Trending({ memories }: { memories: WallMemory[] }) {
         </Link>
       </div>
       <div className="mt-3">
-        <CoverStack key={category ?? "all"} memories={shown.slice(0, SHOWN)} ranked={ranked} shownElsewhere={alsoShown} />
+        <CoverStack key={category ?? "all"} memories={shown.slice(0, SHOWN)} ranked={ranked} />
       </div>
     </section>
   );

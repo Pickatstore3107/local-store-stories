@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { ViewTransition, type ReactNode } from "react";
+import { useRef, type ReactNode } from "react";
 import { Avatar } from "@/components/avatar";
 import { FollowButton } from "@/components/follow-button";
 import { ActionsRow, LikeablePhoto, LikesLine } from "@/components/post/post-parts";
+import { useGrowInto } from "@/components/post/grow-photo";
 import { PostMedia } from "@/components/post/post-media";
 import { useLike } from "@/components/post/use-likes";
 import { blockOf } from "@/lib/blocks";
@@ -15,13 +16,15 @@ import { personPath } from "@/lib/people";
  * A memory's page, as a post: who shared it with Follow, its photos or
  * video (tap a photo twice to like), its year and name like a magazine
  * cover's, Like, Comment and Share, who liked it, then its words. The photo sits on a blur of its own colours, and
- * grows out of its cover when opened from Home.
+ * grows out of the photo tapped on Home to open it.
  */
 export function MemoryPost({ memory, title, children }: { memory: Memory; title: ReactNode; children: ReactNode }) {
   const like = useLike(memory.id, memory.likes, memory.builtAt);
   const { author } = memory;
   const block = blockOf(memory.id);
   const backdrop = memory.photoUrl;
+  const photo = useRef<HTMLDivElement>(null);
+  useGrowInto(photo, memory.id);
 
   return (
     <div className="overflow-hidden rounded-[1.6rem] bg-white ring-1 ring-ink/[0.06]">
@@ -59,16 +62,18 @@ export function MemoryPost({ memory, title, children }: { memory: Memory; title:
           )}
           <span className="absolute inset-0 bg-gradient-to-b from-white/10 via-white/30 to-white" />
         </div>
-        <ViewTransition name={`photo-${memory.id}`} share="morph" default="none">
-          <div className="relative mx-auto w-[84%] overflow-hidden rounded-[1rem] bg-sand shadow-[0_18px_34px_rgb(43_29_26/0.32)]">
-            <LikeablePhoto like={like}>
-              <PostMedia memory={memory} />
-              <span className="pointer-events-none absolute left-3 top-3 rounded-full bg-white px-2.5 py-1 text-xs font-bold text-ink shadow-[0_2px_6px_rgb(43_29_26/0.2)]">
-                {memory.category}
-              </span>
-            </LikeablePhoto>
-          </div>
-        </ViewTransition>
+        <div
+          ref={photo}
+          data-post-photo={memory.id}
+          className="relative mx-auto w-[84%] overflow-hidden rounded-[1rem] bg-sand shadow-[0_18px_34px_rgb(43_29_26/0.32)]"
+        >
+          <LikeablePhoto like={like}>
+            <PostMedia memory={memory} />
+            <span className="pointer-events-none absolute left-3 top-3 rounded-full bg-white px-2.5 py-1 text-xs font-bold text-ink shadow-[0_2px_6px_rgb(43_29_26/0.2)]">
+              {memory.category}
+            </span>
+          </LikeablePhoto>
+        </div>
       </div>
 
       <div className="px-3.5 pt-4 animate-[rise_0.45s_ease-out_0.06s_backwards] motion-reduce:animate-none">{title}</div>

@@ -2,13 +2,14 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import { BackIcon, StarIcon } from "@/components/icons";
+import { StarIcon } from "@/components/icons";
 import { excerpt, placeLine, shortDate, textLang } from "@/lib/memories";
 import { mapPath } from "@/lib/pins";
 import { loadMemory } from "@/lib/server/wall";
 import { Comments } from "./comments";
 import { MemoryActions } from "./memory-actions";
 import { MemoryPost } from "./memory-post";
+import { OpeningPhoto, PostBackLink } from "./post-opening";
 import { anton } from "@/lib/anton";
 
 
@@ -54,10 +55,7 @@ export async function generateMetadata({ params }: PageProps<"/memories/[id]">):
 export default function MemoryPage({ params }: PageProps<"/memories/[id]">) {
   return (
     <main className="mx-auto w-full max-w-xl flex-1 px-4 py-3 sm:px-5 sm:py-8">
-      <Link href="/" transitionTypes={["nav-back"]} className="inline-flex items-center gap-0.5 text-[0.85rem] font-bold text-brand-red underline-offset-4 hover:underline">
-        <BackIcon className="h-4 w-4" />
-        Home
-      </Link>
+      <PostBackLink />
       <Suspense fallback={<MemorySkeleton />}>
         {params.then(({ id }) => (
           <MemoryContent id={id} />
@@ -169,14 +167,19 @@ function MemorySkeleton() {
   return (
     <div className="mt-3" role="status">
       <span className="sr-only">Loading the post…</span>
-      <div className="animate-pulse overflow-hidden rounded-[1.25rem] bg-white pb-4 ring-1 ring-ink/[0.06]">
-        <div className="flex items-center gap-2.5 px-3.5 py-2.5">
-          <div className="h-8 w-8 rounded-full bg-sand" />
+      {/* Laid out like the post, so a photo tapped on Home grows straight to where the post's will be. */}
+      <div className="overflow-hidden rounded-[1.6rem] bg-white pb-4 ring-1 ring-ink/[0.06]">
+        <div className="flex animate-pulse items-center gap-2.5 px-3.5 py-2.5">
+          <div className="h-9 w-9 rounded-full bg-sand" />
           <div className="h-4 w-1/3 rounded bg-sand" />
         </div>
-        <div className="aspect-square w-full bg-sand" />
-        <div className="mx-3.5 mt-3 h-5 w-1/4 rounded bg-sand" />
-        <div className="mx-3.5 mt-3 h-6 w-2/3 rounded bg-sand" />
+        <div className="px-5 pt-4">
+          <OpeningPhoto />
+        </div>
+        <div className="animate-pulse">
+          <div className="mx-3.5 mt-4 h-5 w-1/4 rounded bg-sand" />
+          <div className="mx-3.5 mt-3 h-6 w-2/3 rounded bg-sand" />
+        </div>
       </div>
     </div>
   );
