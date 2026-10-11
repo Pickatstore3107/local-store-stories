@@ -11,9 +11,10 @@ describe("greeting", () => {
     expect(dayPart(2)).toBe("night");
   });
 
-  it("uses the first name, or the city for visitors", () => {
+  it("uses the first name, and none for visitors", () => {
     expect(greeting({ name: "Krishna", hour: 8, seed: 0 })).toBe("Good morning, Krishna");
-    expect(greeting({ name: null, hour: 18, seed: 0 })).toBe("Good evening, Hyderabad");
+    expect(greeting({ name: null, hour: 18, seed: 0 })).toBe("Good evening");
+    expect(greeting({ name: null, hour: 8, seed: 1 })).toBe("Chai first?");
     expect(greeting({ name: "Asha", hour: 23, seed: 1 })).toBe("Still awake, Asha?");
   });
 
