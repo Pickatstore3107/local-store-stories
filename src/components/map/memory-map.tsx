@@ -4,7 +4,7 @@ import type { ControlPosition, MapMouseEvent, Map as MapLibreMap, PaddingOptions
 import { useEffect, useRef, useState, type RefObject } from "react";
 import type { WallMemory } from "@/lib/memories";
 import type { LatLng } from "@/lib/pins";
-import { addMeLayers, addPlaceLayer, addSelectionLayers, openMap, showSelected } from "./open-map";
+import { addMeLayers, addPlaceLayer, addSelectionLayers, openMap, paperStyle, showSelected } from "./open-map";
 import { addPinSource, photoPins, type PhotoPins, type PinPost } from "./photo-pins";
 
 export type PinnedMemory = WallMemory & { pin: LatLng };
@@ -271,6 +271,66 @@ export function MemoryMap({
       )}
       {failed && (
         <p role="alert" className="absolute inset-0 flex items-center justify-center px-8 text-center text-ink-soft">
+          The map couldn&apos;t load just now. Please check your connection and try again.
+        </p>
+      )}
+    </div>
+  );
+}
+
+/**
+ * The bare map for the Map tab, filling its parent: the streets in the
+ * redesign's colours, without shop icons, for the pins drawn on top.
+ */
+export function MemoryMapBase({ onMap, label }: { onMap: (map: MapLibreMap | null) => void; label: string }) {
+  const box = useRef<HTMLDivElement>(null);
+  const [map, setMap] = useState<MapLibreMap | null>(null);
+  const [failed, setFailed] = useState(false);
+  const latest = useRef(onMap);
+  useEffect(() => {
+    latest.current = onMap;
+  });
+
+  useEffect(() => {
+    const gone = new AbortController();
+    let opened: MapLibreMap | null = null;
+    openMap(box.current!, gone.signal, {}, { credits: "bottom-left" })
+      .then((m) => {
+        if (!m) return;
+        if (gone.signal.aborted) return m.remove();
+        opened = m;
+        m.on("error", (event) => {
+          if (!m.loaded() && !m.isStyleLoaded()) setFailed(true);
+          console.error("Map error", event.error);
+        });
+        m.on("load", () => {
+          paperStyle(m, { shops: false });
+          setMap(m);
+          latest.current(m);
+        });
+      })
+      .catch((error) => {
+        console.error("Could not open the map", error);
+        setFailed(true);
+      });
+    return () => {
+      gone.abort();
+      opened?.remove();
+      setMap(null);
+      latest.current(null);
+    };
+  }, []);
+
+  return (
+    <div style={{ position: "absolute", inset: 0 }}>
+      <div ref={box} role="region" aria-label={label} style={{ width: "100%", height: "100%" }} />
+      {!map && !failed && (
+        <p role="status" style={{ position: "absolute", inset: 0, margin: 0, display: "grid", placeItems: "center", font: "500 13px 'Plus Jakarta Sans'", color: "#6E5A55" }}>
+          Loading the map…
+        </p>
+      )}
+      {failed && (
+        <p role="alert" style={{ position: "absolute", inset: 0, margin: 0, display: "grid", placeItems: "center", padding: "0 32px", textAlign: "center", font: "500 13px 'Plus Jakarta Sans'", color: "#6E5A55" }}>
           The map couldn&apos;t load just now. Please check your connection and try again.
         </p>
       )}

@@ -21,7 +21,7 @@ export default async function MapPage() {
   return (
     <main className="h-screen-app relative w-full">
       <h1 className="sr-only">Hyderabad map</h1>
-      <MapScreen memories={pinned} failed={wall === null} />
+      <MapScreen memories={pinned} failed={wall === null} builtAt={wall?.builtAt ?? null} />
     </main>
   );
 }

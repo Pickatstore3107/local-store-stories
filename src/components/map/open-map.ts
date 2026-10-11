@@ -56,8 +56,80 @@ export async function openMap(
     map.keyboard.disableRotation();
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
   }
-  map.on("load", () => addPinImages(map));
+  map.on("load", () => {
+    addPinImages(map);
+    paperStyle(map);
+  });
   return map;
+}
+
+// The redesign's map colours (docs/design_handoff_pas_redesign): paper with
+// dots, water, parks, two yellows for roads, and the soft area labels.
+const PAPER = "#FBF5EA";
+const DOTS = "#E9DFD0";
+const WATER = "#D3E4EC";
+const WATER_LABEL = "#5B8AA3";
+const PARK = "#E4EDD6";
+const PARK_LABEL = "#6F8A55";
+const ROAD = "#FFE7A3";
+const ROAD_LIGHT = "#FFEFC2";
+const AREA_LABEL = "#B3A29B";
+
+/** The paper's dot: radial-gradient(#E9DFD0 1.2px, transparent 1.4px) on a 22px grid. */
+function dotsImage() {
+  const g = canvas(22, 22);
+  g.fillStyle = PAPER;
+  g.fillRect(0, 0, 22, 22);
+  g.beginPath();
+  g.arc(11, 11, 1.3, 0, Math.PI * 2);
+  g.fillStyle = DOTS;
+  g.fill();
+  return g.getImageData(0, 0, 22 * SCALE, 22 * SCALE);
+}
+
+const GREEN = ["park", "grass", "wood", "forest", "garden", "meadow", "scrub", "pitch", "playground", "cemetery", "golf_course", "recreation_ground", "nature_reserve"];
+const MAJOR = ["motorway", "trunk", "primary"];
+
+/**
+ * Recolours the OpenFreeMap streets in the redesign's colours. Buildings
+ * and shop icons aren't on the redesign's map, so they're hidden unless
+ * `shops` is kept for picking a store.
+ */
+export function paperStyle(map: MapLibreMap, { shops = true }: { shops?: boolean } = {}) {
+  if (!map.hasImage("pas-dots")) map.addImage("pas-dots", dotsImage(), { pixelRatio: SCALE });
+  for (const layer of map.getStyle().layers ?? []) {
+    if (layer.id.startsWith("lss-")) continue;
+    const source = "source-layer" in layer ? layer["source-layer"] : undefined;
+    const set = (name: string, value: unknown) => map.setPaintProperty(layer.id, name, value);
+    const hide = () => map.setLayoutProperty(layer.id, "visibility", "none");
+    if (layer.type === "background") {
+      set("background-color", PAPER);
+      set("background-pattern", "pas-dots");
+    } else if (layer.type === "fill" && source === "water") {
+      set("fill-color", WATER);
+    } else if (layer.type === "line" && source === "waterway") {
+      set("line-color", WATER);
+    } else if (layer.type === "fill" && (source === "park" || source === "landcover" || source === "landuse")) {
+      set("fill-color", ["match", ["get", "class"], GREEN, PARK, PAPER]);
+      if (source === "park") set("fill-color", PARK);
+    } else if (layer.type === "fill-extrusion" || (layer.type === "fill" && source === "building")) {
+      hide();
+    } else if (layer.type === "line" && source === "transportation") {
+      if (layer.id.includes("casing")) set("line-color", PAPER);
+      else set("line-color", ["match", ["get", "class"], MAJOR, ROAD, ROAD_LIGHT]);
+    } else if (layer.type === "symbol" && source === "water_name") {
+      set("text-color", WATER_LABEL);
+    } else if (layer.type === "symbol" && source === "poi") {
+      if (!shops) hide();
+      else if (layer.id.includes("park")) set("text-color", PARK_LABEL);
+    } else if (layer.type === "symbol" && source === "place") {
+      set("text-color", AREA_LABEL);
+      map.setLayoutProperty(layer.id, "text-transform", "uppercase");
+      map.setLayoutProperty(layer.id, "text-letter-spacing", 0.24);
+    } else if (layer.type === "symbol" && source === "transportation_name") {
+      set("text-color", AREA_LABEL);
+    }
+  }
 }
 
 const SCALE = 2;

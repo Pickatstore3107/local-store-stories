@@ -1,620 +1,405 @@
 "use client";
 
-import type {
-  MapMouseEvent,
-  Map as MapLibreMap,
-  PaddingOptions,
-} from "maplibre-gl";
-import Link from "next/link";
-import {
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type CSSProperties,
-} from "react";
-import { useAuth } from "@/components/auth-provider";
-import { CategoryIcon } from "@/components/category-icon";
-import {
-  CloseIcon,
-  GridIcon,
-  LocateIcon,
-  PeopleIcon,
-} from "@/components/icons";
-import { setReturnPath } from "@/components/require-account";
+import type { Map as MapLibreMap, Marker } from "maplibre-gl";
+import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { createPortal } from "react-dom";
+import { useAskToJoin } from "@/components/pas/actions";
+import { flash } from "@/components/pas/toast";
+import { Walker } from "@/components/pas/walker";
 import { useMyFollows } from "@/components/use-my-follows";
-import { metresBetween } from "@/lib/nearby";
+import { memoryPath, textLang } from "@/lib/memories";
 import type { LatLng } from "@/lib/pins";
-import { CATEGORIES, type Category } from "@/lib/stories";
-import {
-  NoteCard,
-  PostCards,
-  StoreCard,
-  outlineButton,
-  redButton,
-  type Card,
-  type Store,
-} from "./map-cards";
 import { MapSearch, type Found } from "./map-search";
-import {
-  MemoryMap,
-  centerOffset,
-  fitTo,
-  pinSpots,
-  withMargin,
-  type PinnedMemory,
-} from "./memory-map";
-import { showMe, showPlace } from "./open-map";
-import { shopAt } from "./shops";
-import { useMyLocation, type MyLocation } from "./use-my-location";
+import { MemoryMapBase, fitTo, pinSpots, type PinnedMemory } from "./memory-map";
+import { useMyLocation } from "./use-my-location";
 
-const chip =
-  "flex h-8 shrink-0 items-center gap-1.5 rounded-full pl-2.5 pr-3 text-[0.8rem] font-semibold leading-none shadow-[0_2px_8px_-3px_rgb(43_29_26/0.4)] transition";
-const chipOff = "bg-white text-ink hover:text-brand-red";
-const chipOn = "bg-brand-red text-white";
-const chipIcon = (on: boolean) =>
-  `h-4 w-4 ${on ? "text-white" : "text-brand-red"}`;
+// The map, copied from the prototype (docs/design_handoff_pas_redesign) on
+// top of the real streets: search and kinds at the top, Near me and the
+// story trail on the right, and along the bottom the "Since" year slider
+// with the walking woman and a card for every story, synced with the pins.
 
-/** The part of the map in view, past the search bar and the cards, when it last settled. */
-type View = {
-  west: number;
-  south: number;
-  east: number;
-  north: number;
-  center: LatLng;
-};
+const RED = "#A3171B", INK = "#2B1D1A";
+const MAP_KINDS = ["All", "Following", "Cafes", "Tea Stalls", "Bakeries", "Bookstores"] as const;
+type MapKind = (typeof MAP_KINDS)[number];
+/** One card and the gap after it, as the prototype scrolls them. */
+const CARD_STEP = 328;
+/** Where the prototype puts the story it moves to: 195px across, 330px down its map, which starts under the 52px header. */
+const FOCUS_Y = 330 - 52;
 
-// Moves of the map made by swiping the cards don't change which cards there are.
-const KEEP_CARDS = { keepCards: true };
-
-function viewOf(map: MapLibreMap, padding: PaddingOptions): View {
-  const { clientWidth: width, clientHeight: height } = map.getContainer();
-  const top = Math.min(padding.top ?? 0, height / 2);
-  const bottom = Math.max(height - (padding.bottom ?? 0), top + 1);
-  const a = map.unproject([padding.left ?? 0, top]);
-  const b = map.unproject([width - (padding.right ?? 0), bottom]);
-  const center = map.unproject([width / 2, (top + bottom) / 2]);
-  return {
-    west: Math.min(a.lng, b.lng),
-    east: Math.max(a.lng, b.lng),
-    south: Math.min(a.lat, b.lat),
-    north: Math.max(a.lat, b.lat),
-    center: { lat: center.lat, lng: center.lng },
+/** CSS's cubic-bezier(), for moving the map as the prototype moves its own. */
+function cubicBezier(x1: number, y1: number, x2: number, y2: number) {
+  const at = (a: number, b: number, t: number) => 3 * a * t * (1 - t) ** 2 + 3 * b * t ** 2 * (1 - t) + t ** 3;
+  return (x: number) => {
+    let lo = 0, hi = 1, t = x;
+    for (let i = 0; i < 24; i++) {
+      t = (lo + hi) / 2;
+      if (at(x1, x2, t) < x) lo = t;
+      else hi = t;
+    }
+    return at(y1, y2, t);
   };
 }
+const PAN_EASING = cubicBezier(0.3, 0.8, 0.2, 1);
 
-const inside = (view: View, { lat, lng }: LatLng) =>
-  lat >= view.south &&
-  lat <= view.north &&
-  lng >= view.west &&
-  lng <= view.east;
+const directions = ({ lat, lng }: LatLng) =>
+  `https://www.google.com/maps/dir/?api=1&destination=${lat.toFixed(6)},${lng.toFixed(6)}`;
 
-const plural = (n: number, one: string, many: string) =>
-  `${n} ${n === 1 ? one : many}`;
-
-/**
- * The Hyderabad map, the whole screen: search on top, posts as small square
- * photos, and the posts in view as cards along the bottom to swipe through,
- * like Airbnb. Swiping moves the map to each post; tapping a photo brings
- * its card up. Near me shows the posts around you.
- */
-export function MapScreen({
-  memories,
-  failed = false,
-}: {
-  memories: PinnedMemory[];
-  failed?: boolean;
-}) {
-  const { user, consent } = useAuth();
+export function MapScreen({ memories, failed = false, builtAt }: { memories: PinnedMemory[]; failed?: boolean; builtAt: number | null }) {
+  const router = useRouter();
+  const { member, ask } = useAskToJoin();
   const myFollows = useMyFollows();
-  const member = !!user && !!consent;
   const { location, locate } = useMyLocation();
-
-  const [following, setFollowing] = useState(false);
-  const [category, setCategory] = useState<Category | null>(null);
   const [map, setMap] = useState<MapLibreMap | null>(null);
-  const [view, setView] = useState<View | null>(null);
-  const [activeId, setActiveId] = useState<string | null>(null);
-  // A post to bring into view once the map is ready, from ?memory=…
-  const [waiting, setWaiting] = useState<string | null>(null);
-  const [store, setStore] = useState<Store | null>(null);
-  // A place found by searching, shown with a dark pin.
-  const [place, setPlace] = useState<LatLng | null>(null);
-  const [hideLocationNote, setHideLocationNote] = useState(false);
-
-  // How much of the map the search bar and the cards cover.
-  const top = useRef<HTMLDivElement>(null);
+  const [mapKind, setMapKind] = useState<MapKind>("All");
+  const [activePin, setActivePin] = useState<string | null>(null);
+  const [trail, setTrail] = useState(true);
+  const [frame, setFrame] = useState(0);
+  const cardRef = useRef<HTMLDivElement>(null);
   const bottom = useRef<HTMLDivElement>(null);
-  const [covered, setCovered] = useState({ top: 112, bottom: 160 });
-  useEffect(() => {
-    const bar = top.current!;
-    const cards = bottom.current!;
-    const observer = new ResizeObserver(() =>
-      setCovered({
-        top: bar.offsetTop + bar.offsetHeight,
-        bottom: cards.offsetHeight,
-      }),
-    );
-    observer.observe(bar);
-    observer.observe(cards);
-    return () => observer.disconnect();
-  }, []);
-  // Room to leave when moving the map, so what it moves to isn't under them.
-  const padding = useMemo<PaddingOptions>(
-    () => ({
-      top: covered.top + 4,
-      bottom: covered.bottom + 4,
-      left: 12,
-      right: 12,
-    }),
-    [covered],
-  );
+  const [bottomPx, setBottomPx] = useState(0);
 
-  const shown = useMemo(
+  // The prototype's slider runs to 2026, this year; it follows the year from here on.
+  const yearMax = builtAt ? new Date(builtAt).getFullYear() : 2026;
+  const yearFloor = Math.min(1970, ...memories.flatMap((m) => (m.year ? [m.year] : [])));
+  const [yearMin, setYearMin] = useState(yearFloor);
+
+  const mapPosts = useMemo(
     () =>
-      memories.filter(
-        (m) =>
-          (!following || myFollows.following.has(m.authorId)) &&
-          (!category || m.category === category),
+      memories.filter((p) =>
+        mapKind === "All" ? true : mapKind === "Following" ? myFollows.following.has(p.authorId) : p.category === mapKind,
       ),
-    [memories, following, myFollows.following, category],
+    [memories, mapKind, myFollows.following],
   );
-  const categories = CATEGORIES.filter(
-    (c) => c === category || memories.some((m) => m.category === c),
-  );
-  const spots = useMemo(() => pinSpots(shown), [shown]);
+  const spots = useMemo(() => pinSpots(mapPosts), [mapPosts]);
+  const shows = (p: PinnedMemory) => !p.year || p.year >= yearMin;
+  const visible = mapPosts.filter(shows);
+  const activeId = visible.some((p) => p.id === activePin) ? activePin : (visible[0]?.id ?? null);
 
-  const me = location.status === "on" ? location : null;
-  const here = me?.spot ?? null;
-
-  // The posts in view, nearest you first when Near me is on, else nearest the middle.
-  const cards: Card[] = useMemo(() => {
-    if (!view) return [];
-    const from = here ?? view.center;
-    return shown
-      .filter((m) => inside(view, spots.get(m.id) ?? m.pin))
-      .map((memory) => ({
-        memory,
-        metres: here ? metresBetween(here, memory.pin) : null,
-        order: metresBetween(from, spots.get(memory.id) ?? memory.pin),
-      }))
-      .sort((a, b) => a.order - b.order)
-      .map(({ memory, metres }) => ({ memory, metres }));
-  }, [view, shown, spots, here]);
-  const active =
-    cards.find((card) => card.memory.id === activeId) ?? cards[0] ?? null;
-
-  // Which cards there are changes when the map settles somewhere new, unless
-  // a swipe moved it.
-  const latest = useRef({ padding });
-  useEffect(() => {
-    latest.current = { padding };
-  });
+  // The map's own markers, one per post, that the pins below are drawn into.
+  const markers = useRef(new Map<string, Marker>());
+  const meMarkerRef = useRef<Marker | null>(null);
+  const [pinMarkers, setPinMarkers] = useState<ReadonlyMap<string, Marker>>(new Map());
+  const [meMarker, setMeMarker] = useState<Marker | null>(null);
+  const [trailBox, setTrailBox] = useState<HTMLDivElement | null>(null);
   useEffect(() => {
     if (!map) return;
-    const settled = (event: { keepCards?: boolean }) => {
-      if (!event.keepCards) setView(viewOf(map, latest.current.padding));
-    };
-    settled({});
-    map.on("moveend", settled);
-    map.on("resize", settled);
+    let gone = false;
+    import("maplibre-gl").then(({ default: maplibregl }) => {
+      if (gone) return;
+      const keep = new Set(mapPosts.map((p) => p.id));
+      for (const [id, marker] of markers.current) {
+        if (keep.has(id)) continue;
+        marker.remove();
+        markers.current.delete(id);
+      }
+      for (const p of mapPosts) {
+        const spot = spots.get(p.id)!;
+        const marker = markers.current.get(p.id) ?? new maplibregl.Marker({ element: document.createElement("div"), anchor: "center" });
+        marker.setLngLat([spot.lng, spot.lat]).addTo(map);
+        markers.current.set(p.id, marker);
+      }
+      if (!meMarkerRef.current) meMarkerRef.current = new maplibregl.Marker({ element: document.createElement("div"), anchor: "center" });
+      setMeMarker(meMarkerRef.current);
+      setPinMarkers(new Map(markers.current));
+    });
     return () => {
-      map.off("moveend", settled);
-      map.off("resize", settled);
+      gone = true;
+    };
+  }, [map, mapPosts, spots]);
+  useEffect(
+    () => () => {
+      for (const marker of markers.current.values()) marker.remove();
+      markers.current.clear();
+      meMarkerRef.current?.remove();
+    },
+    [],
+  );
+
+  // The story trail is drawn over the map, under the pins, and redrawn as it moves.
+  useEffect(() => {
+    if (!map) return;
+    let raf = 0;
+    const moved = () => {
+      if (!raf) raf = requestAnimationFrame(() => {
+        raf = 0;
+        setFrame((n) => n + 1);
+      });
+    };
+    map.on("move", moved);
+    map.on("resize", moved);
+    return () => {
+      cancelAnimationFrame(raf);
+      map.off("move", moved);
+      map.off("resize", moved);
     };
   }, [map]);
 
-  // The blue dot, and a trip to it the first time it's found.
-  const flyOnFind = useRef(false);
+  // Where you are: the prototype's red dot with its pulse.
+  const me = location.status === "on" ? location.spot : null;
   useEffect(() => {
+    if (!map || !meMarker) return;
+    if (me) meMarker.setLngLat([me.lng, me.lat]).addTo(map);
+    else meMarker.remove();
+  }, [map, me, meMarker]);
+
+  // The chosen pin sits on top of the others.
+  useEffect(() => {
+    for (const [id, marker] of pinMarkers) marker.getElement().style.zIndex = String(id === activeId ? 5 : 2);
+  }, [pinMarkers, activeId]);
+
+  // The attribution sits above the cards.
+  useEffect(() => {
+    const el = bottom.current!;
+    const observer = new ResizeObserver(() => setBottomPx(el.offsetHeight + 6));
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  const panTo = (spot: LatLng, zoom?: number) => {
     if (!map) return;
-    showMe(map, me);
-    if (me && flyOnFind.current) {
-      flyOnFind.current = false;
-      map.easeTo({
-        center: [me.spot.lng, me.spot.lat],
-        zoom: Math.max(map.getZoom(), 15),
-        offset: centerOffset(latest.current.padding),
-      });
-    }
-  }, [map, me]);
+    const height = map.getContainer().clientHeight;
+    map.easeTo({ center: [spot.lng, spot.lat], zoom, offset: [0, FOCUS_Y - height / 2], duration: 750, easing: PAN_EASING });
+  };
 
-  // The dark pin on the store or place being looked at.
-  useEffect(() => {
-    if (map) showPlace(map, store?.spot ?? place);
-  }, [map, store, place]);
-
-  // A post from the address or a search, once the map has fitted everything in.
-  const goToLater = useRef(goTo);
-  useEffect(() => {
-    goToLater.current = goTo;
-  });
-  useEffect(() => {
-    if (!map || !waiting) return;
-    goToLater.current(waiting);
-  }, [map, waiting]);
-
-  function findMe() {
-    setHideLocationNote(false);
-    if (me && map) {
-      map.easeTo({
-        center: [me.spot.lng, me.spot.lat],
-        zoom: Math.max(map.getZoom(), 15),
-        offset: centerOffset(padding),
-      });
-      return;
-    }
-    flyOnFind.current = true;
-    locate();
-  }
-
-  /** Brings a post to the middle of the map, closer in, with its card. */
-  function goTo(id: string) {
+  // Moving the cards ourselves isn't a swipe.
+  const programmatic = useRef(false);
+  const programmaticTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const scrollCardTo = (i: number) => {
+    const el = cardRef.current;
+    if (!el || i < 0) return;
+    programmatic.current = true;
+    clearTimeout(programmaticTimer.current);
+    programmaticTimer.current = setTimeout(() => (programmatic.current = false), 600);
+    el.scrollTo({ left: i * CARD_STEP, behavior: "smooth" });
+  };
+  const pick = (id: string) => {
+    setActivePin(id);
     const spot = spots.get(id);
-    setWaiting(null);
-    if (!map || !spot) return;
-    setStore(null);
-    setActiveId(id);
-    map.easeTo({
-      center: [spot.lng, spot.lat],
-      zoom: Math.max(map.getZoom(), 15),
-      offset: centerOffset(padding),
-    });
-  }
-
-  // A swipe moves the map along to the post in the middle, at the same zoom.
-  function swiped(id: string) {
-    setActiveId(id);
-    const spot = spots.get(id);
-    if (map && spot)
-      map.easeTo(
-        { center: [spot.lng, spot.lat], offset: centerOffset(padding), duration: 450 },
-        KEEP_CARDS,
-      );
-  }
-
-  // A tapped photo brings its card to the middle.
-  function picked(id: string | null) {
-    if (!id) return;
-    setStore(null);
-    if (!cards.some((card) => card.memory.id === id) && map)
-      setView(viewOf(map, padding));
-    setActiveId(id);
-  }
-
-  function openStore(next: Store) {
-    setStore(next);
-    setPlace(null);
-    map?.easeTo({
-      center: [next.spot.lng, next.spot.lat],
-      zoom: Math.max(map.getZoom(), 16),
-      offset: centerOffset(padding),
-    });
-  }
-
-  function found(result: Found) {
-    if (result.type === "memory") {
-      // A post hidden by a filter shows again.
-      if (!shown.some((m) => m.id === result.memory.id)) {
-        setFollowing(false);
-        setCategory(null);
-        setWaiting(result.memory.id);
-      } else {
-        goTo(result.memory.id);
+    if (spot) panTo(spot);
+    scrollCardTo(visible.findIndex((p) => p.id === id));
+  };
+  const cardTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const onCardScroll = () => {
+    if (programmatic.current) return;
+    const el = cardRef.current!;
+    clearTimeout(cardTimer.current);
+    cardTimer.current = setTimeout(() => {
+      const v = visible[Math.round(el.scrollLeft / CARD_STEP)];
+      if (v && v.id !== activeId) {
+        setActivePin(v.id);
+        const spot = spots.get(v.id);
+        if (spot) panTo(spot);
       }
-      setPlace(null);
-      return;
-    }
-    const { place: found } = result;
-    if (found.store) {
-      openStore({
-        name: found.name,
-        detail: found.detail,
-        spot: found.spot,
-        category: found.category,
-      });
-      return;
-    }
-    // An area or street: the map goes there and the cards show its posts.
-    setStore(null);
-    setPlace(found.spot);
-    if (!map) return;
-    if (found.extent) {
-      const [west, south, east, north] = found.extent;
-      map.fitBounds(
-        [
-          [west, south],
-          [east, north],
-        ],
-        { padding: withMargin(padding, 16), maxZoom: 16 },
-      );
-    } else {
-      map.easeTo({
-        center: [found.spot.lng, found.spot.lat],
-        zoom: Math.max(map.getZoom(), 15),
-        offset: centerOffset(padding),
-      });
-    }
-  }
+    }, 140);
+  };
 
-  // A tap on a shop's name on the map opens it; a tap on nothing closes it.
-  function tapMap(event: MapMouseEvent) {
-    if (!map) return;
-    const { x, y } = event.point;
-    const shop = shopAt(map, [
-      [x - 10, y - 10],
-      [x + 10, y + 10],
-    ]);
-    if (shop) {
-      openStore({
-        name: shop.name,
-        detail: shop.kind,
-        spot: shop.spot,
-        category: shop.category,
-      });
+  // Once the map has loaded: the layer for the trail, then everything in
+  // view, or the post named in the address (?memory=…) from a post's page.
+  function mapReady(m: MapLibreMap | null) {
+    setMap(m);
+    if (!m) {
+      setTrailBox(null);
       return;
     }
-    setStore(null);
-    setPlace(null);
-  }
-
-  // Opens the post named in the address (?memory=…), from a post's page.
-  function ready() {
+    const box = document.createElement("div");
+    box.style.cssText = "position:absolute;inset:0;pointer-events:none";
+    m.getCanvasContainer().insertBefore(box, m.getCanvas().nextSibling);
+    setTrailBox(box);
     const id = new URLSearchParams(window.location.search).get("memory");
-    if (id && shown.some((m) => m.id === id)) setWaiting(id);
+    const memory = id ? memories.find((p) => p.id === id) : null;
+    if (memory) {
+      if (memory.year) setYearMin((y) => Math.min(y, memory.year!));
+      setActivePin(memory.id);
+      const spot = pinSpots(memories).get(memory.id)!;
+      const height = m.getContainer().clientHeight;
+      m.easeTo({ center: [spot.lng, spot.lat], zoom: 15, offset: [0, FOCUS_Y - height / 2], duration: 0 });
+      const since = memory.year ? Math.min(yearMin, memory.year) : yearMin;
+      const cards = memories.filter((p) => !p.year || p.year >= since);
+      setTimeout(() => scrollCardTo(cards.findIndex((p) => p.id === memory.id)), 0);
+    } else {
+      fitTo(m, [...pinSpots(memories).values()], false, { top: 120, bottom: 220, left: 40, right: 60 });
+    }
   }
 
-  function showAll() {
-    if (map) fitTo(map, [...spots.values()], true, withMargin(padding));
+  const nearMe = () => {
+    if (me) {
+      panTo(me);
+      flash("Showing stories near you");
+      return;
+    }
+    found.current = true;
+    locate();
+  };
+  // The first time you're found, the map goes to you.
+  const found = useRef(false);
+  useEffect(() => {
+    if (!found.current) return;
+    if (location.status === "on") {
+      found.current = false;
+      panTo(location.spot, map ? Math.max(map.getZoom(), 14) : undefined);
+      flash("Showing stories near you");
+    } else if (location.status !== "finding" && location.status !== "off") {
+      found.current = false;
+      flash(
+        {
+          outside: "You're outside Hyderabad. The map covers Hyderabad only for now.",
+          denied: "Location is blocked for this site. Allow Location in your browser, then try again.",
+          unavailable: "We couldn't find where you are. Check that location is on, then try again.",
+        }[location.status],
+      );
+    }
+    // panTo reads the map, which is in the list.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location, map]);
+
+  const toggleTrail = () => {
+    setTrail(!trail);
+    flash(trail ? "Story trail hidden" : "Story trail: oldest to newest");
+  };
+
+  const pickKind = (k: MapKind) => {
+    if (k === "Following" && !member) return ask();
+    setMapKind(k);
+  };
+
+  function onFound(result: Found) {
+    if (result.type === "memory") {
+      const m = result.memory;
+      if (!mapPosts.some((p) => p.id === m.id)) setMapKind("All");
+      if (m.year && m.year < yearMin) setYearMin(m.year);
+      setActivePin(m.id);
+      const spot = pinSpots(memories).get(m.id) ?? m.pin;
+      panTo(spot, map ? Math.max(map.getZoom(), 15) : undefined);
+      return;
+    }
+    const { place } = result;
+    if (!map) return;
+    if (place.extent) {
+      const [west, south, east, north] = place.extent;
+      map.fitBounds([[west, south], [east, north]], { padding: { top: 120, bottom: 220, left: 40, right: 60 }, maxZoom: 16 });
+    } else {
+      panTo(place.spot, Math.max(map.getZoom(), 15));
+    }
   }
 
-  const note = !following
-    ? memories.length === 0
-      ? "empty"
-      : null
-    : !member
-      ? "signIn"
-      : myFollows.ready && myFollows.following.size === 0
-        ? "nobody"
-        : null;
+  // The trail joins the stories in view, oldest to newest, 10px above each pin's point.
+  void frame;
+  const trailPts =
+    map && trail
+      ? [...visible]
+          .filter((p) => p.year)
+          .sort((a, b) => a.year! - b.year!)
+          .map((p) => {
+            const spot = spots.get(p.id)!;
+            const { x, y } = map.project([spot.lng, spot.lat]);
+            return x + "," + (y - 10);
+          })
+      : [];
 
   return (
-    <div
-      className="lss-full-map relative h-full w-full overflow-clip"
-      style={{ "--cards-px": `${covered.bottom}px` } as CSSProperties}
-    >
-      <MemoryMap
-        memories={shown}
-        selectedId={store ? null : (active?.memory.id ?? null)}
-        onSelect={picked}
-        onReady={ready}
-        onMap={setMap}
-        onEmptyClick={tapMap}
-        focusPadding={padding}
-        moveToSelected={false}
-        fitKey={`${following}-${category}`}
-        label="Map of Hyderabad with posts as photos"
-        credits="bottom-left"
-        framed={false}
-        className="absolute inset-0"
-      />
+    <div className="lss-full-map" style={{ position: "absolute", inset: 0, overflow: "hidden", background: "#FBF5EA", "--cards-px": `${bottomPx}px` } as CSSProperties}>
+      <MemoryMapBase onMap={mapReady} label="Map of Hyderabad with stories as pins" />
 
-      <div
-        ref={top}
-        className="pointer-events-none absolute inset-x-0 top-0 z-30 space-y-2 p-3 sm:right-auto sm:left-4 sm:top-4 sm:w-[23rem] sm:p-0"
-      >
-        <MapSearch memories={memories} onFound={found} />
-        <div
-          role="group"
-          aria-label="Which posts"
-          className="pointer-events-auto -mx-3 flex gap-1.5 overflow-x-auto px-3 pb-2 [scrollbar-width:none] sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden"
-        >
-          <button
-            type="button"
-            aria-pressed={!following && !category}
-            onClick={() => {
-              setFollowing(false);
-              setCategory(null);
-            }}
-            className={`${chip} ${!following && !category ? chipOn : chipOff}`}
-          >
-            <GridIcon className={chipIcon(!following && !category)} />
-            All
-          </button>
-          <button
-            type="button"
-            aria-pressed={following}
-            onClick={() => setFollowing(!following)}
-            className={`${chip} ${following ? chipOn : chipOff}`}
-          >
-            <PeopleIcon className={chipIcon(following)} />
-            Following
-          </button>
-          {categories.map((c) => (
-            <button
-              key={c}
-              type="button"
-              aria-pressed={category === c}
-              onClick={() => setCategory(category === c ? null : c)}
-              className={`${chip} ${category === c ? chipOn : chipOff}`}
-            >
-              <CategoryIcon category={c} className={chipIcon(category === c)} />
-              <span className="whitespace-nowrap">{c}</span>
-            </button>
+      {trailBox && trailPts.length > 1 &&
+        createPortal(
+          <svg width="100%" height="100%" style={{ position: "absolute", left: 0, top: 0, pointerEvents: "none" }}>
+            <polyline points={trailPts.join(" ")} fill="none" stroke={RED} strokeWidth={2.5} strokeDasharray="2 9" strokeLinecap="round" strokeLinejoin="round" style={{ animation: "pasMarch 1.1s linear infinite" }} />
+          </svg>,
+          trailBox,
+        )}
+
+      {mapPosts.map((p) => {
+        const marker = pinMarkers.get(p.id);
+        if (!marker) return null;
+        const on = p.id === activeId, show = shows(p);
+        const size = on ? "62px" : "44px", ring = on ? RED : "#fff";
+        return createPortal(
+          <button type="button" onClick={(e) => { e.stopPropagation(); pick(p.id); }} aria-label={p.storeName} style={{ position: "absolute", left: 0, top: 0, width: 0, height: 0, padding: 0, border: 0, background: "none", zIndex: on ? 5 : 2, pointerEvents: show ? "auto" : "none" }}>
+            <span style={{ position: "absolute", left: 0, top: 0, display: "flex", flexDirection: "column", alignItems: "center", transform: `translate(-50%,-100%) scale(${show ? 1 : 0})`, transformOrigin: "50% 100%", opacity: show ? 1 : 0, transition: "transform .5s cubic-bezier(.3,1.6,.5,1),opacity .3s ease" }}>
+              <span style={{ position: "relative", width: size, height: size, borderRadius: "50%", border: `3px solid ${ring}`, background: "#F7F2EF", boxShadow: "0 8px 18px rgb(120 70 30 / .3)", transition: "width .4s cubic-bezier(.3,1.6,.5,1),height .4s cubic-bezier(.3,1.6,.5,1),border-color .3s" }}>
+                {p.photoUrl && (
+                  // eslint-disable-next-line @next/next/no-img-element -- a signed link from our image host, already sized
+                  <img src={p.photoUrl} alt="" draggable={false} decoding="async" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", borderRadius: "50%", objectFit: "cover" }} />
+                )}
+                {p.year && <span style={{ position: "absolute", top: -10, right: -18, padding: "2px 7px", borderRadius: 999, background: on ? "#FFC000" : "#fff", font: "400 12px/1.25 'Anton'", color: on ? INK : RED, boxShadow: "0 2px 6px rgb(120 70 30 / .2)", transition: "background .3s" }}>{p.year}</span>}
+              </span>
+              <span style={{ width: 0, height: 0, marginTop: -2, borderLeft: "7px solid transparent", borderRight: "7px solid transparent", borderTop: `10px solid ${ring}`, transition: "border-color .3s" }}></span>
+            </span>
+          </button>,
+          marker.getElement(),
+          p.id,
+        );
+      })}
+
+      {me && meMarker &&
+        createPortal(
+          <div style={{ position: "absolute", left: 0, top: 0, width: 0, height: 0 }}>
+            <span style={{ position: "absolute", left: -22, top: -22, width: 44, height: 44, borderRadius: "50%", background: "rgb(163 23 27 / .25)", animation: "pasRing 2s ease-out infinite" }}></span>
+            <span style={{ position: "absolute", left: -9, top: -9, width: 18, height: 18, borderRadius: "50%", background: RED, border: "3px solid #fff", boxSizing: "border-box", boxShadow: "0 3px 8px rgb(120 70 30 / .35)" }}></span>
+          </div>,
+          meMarker.getElement(),
+        )}
+
+      <div style={{ position: "absolute", top: 6, left: 12, right: 12, display: "flex", flexDirection: "column", gap: 10, zIndex: 4 }}>
+        <MapSearch memories={memories} onFound={onFound} />
+        <div role="group" aria-label="Which stories" style={{ display: "flex", gap: 6, overflowX: "auto", scrollbarWidth: "none", margin: "0 -12px", padding: "0 12px" }}>
+          {MAP_KINDS.map((k) => (
+            <button key={k} type="button" aria-pressed={k === mapKind} onClick={() => pickKind(k)} style={{ flex: "none", height: 32, padding: "0 14px", border: 0, borderRadius: 999, background: k === mapKind ? RED : "#fff", color: k === mapKind ? "#fff" : INK, font: "700 12px 'Plus Jakarta Sans'", boxShadow: "0 4px 12px rgb(120 70 30 / .12)", transition: "background .2s,color .2s" }}>{k}</button>
           ))}
         </div>
       </div>
 
-      <div
-        ref={bottom}
-        className="pointer-events-none absolute inset-x-0 bottom-0 z-20 pb-[calc(var(--bar-lift)+0.4rem)] sm:pb-4"
-      >
-        <div className="mb-1.5 flex items-end justify-end gap-2 px-3">
-          {!hideLocationNote && (
-            <LocationNote
-              location={location}
-              onLocate={findMe}
-              onClose={() => setHideLocationNote(true)}
-            />
-          )}
-          <button
-            type="button"
-            onClick={findMe}
-            aria-pressed={!!me}
-            className={`pointer-events-auto flex h-9 shrink-0 items-center gap-1.5 rounded-full bg-white pl-2.5 pr-3.5 text-[0.8rem] font-semibold shadow-[0_4px_14px_-4px_rgb(43_29_26/0.5)] transition hover:text-brand-red ${me ? "text-[#1a73e8]" : "text-ink"}`}
-          >
-            {location.status === "finding" ? (
-              <span
-                aria-hidden="true"
-                className="h-4 w-4 animate-spin rounded-full border-2 border-ink/20 border-t-[#1a73e8]"
-              />
-            ) : (
-              <LocateIcon className="h-4 w-4 text-[#1a73e8]" />
-            )}
-            Near me
-          </button>
-        </div>
+      <div style={{ position: "absolute", right: 12, top: 118, zIndex: 4, display: "flex", flexDirection: "column", gap: 8 }}>
+        <button type="button" onClick={nearMe} aria-label="Near me" className="active:[transform:scale(.92)]" style={{ width: 44, height: 44, border: 0, borderRadius: "50%", background: "#fff", display: "grid", placeItems: "center", boxShadow: "0 6px 16px rgb(120 70 30 / .16)" }}><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="#A3171B" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="6.5"></circle><circle cx="12" cy="12" r="2.2" fill="#A3171B" stroke="none"></circle><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3"></path></svg></button>
+        <button type="button" onClick={toggleTrail} aria-label="Story trail" aria-pressed={trail} className="active:[transform:scale(.92)]" style={{ width: 44, height: 44, border: 0, borderRadius: "50%", background: trail ? RED : "#fff", display: "grid", placeItems: "center", boxShadow: "0 6px 16px rgb(120 70 30 / .16)", transition: "background .2s" }}><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke={trail ? "#fff" : RED} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" strokeDasharray="2.5 3"><path d="M5 19c3-6 2-9 6-10s5 2 8-4"></path></svg></button>
+      </div>
 
-        {/* As tall as the cards even before they come, so the map leaves room for them from the start. */}
-        <div className="flex min-h-[7.65rem] flex-col justify-end">
-          {store ? (
-            <StoreCard
-              store={store}
-              metres={here ? metresBetween(here, store.spot) : null}
-              onClose={() => setStore(null)}
-            />
-          ) : failed ? (
-            <NoteCard alert>
-              The posts couldn&apos;t be loaded just now. Please try again in a
-              minute.
-            </NoteCard>
-          ) : note ? (
-            <MapNote note={note} />
-          ) : cards.length > 0 ? (
-            <PostCards
-              cards={cards}
-              activeId={active?.memory.id ?? null}
-              onSwipe={swiped}
-            />
-          ) : view ? (
-            <NoteCard>
-              <p className="font-semibold">
-                {here
-                  ? "No posts near you yet."
-                  : "No posts in this part of the map."}
-              </p>
-              <p className="mt-0.5 text-ink-soft">
-                Tap a shop&apos;s name on the map to share a post about it.
-              </p>
-              {shown.length > 0 && (
-                <button
-                  type="button"
-                  onClick={showAll}
-                  className={`${outlineButton} mt-2.5`}
-                >
-                  See all {plural(shown.length, "post", "posts")}
-                </button>
+      <div ref={bottom} style={{ position: "absolute", left: 0, right: 0, bottom: 6, zIndex: 4, display: "flex", flexDirection: "column", gap: 10 }}>
+        <div style={{ margin: "0 16px", display: "flex", alignItems: "center", gap: 10, padding: "8px 14px 8px 8px", borderRadius: 18, background: "rgb(255 255 255 / .96)", boxShadow: "0 10px 26px rgb(120 70 30 / .14)" }}>
+          <div style={{ position: "relative", width: 30, height: 46, flex: "none" }}><Walker width={30} top="50%" /></div>
+          <div style={{ display: "flex", flexDirection: "column", flex: "none", width: 74 }}>
+            <span style={{ font: "700 9.5px 'Plus Jakarta Sans'", letterSpacing: ".14em", textTransform: "uppercase", color: "#6E5A55" }}>Since</span>
+            <span style={{ font: "400 26px/1 'Anton'", color: "#A3171B" }}>{yearMin}</span>
+          </div>
+          <input type="range" min={yearFloor} max={yearMax} step="1" value={yearMin} onChange={(e) => setYearMin(+e.target.value)} aria-label="Show stories since year" style={{ flex: 1, minWidth: 0, accentColor: "#A3171B" }} />
+          <span style={{ flex: "none", font: "700 11px 'Plus Jakarta Sans'", color: "#2B1D1A" }}>{visible.length === 1 ? "1 story" : visible.length + " stories"}</span>
+        </div>
+        <div ref={cardRef} onScroll={onCardScroll} style={{ display: "flex", gap: 10, overflowX: "auto", scrollSnapType: "x mandatory", padding: "0 16px 4px", scrollPadding: "0 16px", scrollbarWidth: "none" }}>
+          {visible.map((cd) => (
+            <div key={cd.id} onClick={() => pick(cd.id)} style={{ flex: "none", width: 318, scrollSnapAlign: "start", display: "flex", gap: 12, padding: 10, boxSizing: "border-box", borderRadius: 22, background: "#fff", border: `2px solid ${cd.id === activeId ? RED : "transparent"}`, boxShadow: "0 12px 28px rgb(120 70 30 / .18)", cursor: "pointer", transition: "border-color .3s" }}>
+              <div style={{ width: 84, aspectRatio: "4/5", flex: "none", borderRadius: 14, position: "relative", overflow: "hidden", background: "#F7F2EF" }}>
+                {cd.postPhotoUrl && (
+                  // eslint-disable-next-line @next/next/no-img-element -- a signed link from our image host, already sized
+                  <img src={cd.postPhotoUrl} alt="" loading="lazy" decoding="async" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
+                )}
+                {cd.year && <span style={{ position: "absolute", left: 6, bottom: 3, font: "400 20px/1 'Anton'", color: "#fff", textShadow: "0 1px 6px rgb(0 0 0 / .25)" }}>{cd.year}</span>}
+              </div>
+              <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 3 }}>
+                <span style={{ font: "700 9.5px 'Plus Jakarta Sans'", letterSpacing: ".14em", textTransform: "uppercase", color: "#A3171B" }}>{cd.category + " · " + (cd.neighbourhood ?? cd.city)}</span>
+                <span lang={textLang(cd.storeName)} style={{ font: "600 18px/1.1 'Playfair Display'", color: "#2B1D1A" }}>{cd.storeName}</span>
+                <span lang={textLang(cd.caption)} style={{ font: "400 15px/1.25 'Kalam'", color: "#6E5A55", overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>{cd.caption}</span>
+                <div style={{ display: "flex", gap: 6, marginTop: "auto" }}>
+                  <button type="button" onClick={(e) => { e.stopPropagation(); router.push(memoryPath(cd.id)); }} style={{ height: 30, padding: "0 12px", border: 0, borderRadius: 999, background: "#A3171B", color: "#fff", font: "700 11.5px 'Plus Jakarta Sans'" }}>Open story</button>
+                  <button type="button" onClick={(e) => { e.stopPropagation(); flash("Opening directions to " + cd.storeName); window.open(directions(cd.pin), "_blank", "noopener,noreferrer"); }} style={{ height: 30, padding: "0 12px", border: "1.5px solid #E7D9D4", borderRadius: 999, background: "#fff", color: "#2B1D1A", font: "700 11.5px 'Plus Jakarta Sans'" }}>Directions</button>
+                </div>
+              </div>
+            </div>
+          ))}
+          {visible.length === 0 && (
+            <div role={failed ? "alert" : undefined} style={{ flex: "none", width: 318, padding: 18, boxSizing: "border-box", borderRadius: 22, background: "#fff", boxShadow: "0 12px 28px rgb(120 70 30 / .18)", display: "flex", flexDirection: "column", gap: 6 }}>
+              {failed ? (
+                <span style={{ font: "400 15px 'Kalam'", color: "#6E5A55" }}>The stories couldn&apos;t be loaded just now. Please try again in a minute.</span>
+              ) : (
+                <>
+                  <span style={{ font: "600 18px 'Playfair Display'", color: "#2B1D1A" }}>No stories from here yet</span>
+                  <span style={{ font: "400 15px 'Kalam'", color: "#6E5A55" }}>Slide back in time, or pick another kind.</span>
+                </>
               )}
-            </NoteCard>
-          ) : null}
+            </div>
+          )}
         </div>
-        <p role="status" className="sr-only">
-          {view && !store && !note
-            ? plural(cards.length, "post", "posts") +
-              (here ? " near you" : " in view")
-            : ""}
-        </p>
       </div>
     </div>
-  );
-}
-
-function LocationNote({
-  location,
-  onLocate,
-  onClose,
-}: {
-  location: MyLocation;
-  onLocate: () => void;
-  onClose: () => void;
-}) {
-  if (
-    location.status === "on" ||
-    location.status === "off" ||
-    location.status === "finding"
-  )
-    return null;
-  const text = {
-    outside: "You're outside Hyderabad. The map covers Hyderabad only for now.",
-    denied:
-      "Location is blocked for this site. Tap the lock or ⓘ beside the web address, allow Location, then try again.",
-    unavailable:
-      "We couldn't find where you are. Check that location is on in your phone's settings, then try again.",
-  }[location.status];
-  return (
-    <div
-      role="alert"
-      className="pointer-events-auto flex min-w-0 flex-1 items-start gap-2 rounded-2xl bg-white px-3 py-2 text-[0.8rem] leading-snug text-ink shadow-[0_4px_14px_-4px_rgb(43_29_26/0.5)]"
-    >
-      <div className="min-w-0 flex-1">
-        <p>{text}</p>
-        {location.status !== "outside" && (
-          <button
-            type="button"
-            onClick={onLocate}
-            className="mt-0.5 font-semibold text-brand-red underline underline-offset-4"
-          >
-            Try again
-          </button>
-        )}
-      </div>
-      <button
-        type="button"
-        onClick={onClose}
-        className="-mr-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-ink-soft hover:text-ink"
-      >
-        <CloseIcon className="h-3.5 w-3.5" />
-        <span className="sr-only">Close</span>
-      </button>
-    </div>
-  );
-}
-
-function MapNote({ note }: { note: "empty" | "signIn" | "nobody" }) {
-  const { user } = useAuth();
-  if (note === "empty") {
-    return (
-      <NoteCard>
-        <p>
-          No posts on the map yet. When you share a post about a Hyderabad
-          store, tap where it was and it shows up here.
-        </p>
-        <Link href="/share" className={`${redButton} mt-2.5`}>
-          Share a post
-        </Link>
-      </NoteCard>
-    );
-  }
-  if (note === "nobody") {
-    return (
-      <NoteCard>
-        You&apos;re not following anyone yet. Tap a name on any post, then tap
-        Follow, and their posts show here.
-      </NoteCard>
-    );
-  }
-  return (
-    <NoteCard>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <p>Sign in to see posts from the people you follow.</p>
-        <Link
-          href={user ? "/welcome" : "/signin"}
-          onClick={() => setReturnPath("/map")}
-          className={redButton}
-        >
-          {user ? "Finish joining" : "Sign in"}
-        </Link>
-      </div>
-    </NoteCard>
   );
 }
