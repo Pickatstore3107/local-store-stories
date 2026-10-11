@@ -16,8 +16,7 @@ import "./globals.css";
 // 400 to 700 for the interface, Playfair Display 500 and 600 with italics for
 // headings, Kalam 400 for handwritten words and Anton 400 (src/lib/anton.ts)
 // for years and numbers. Google serves Jakarta and Playfair as variable fonts,
-// as the prototype gets them; Kalam 700 stays only for the pages not yet
-// redesigned.
+// as the prototype gets them.
 const jakarta = Plus_Jakarta_Sans({
   variable: "--font-jakarta",
   subsets: ["latin"],
@@ -31,7 +30,7 @@ const playfair = Playfair_Display({
 
 const kalam = Kalam({
   variable: "--font-kalam",
-  weight: ["400", "700"],
+  weight: "400",
   subsets: ["latin", "devanagari"],
 });
 
@@ -58,17 +57,20 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" suppressHydrationWarning className={`${jakarta.variable} ${playfair.variable} ${kalam.variable} ${anton.variable} h-full antialiased`}>
-      <body className="flex min-h-full flex-col pb-[calc(var(--bar-h)+var(--bar-lift))] font-sans">
+    <html lang="en" suppressHydrationWarning className={`${jakarta.variable} ${playfair.variable} ${kalam.variable} ${anton.variable} h-full`}>
+      <body className="flex min-h-full flex-col">
         {/* Decides before the first paint whether the opening screen shows. */}
         <Script id="lss-splash" strategy="beforeInteractive">
           {splashScript}
         </Script>
         <AuthProvider>
           <Splash />
-          <SiteHeader />
-          {children}
-          <SiteFooter />
+          {/* The prototype's phone screen: white on its #EFEAE6 page. */}
+          <div className="flex flex-col pb-[calc(var(--bar-h)+var(--bar-lift))]" style={{ flex: 1, background: "#fff" }}>
+            <SiteHeader />
+            {children}
+            <SiteFooter />
+          </div>
           <BottomBar />
           <CookieBanner />
         </AuthProvider>

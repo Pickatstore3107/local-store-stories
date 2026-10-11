@@ -3,10 +3,6 @@
  * (docs/design_handoff_pas_redesign/Local Stores Prototype.dc.html). The
  * prototype sets every style inline, so redesigned components do the same
  * with these values. Never round or swap a value for a nearby one.
- *
- * Each redesigned screen's outer element carries a `data-pas` attribute,
- * which keeps the old pages' global heading style off it and gives its
- * links the prototype's red (src/app/globals.css).
  */
 
 // The prototype's own names for its three main colours.
@@ -57,7 +53,7 @@ export const PAS = {
   // Saved illustration card (matches the sprite's own background)
   savedCard: "#F2C8B9",
 
-  // Around the phone in the prototype only
+  // The page behind the white screen (body background)
   backdrop: "#EFEAE6",
 } as const;
 
