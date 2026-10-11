@@ -2,11 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState, useSyncExternalStore, type ReactNode } from "react";
-import { personPath, photoOf } from "@/lib/people";
+import { useState, useSyncExternalStore } from "react";
+import { personPath } from "@/lib/people";
 import { useAuth } from "./auth-provider";
-import { Avatar } from "./avatar";
-import { BookmarkIcon, HomeIcon, MapIcon, PersonIcon, PlusIcon } from "./icons";
 
 // Whether someone is typing in a box, when the phone's keyboard is up and
 // the bar would only be in the way.
@@ -34,123 +32,45 @@ function useTyping() {
   );
 }
 
-type Tab = {
-  href: string;
-  label: string;
-  /** What a screen reader says, when it's more than the label. */
-  spoken?: string;
-  current: boolean;
-  /** The icon on the bar, and the one in the round button when it's the page you're on. */
-  icon: ReactNode;
-  raised: ReactNode;
+// The tab icons, copied from the prototype's ICON object.
+const ICON = {
+  home: "M4 10.5 12 4l8 6.5V19a1 1 0 0 1-1 1h-4.5v-5.5h-5V20H5a1 1 0 0 1-1-1v-8.5Z",
+  map: "M12 21s-6.5-6.2-6.5-11.2a6.5 6.5 0 0 1 13 0C18.5 14.8 12 21 12 21Z M14.4 9.8a2.4 2.4 0 1 1-4.8 0a2.4 2.4 0 1 1 4.8 0Z",
+  saved: "M6.5 4.5h11v15.5L12 16.2 6.5 20V4.5Z",
 };
 
-// How long the round button takes to slide to another button, and its easing.
-const SLIDE = "duration-500 ease-[cubic-bezier(0.65,0,0.35,1)] motion-reduce:transition-none";
+type TabId = "home" | "map" | "add" | "saved" | "me";
 
 /**
- * The bar's white shape, with a dip in its top edge where the round button
- * sits. One piece the width of a button slides along under the buttons; the
- * flat white either side of the dip reaches past both ends of the bar.
- */
-function Notch({ open }: { open: boolean }) {
-  return (
-    <div className="absolute inset-0 [filter:drop-shadow(0_-1px_0_rgb(43_29_26/0.08))_drop-shadow(0_-3px_6px_rgb(90_50_20/0.05))]">
-      <span className="absolute inset-y-0 right-[calc(50%+39px)] w-screen bg-white" />
-      <span className="absolute inset-y-0 left-[calc(50%+39px)] w-screen bg-white" />
-      <svg viewBox="0 0 80 52" className="absolute top-0 left-1/2 -ml-[40px] h-[52px] w-[80px]">
-        <path d="M0 0H6C11 0 13.5 3 15.7 9A25 25 0 0 0 64.3 9C66.5 3 69 0 74 0H80V52H0Z" fill="#fff" />
-      </svg>
-      {/* Fills the dip when no button is raised. */}
-      <span
-        className={`absolute top-0 left-1/2 -ml-[40px] h-[52px] w-[80px] bg-white transition-opacity duration-300 ${open ? "opacity-0" : "opacity-100"}`}
-      />
-    </div>
-  );
-}
-
-/**
- * The phone's main buttons, on a bar along the bottom where a thumb
- * reaches: Home and the map, the red button to add a place in the middle,
- * then Saved and your profile. The page you're on rises into a yellow
- * round button that slides along the bar to whichever is tapped. Activity
- * is the bell at the top. Computers have these in the menu at the top.
- * Sized in pixels, not rem, so it's the same slim bar on every phone.
+ * The bottom bar, the prototype's "notch" variant: five tabs, Home, Map,
+ * Add Place, Saved and Me, with a red pill that slides under the icon of
+ * the page you're on (not under Add Place or Me, and not on other pages).
+ * Every style is copied from the prototype. Computers have these in the
+ * menu at the top.
  */
 export function BottomBar() {
-  const { loading, user, profile, consent } = useAuth();
+  const { user, profile, consent } = useAuth();
   const pathname = usePathname();
   const typing = useTyping();
-  const me =
-    user && consent && profile
-      ? { uid: user.uid, name: profile.displayName, photo: photoOf(profile)?.small ?? null }
-      : null;
-  const mine = me ? personPath(me.uid) : null;
-  const icon = "h-[22px] w-[22px]";
-  const raised = "h-[21px] w-[21px]";
+  const member = user && consent && profile ? profile : null;
+  const mine = member && user ? personPath(user.uid) : null;
+  // Signed out, or not yet joined, Me leads to signing in or joining.
+  const meHref = mine ?? (user ? "/welcome" : "/signin");
 
-  const tabs: (Tab | null)[] = [
+  const tabs: { id: TabId; href: string; label: string; current: boolean }[] = [
+    { id: "home", href: "/", label: "Home", current: pathname === "/" },
+    { id: "map", href: "/map", label: "Map", current: pathname === "/map" },
+    { id: "add", href: "/share", label: "Add Place", current: pathname === "/share" },
+    { id: "saved", href: "/saved", label: "Saved", current: pathname === "/saved" },
     {
-      href: "/",
-      label: "Home",
-      current: pathname === "/",
-      icon: <HomeIcon className={icon} />,
-      raised: <HomeIcon filled className={raised} />,
+      id: "me",
+      href: meHref,
+      label: "Me",
+      current: pathname === meHref || (!!mine && pathname === "/account"),
     },
-    {
-      href: "/map",
-      label: "Map",
-      current: pathname === "/map",
-      icon: <MapIcon className={icon} />,
-      raised: <MapIcon className={raised} />,
-    },
-    {
-      href: "/share",
-      label: "Add Place",
-      current: pathname === "/share",
-      icon: (
-        <span className="flex h-[24px] w-[42px] items-center justify-center rounded-full bg-brand-red text-white shadow-[0_3px_8px_rgb(163_23_27/0.3)] transition group-hover:bg-brand-red-deep group-active:scale-95">
-          <PlusIcon className="h-[19px] w-[19px]" />
-        </span>
-      ),
-      raised: <PlusIcon className={raised} />,
-    },
-    {
-      href: "/saved",
-      label: "Saved",
-      current: pathname === "/saved",
-      icon: <BookmarkIcon className={icon} />,
-      raised: <BookmarkIcon filled className={raised} />,
-    },
-    me && mine
-      ? {
-          href: mine,
-          label: "Me",
-          spoken: "My profile",
-          current: pathname === mine || pathname === "/account",
-          icon: <Avatar name={me.name} photo={me.photo} size="bar" />,
-          raised: <Avatar name={me.name} photo={me.photo} size="bar" />,
-        }
-      : loading
-        ? null
-        : user
-          ? {
-              href: "/welcome",
-              label: "Join",
-              current: pathname === "/welcome",
-              icon: <PersonIcon className={icon} />,
-              raised: <PersonIcon className={raised} />,
-            }
-          : {
-              href: "/signin",
-              label: "Sign in",
-              current: pathname === "/signin",
-              icon: <PersonIcon className={icon} />,
-              raised: <PersonIcon className={raised} />,
-            },
   ];
 
-  // The button moves as soon as it's tapped, while the page loads.
+  // The pill moves as soon as a tab is tapped, while the page loads.
   // Once the new page is showing, the page itself says where it sits.
   const [tapped, setTapped] = useState(-1);
   const [shown, setShown] = useState(pathname);
@@ -158,66 +78,131 @@ export function BottomBar() {
     setShown(pathname);
     setTapped(-1);
   }
-  const index = tapped >= 0 ? tapped : tabs.findIndex((tab) => tab?.current);
-  // On a page that isn't one of these, the button sinks where it last was.
-  const [last, setLast] = useState(Math.max(index, 0));
-  if (index >= 0 && index !== last) setLast(index);
-  const at = index >= 0 ? index : last;
-  const active = index >= 0 ? tabs[index] : null;
+  const ai = tapped >= 0 ? tapped : tabs.findIndex((tab) => tab.current);
+  const activeTab = ai >= 0 ? tabs[ai].id : null;
+  const notchOk = ai >= 0 && activeTab !== "add" && activeTab !== "me";
 
   return (
     <nav
       aria-label="Main"
-      style={{ viewTransitionName: "bottom-bar" }}
-      className={`fixed inset-x-0 bottom-0 z-40 [clip-path:inset(-40px_0_0_0)] transition-transform duration-200 sm:hidden ${typing ? "translate-y-full" : ""}`}
+      className={`transition-transform duration-200 sm:hidden ${typing ? "translate-y-full" : ""}`}
+      style={{
+        viewTransitionName: "bottom-bar",
+        position: "fixed",
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: 30,
+        background: "rgb(255 255 255 / .96)",
+        backdropFilter: "blur(14px)",
+        WebkitBackdropFilter: "blur(14px)",
+        borderTop: "1px solid #F1E6E2",
+      }}
     >
-      <div className="relative mx-auto h-[52px] max-w-md px-2">
+      <div style={{ position: "relative", display: "grid", gridTemplateColumns: "repeat(5,1fr)", height: 60 }}>
         <div
           aria-hidden="true"
-          className={`pointer-events-none absolute inset-y-0 left-2 w-[calc((100%-16px)/5)] transition-transform ${SLIDE}`}
-          style={{ transform: `translateX(${at * 100}%)` }}
-        >
-          <Notch open={!!active} />
-          <span
-            className={`absolute top-[-17px] left-1/2 -ml-[20px] flex h-10 w-10 items-center justify-center rounded-full bg-brand-yellow text-brand-red-deep shadow-[0_4px_10px_rgb(120_70_30/0.25)] transition-transform duration-300 motion-reduce:transition-none ${active ? "scale-100" : "scale-0"}`}
-          >
-            <span key={at} className="flex animate-[bar-pop_0.35s_ease-out_0.15s_backwards] motion-reduce:animate-none">
-              {active?.raised}
-            </span>
-          </span>
-        </div>
-        <ul className="relative flex h-full items-stretch">
-          {tabs.map((tab, i) =>
-            tab ? (
-              <li key={tab.href} className="flex-1">
-                <Link
-                  href={tab.href}
-                  aria-label={tab.spoken}
-                  aria-current={tab.current ? "page" : undefined}
-                  transitionTypes={[i > at ? "nav-forward" : "nav-back"]}
-                  onClick={(event) => {
-                    if (!event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey) {
-                      setTapped(i);
-                    }
+          style={{
+            position: "absolute",
+            top: 6,
+            left: Math.max(ai, 0) * 20 + 10 + "%",
+            width: 40,
+            height: 30,
+            marginLeft: -20,
+            borderRadius: 999,
+            background: "#A3171B",
+            transition: "left .38s cubic-bezier(.3,1.3,.5,1),opacity .2s",
+            opacity: notchOk ? 1 : 0,
+          }}
+        />
+        {tabs.map((tab, i) => {
+          const on = activeTab === tab.id;
+          return (
+            <Link
+              key={tab.id}
+              href={tab.href}
+              aria-label={tab.label}
+              aria-current={tab.current ? "page" : undefined}
+              transitionTypes={[i > ai ? "nav-forward" : "nav-back"]}
+              onClick={(event) => {
+                if (!event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey) setTapped(i);
+              }}
+              style={{
+                position: "relative",
+                border: 0,
+                background: "transparent",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 4,
+                paddingTop: 9,
+              }}
+            >
+              {tab.id === "add" && (
+                <span
+                  style={{
+                    width: 44,
+                    height: 30,
+                    marginTop: -3,
+                    borderRadius: 999,
+                    border: "2px solid #A3171B",
+                    display: "grid",
+                    placeItems: "center",
+                    color: "#A3171B",
                   }}
-                  className={`group flex h-full flex-col items-center justify-end gap-[3px] pb-[7px] text-[10px] font-semibold leading-none transition-colors ${i === index ? "text-brand-red" : "text-ink-soft hover:text-ink"}`}
                 >
-                  <span
-                    className={`flex transition duration-300 motion-reduce:transition-none ${i === index ? "-translate-y-2 opacity-0" : ""}`}
-                  >
-                    {tab.icon}
-                  </span>
-                  <span>{tab.label}</span>
-                </Link>
-              </li>
-            ) : (
-              <li key={i} aria-hidden="true" className="flex-1" />
-            ),
-          )}
-        </ul>
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
+                    <path d="M12 6v12M6 12h12"></path>
+                  </svg>
+                </span>
+              )}
+              {tab.id === "me" && (
+                <span
+                  style={{
+                    width: 24,
+                    height: 24,
+                    borderRadius: "50%",
+                    background: "#A3171B",
+                    color: "#fff",
+                    display: "grid",
+                    placeItems: "center",
+                    font: "700 11px 'Plus Jakarta Sans'",
+                    boxShadow: on ? "0 0 0 2px #fff,0 0 0 4px #FFC000" : "none",
+                  }}
+                >
+                  {member?.displayName.trim()[0]}
+                </span>
+              )}
+              {(tab.id === "home" || tab.id === "map" || tab.id === "saved") && (
+                <svg
+                  viewBox="0 0 24 24"
+                  width="22"
+                  height="22"
+                  fill={on && tab.id !== "map" ? "#fff" : "none"}
+                  stroke={on ? "#fff" : "#6E5A55"}
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  style={{ transition: "stroke .2s" }}
+                >
+                  <path d={ICON[tab.id]}></path>
+                </svg>
+              )}
+              <span
+                style={{
+                  font: `${on ? 700 : 500} 10.5px 'Plus Jakarta Sans'`,
+                  color: on ? "#A3171B" : "#6E5A55",
+                  marginTop: tab.id === "add" ? "1px" : "0px",
+                }}
+              >
+                {tab.label}
+              </span>
+            </Link>
+          );
+        })}
       </div>
-      {/* Keeps the bar clear of the iPhone's home bar. */}
-      <div className="h-[env(safe-area-inset-bottom)] bg-white" />
+      {/* The phone's own home bar area, in place of the prototype's drawn one. */}
+      <div style={{ height: "env(safe-area-inset-bottom)" }} />
     </nav>
   );
 }
