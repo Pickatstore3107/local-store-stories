@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { personPath, photoOf } from "@/lib/people";
 import { useAuth } from "./auth-provider";
 import { Avatar } from "./avatar";
-import { BellLink } from "./bell";
+import { BellLink, useBell } from "./bell";
 import { CityPicker } from "./city-picker";
 import { PersonIcon } from "./icons";
 
@@ -28,7 +28,9 @@ export function SiteHeader() {
       : null;
 
   return (
-    <header style={{ viewTransitionName: "site-header" }} className="flex h-(--header-h) shrink-0 items-center justify-between gap-3 px-4 sm:px-8">
+    <>
+      <PhoneHeader />
+      <header style={{ viewTransitionName: "site-header" }} className="hidden h-(--header-h) shrink-0 items-center justify-between gap-3 px-8 sm:flex">
       <Link href="/" aria-label="Local Stores & Their Stories home">
         <Image
           src="/brand/pas-logo-horizontal.webp"
@@ -36,14 +38,9 @@ export function SiteHeader() {
           width={900}
           height={419}
           priority
-          className="h-7 w-auto sm:h-11"
+          className="h-11 w-auto"
         />
       </Link>
-      {/* On a phone, the city and the bell sit here; the rest is in the bar at the bottom. */}
-      <div className="flex items-center gap-0.5 sm:hidden">
-        <CityPicker />
-        {!loading && me && <BellLink />}
-      </div>
       <nav aria-label="Main" className="hidden items-center gap-2 sm:flex">
         <Link href="/" aria-current={pathname === "/" ? "page" : undefined} className={navLink}>
           Home
@@ -91,6 +88,33 @@ export function SiteHeader() {
           </Link>
         )}
       </nav>
+    </header>
+    </>
+  );
+}
+
+/**
+ * The phone's header, copied from the prototype: the logo, the city and
+ * the bell on a 52px blurred white strip that stays at the top.
+ */
+function PhoneHeader() {
+  const bell = useBell();
+  const unseen = !!bell && bell.ringAt > bell.seenAt;
+  return (
+    <header
+      className="sm:hidden"
+      style={{ viewTransitionName: "site-header", position: "sticky", top: 0, zIndex: 20, height: 52, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 14px 0 16px", background: "rgb(255 255 255 / .94)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)" }}
+    >
+      <Link href="/" aria-label="Local Stores & Their Stories home">
+        <Image src="/assets/pas-logo-horizontal.webp" alt="Pick at Store" width={900} height={419} priority style={{ height: 26, width: "auto", display: "block" }} />
+      </Link>
+      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+        <CityPicker />
+        <Link href="/activity" aria-label={unseen ? "Activity, something new" : "Activity"} style={{ width: 40, height: 40, border: 0, background: "transparent", display: "grid", placeItems: "center", position: "relative", color: "#2B1D1A" }}>
+          <svg viewBox="0 0 24 24" width="23" height="23" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M6 16.5V11a6 6 0 1 1 12 0v5.5l1.5 1.5h-15L6 16.5Zm4 3a2 2 0 0 0 4 0"></path></svg>
+          {unseen && <span style={{ position: "absolute", top: 9, right: 10, width: 8, height: 8, borderRadius: "50%", background: "#A3171B", border: "2px solid #fff" }}></span>}
+        </Link>
+      </div>
     </header>
   );
 }

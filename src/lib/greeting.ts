@@ -31,3 +31,12 @@ export function greeting({ name, hour, seed }: { name: string | null; hour: numb
   const [start, end] = hellos[seed % hellos.length];
   return name ? `${start}, ${name}${end}` : `${start}${end}`;
 }
+
+/**
+ * The redesign's hello, as the prototype words it: one per part of the
+ * day, with the member's first name before the question mark.
+ */
+export function pasGreeting(name: string | null, hour: number) {
+  const hello = hour < 12 ? "Chai first" : hour < 17 ? "Lunch break" : hour < 21 ? "Evening walk" : "Still awake";
+  return name ? hello + ", " + name + "?" : hello + "?";
+}
