@@ -1,4 +1,5 @@
 import { Anton } from "next/font/google";
 
-/** Tall, bold numbers: counts on profiles, a cover's rank, a post's year. */
-export const anton = Anton({ weight: "400", subsets: ["latin"] });
+/** Tall, bold numbers: years, counts and ranks. Loaded for the whole site
+ *  in the root layout, where --font-anton is set. */
+export const anton = Anton({ variable: "--font-anton", weight: "400", subsets: ["latin"] });

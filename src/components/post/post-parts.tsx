@@ -32,6 +32,8 @@ export function LikeablePhoto({
   const lastTap = useRef(0);
   const pending = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const [hearts, setHearts] = useState(0);
+  const [heartShown, setHeartShown] = useState(false);
+  const hideHeart = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   function tap() {
     const now = Date.now();
@@ -40,6 +42,11 @@ export function LikeablePhoto({
       lastTap.current = 0;
       like.likeOnce();
       setHearts((n) => n + 1);
+      // Taken away once its 0.8s animation is over. With motion turned off
+      // it has no animation to fade it out, so this is what hides it.
+      setHeartShown(true);
+      clearTimeout(hideHeart.current);
+      hideHeart.current = setTimeout(() => setHeartShown(false), 800);
       return;
     }
     lastTap.current = now;
@@ -50,7 +57,7 @@ export function LikeablePhoto({
     // The like button and the memory's name do the same for keyboards and screen readers.
     <div onClick={tap} className="relative cursor-pointer select-none [-webkit-touch-callout:none]">
       {children}
-      {hearts > 0 && (
+      {heartShown && (
         <span
           key={hearts}
           aria-hidden="true"

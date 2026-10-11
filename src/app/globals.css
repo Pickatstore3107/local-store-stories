@@ -27,24 +27,24 @@
   --font-serif: var(--font-playfair), Georgia, "Times New Roman", serif;
 }
 
-html,
-body {
-  background: var(--paper);
-  color: var(--ink);
+/* The redesign's resets, copied from the prototype
+   (docs/design_handoff_pas_redesign/Local Stores Prototype.dc.html). In
+   the base layer, after Tailwind's own resets. The white of the prototype's
+   phone screen is the wrapper in src/app/layout.tsx. */
+@layer base {
+  body{margin:0;background:#EFEAE6;font-family:'Plus Jakarta Sans',system-ui,sans-serif;color:#2B1D1A;-webkit-font-smoothing:antialiased}
+  a{color:#A3171B;text-decoration:none}a:hover{color:#7D1114}
+  button{font-family:inherit;cursor:pointer}
+  input,textarea{font-family:inherit}
 }
-
-/* Titles and store names are set in the serif, at a lighter weight than
-   the sans so the thick and thin strokes show. Small all-caps labels stay
-   in the sans. Outside a layer, this wins over the utility classes. */
-:is(h1, h2, h3):not(.uppercase) {
-  font-family: var(--font-serif);
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  font-variant-numeric: lining-nums;
-}
-h1:not(.uppercase) {
-  font-weight: 500;
-}
+/* Copied character for character from the prototype. */
+*::-webkit-scrollbar{display:none}
+@keyframes pasBurst{0%{transform:scale(0);opacity:0}15%{transform:scale(1.25);opacity:1}30%{transform:scale(.92)}45%{transform:scale(1.04)}60%{transform:scale(1)}85%{opacity:1}100%{transform:scale(1) translateY(-40px);opacity:0}}
+@keyframes pasBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+@keyframes pasRing{0%{transform:scale(.4);opacity:.7}100%{transform:scale(2.2);opacity:0}}
+@keyframes pasMarch{to{stroke-dashoffset:-22}}
+@keyframes pasWalk{from{background-position:0% 0}to{background-position:100% 0}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 
 /* A die-cut sticker: a white edge all round and a soft shadow under it. */
 @utility sticker {
@@ -58,17 +58,6 @@ h1:not(.uppercase) {
 }
 @utility lift-sm {
   box-shadow: 0 2px 8px rgb(120 70 30 / 0.1);
-}
-
-/* Text and spacing grow with the screen: 12.5px on a small phone, 14.5px
-   on a large one, 16px on a computer. Everything sized in rem follows. */
-html {
-  font-size: clamp(12.5px, 3.3vw, 14.5px);
-}
-@media (min-width: 640px) {
-  html {
-    font-size: 16px;
-  }
 }
 
 /* The menu at the top, and on a phone the bar of buttons along the bottom,
@@ -108,16 +97,6 @@ html {
 @media (max-width: 639px) {
   .lss-full-map .maplibregl-ctrl-top-right {
     display: none;
-  }
-}
-
-/* Phones zoom in on a box whose text is under 16px when it's tapped, so
-   boxes stay at 16px. Outside a layer, this wins over the utility classes. */
-@media (max-width: 639px) {
-  input:not([type="checkbox"], [type="radio"]),
-  select,
-  textarea {
-    font-size: 16px;
   }
 }
 
