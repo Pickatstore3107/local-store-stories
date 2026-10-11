@@ -71,19 +71,10 @@ export function Splash() {
         <source src="/art/walking.webm" type="video/webm" />
         <source src="/art/walking.mp4" type="video/mp4" />
       </video>
-      {/* The same hello and line as at the top of Home. */}
-      <div className="mt-4 min-h-[4.6rem] max-w-[18rem] px-4 text-center font-serif">
-        {greeting && (
-          <>
-            <p className="text-[1.55rem] leading-tight text-brand-red">
-              <Words text={greeting.hello} delay={2} />
-            </p>
-            <p className="mt-1.5 text-[1rem] italic leading-snug text-ink">
-              <Words text={greeting.lines[0]} delay={6} />
-            </p>
-          </>
-        )}
-      </div>
+      {/* The same hello as at the top of Home. */}
+      <p className="mt-4 min-h-[2.2rem] px-4 text-center font-serif text-[1.55rem] leading-tight text-brand-red">
+        {greeting && <Words text={greeting} delay={2} />}
+      </p>
       <Image src="/brand/pas-logo-horizontal.webp" alt="" width={160} height={48} className="mt-5 h-8 w-auto" priority />
     </div>
   );

@@ -1,13 +1,13 @@
 import Image from "next/image";
 import type { CSSProperties } from "react";
 import { HeartIcon, PlaceIcon } from "../icons";
-import { HeroGreeting, HeroLine } from "./hero-greeting";
+import { HeroGreeting } from "./hero-greeting";
 import { RollingWord } from "./rolling-word";
 
 /**
- * The top of Home: a hello for whoever is here, what the site is about
- * with the kind of place changing as you look, and a line about the shops
- * people remember, next to a small poster of Hyderabad with two stickers.
+ * The top of Home: a hello for whoever is here and what the site is
+ * about, the kind of place changing as you look, next to a small poster
+ * of Hyderabad with two stickers.
  */
 export function HomeHero() {
   return (
@@ -21,12 +21,8 @@ export function HomeHero() {
             <span className="anim-up block font-serif italic text-brand-red [--i:1]">
               <RollingWord />
             </span>
-            <span className="anim-up block text-[0.62em] font-semibold leading-tight text-ink [--i:2]">
-              and the stories behind them
-            </span>
           </span>
         </h1>
-        <HeroLine />
       </div>
       <div className="relative shrink-0">
         <Image

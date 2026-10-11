@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useSyncExternalStore, type CSSProperties } from "react";
+import { useSyncExternalStore, type CSSProperties } from "react";
 import { firstName, greeting } from "@/lib/greeting";
 import { useAuth } from "./auth-provider";
 
@@ -28,7 +28,7 @@ const everyMinute = (changed: () => void) => {
 };
 
 /**
- * The hello and its lines for whoever is here, or null while the page is
+ * The hello for whoever is here, or null while the page is
  * first built and until we know whether someone is signed in.
  */
 export function useGreeting() {
@@ -50,16 +50,3 @@ export function Words({ text, delay = 0 }: { text: string; delay?: number }) {
   ));
 }
 
-/** The line about shops, a new one every few seconds; without motion, the first stays. */
-export function useRollingLine(lines: string[] | undefined, every = 6500) {
-  const [at, setAt] = useState(0);
-  useEffect(() => {
-    if (!lines || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    const timer = setInterval(() => {
-      if (document.hidden || "splash" in document.documentElement.dataset) return;
-      setAt((n) => n + 1);
-    }, every);
-    return () => clearInterval(timer);
-  }, [lines, every]);
-  return lines ? { line: lines[at % lines.length], key: at } : null;
-}

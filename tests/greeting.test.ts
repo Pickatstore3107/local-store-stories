@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { dayPart, firstName, greeting, LINES } from "../src/lib/greeting";
+import { dayPart, firstName, greeting } from "../src/lib/greeting";
 
 describe("greeting", () => {
   it("knows the part of the day", () => {
@@ -12,9 +12,9 @@ describe("greeting", () => {
   });
 
   it("uses the first name, or the city for visitors", () => {
-    expect(greeting({ name: "Krishna", hour: 8, seed: 0 }).hello).toBe("Good morning, Krishna");
-    expect(greeting({ name: null, hour: 18, seed: 0 }).hello).toBe("Good evening, Hyderabad");
-    expect(greeting({ name: "Asha", hour: 23, seed: 1 }).hello).toBe("Still awake, Asha?");
+    expect(greeting({ name: "Krishna", hour: 8, seed: 0 })).toBe("Good morning, Krishna");
+    expect(greeting({ name: null, hour: 18, seed: 0 })).toBe("Good evening, Hyderabad");
+    expect(greeting({ name: "Asha", hour: 23, seed: 1 })).toBe("Still awake, Asha?");
   });
 
   it("takes the first word of a name", () => {
@@ -23,9 +23,4 @@ describe("greeting", () => {
     expect(firstName(undefined)).toBeNull();
   });
 
-  it("shows every line once, starting from the seed", () => {
-    const { lines } = greeting({ name: null, hour: 9, seed: 3 });
-    expect(lines[0]).toBe(LINES[3]);
-    expect(new Set(lines).size).toBe(LINES.length);
-  });
 });
