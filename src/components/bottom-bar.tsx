@@ -17,7 +17,7 @@ function typingNow() {
   return element instanceof HTMLElement && element.isContentEditable;
 }
 
-function useTyping() {
+export function useTyping() {
   return useSyncExternalStore(
     (change) => {
       document.addEventListener("focusin", change);

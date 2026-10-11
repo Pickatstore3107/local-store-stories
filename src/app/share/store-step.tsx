@@ -1,10 +1,8 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
-import { CloseIcon, PlaceIcon, SearchIcon, StoreIcon } from "@/components/icons";
 import { PinPicker } from "@/components/map/pin-picker";
 import { searchPlaces, type Place } from "@/components/map/place-search";
-import { input, primaryButton } from "@/components/ui";
 import { pinAt, type Pin } from "@/lib/pins";
 import { PLACE_MAX, PLACE_MIN, STORE_NAME_MAX, STORE_NAME_MIN, type Category } from "@/lib/stories";
 
@@ -13,9 +11,6 @@ export type StoreDetails = { storeName: string; neighbourhood: string; city: str
 /** How step 2 shows: searching, a store picked from the search, or typing it in. */
 export type StoreMode = "search" | "picked" | "manual";
 
-const label = "mt-4 block text-sm font-bold text-ink";
-const hint = "font-normal text-ink-soft";
-const link = "font-bold text-brand-red underline underline-offset-4";
 const WAIT_MS = 250;
 
 export function storeProblem({ storeName, neighbourhood, city }: StoreDetails) {
@@ -25,14 +20,21 @@ export function storeProblem({ storeName, neighbourhood, city }: StoreDetails) {
   return null;
 }
 
-/** Step 2: the store, found in a search of Hyderabad or typed in. */
+const field = { height: 44, border: 0, borderRadius: 14, background: "#F7F2EF", padding: "0 14px", font: "500 14px 'Plus Jakarta Sans'", color: "#2B1D1A", outline: "none", minWidth: 0 } as const;
+const caps = { font: "700 10.5px 'Plus Jakarta Sans'", letterSpacing: ".14em", textTransform: "uppercase", color: "#6E5A55" } as const;
+const note = { margin: 0, font: "500 12px/1.5 'Plus Jakarta Sans'", color: "#6E5A55" } as const;
+
+/**
+ * Step 2, copied from the prototype: a search of Hyderabad's stores and
+ * areas, with the results as a list. "Not listed?" types it in and drops a
+ * pin on the map instead.
+ */
 export function StoreStep({
   store,
   setStore,
   mode,
   setMode,
   onCategory,
-  onNext,
 }: {
   store: StoreDetails;
   setStore: (store: StoreDetails) => void;
@@ -40,18 +42,14 @@ export function StoreStep({
   setMode: (mode: StoreMode) => void;
   /** The kind of place, when the search knows it. */
   onCategory: (category: Category) => void;
-  onNext: () => void;
 }) {
-  const [error, setError] = useState<string | null>(null);
   // Picked an area, not a store: the name still needs typing.
   const [areaPicked, setAreaPicked] = useState<string | null>(null);
-  const [mapOpen, setMapOpen] = useState(!!store.pin);
   const nameField = useRef<HTMLInputElement>(null);
 
   function pick(place: Place) {
     const pin = pinAt(place.spot);
     const city = (place.city ?? "Hyderabad").slice(0, PLACE_MAX);
-    setError(null);
     if (place.store) {
       setStore({
         storeName: place.name.slice(0, STORE_NAME_MAX),
@@ -65,150 +63,48 @@ export function StoreStep({
     } else {
       setStore({ ...store, neighbourhood: place.name.slice(0, PLACE_MAX), city, pin });
       setAreaPicked(place.name);
-      setMapOpen(!!pin);
       setMode("manual");
       setTimeout(() => nameField.current?.focus());
     }
   }
 
-  function next() {
-    const problem = storeProblem(store);
-    if (problem) {
-      setError(problem);
-      if (mode !== "manual") setMode("manual");
-      return;
-    }
-    onNext();
-  }
-
-  const place = [store.neighbourhood.trim(), store.city.trim()].filter(Boolean).join(", ");
-
   return (
-    <div>
-      {mode === "picked" ? (
-        <div className="mt-4 flex items-center gap-3 rounded-2xl bg-white p-3 ring-1 ring-ink/10">
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-paper text-brand-red">
-            <StoreIcon className="h-5 w-5" />
-          </span>
-          <span className="min-w-0 flex-1">
-            <span className="block truncate font-bold text-ink">{store.storeName}</span>
-            <span className="block truncate text-[0.85rem] text-ink-soft">
-              {[place, store.pin && "On the map"].filter(Boolean).join(" · ")}
-            </span>
-          </span>
-          <button type="button" onClick={() => setMode("search")} className={`${link} shrink-0 text-sm`}>
-            Change
-          </button>
-        </div>
-      ) : mode === "search" ? (
-        <StoreSearch onPick={pick} />
+    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      <h2 style={{ margin: 0, font: "600 20px 'Playfair Display'" }}>Which store?</h2>
+      {mode !== "manual" ? (
+        <StoreSearch onPick={pick} picked={mode === "picked" ? store : null} />
       ) : (
-        <div>
-          {areaPicked && (
-            <p className="mt-4 rounded-xl bg-brand-yellow/20 px-3.5 py-2.5 text-sm text-ink">
-              The pin is on {areaPicked}. Now type the store&apos;s name.
-            </p>
-          )}
-          <label htmlFor="storeName" className={label}>
-            Store name
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {areaPicked && <p style={note}>The pin is on {areaPicked}. Now type the store&apos;s name.</p>}
+          <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <span style={caps}>Store name</span>
+            <input ref={nameField} value={store.storeName} maxLength={STORE_NAME_MAX} onChange={(e) => setStore({ ...store, storeName: e.target.value })} placeholder="Sharma Tea Point" style={field} />
           </label>
-          <input
-            ref={nameField}
-            id="storeName"
-            value={store.storeName}
-            maxLength={STORE_NAME_MAX}
-            onChange={(e) => setStore({ ...store, storeName: e.target.value })}
-            placeholder="e.g. Sharma Tea Stall"
-            className={`${input} mt-1.5`}
-          />
-          <div className="grid grid-cols-2 gap-x-3">
-            <div>
-              <label htmlFor="neighbourhood" className={label}>
-                Area <span className={hint}>(optional)</span>
-              </label>
-              <input
-                id="neighbourhood"
-                value={store.neighbourhood}
-                maxLength={PLACE_MAX}
-                onChange={(e) => setStore({ ...store, neighbourhood: e.target.value })}
-                placeholder="e.g. Ameerpet"
-                className={`${input} mt-1.5`}
-              />
-            </div>
-            <div>
-              <label htmlFor="city" className={label}>
-                City
-              </label>
-              <input
-                id="city"
-                value={store.city}
-                maxLength={PLACE_MAX}
-                onChange={(e) => setStore({ ...store, city: e.target.value })}
-                className={`${input} mt-1.5`}
-              />
-            </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+            <label style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
+              <span style={caps}>Area</span>
+              <input value={store.neighbourhood} maxLength={PLACE_MAX} onChange={(e) => setStore({ ...store, neighbourhood: e.target.value })} placeholder="Optional" style={field} />
+            </label>
+            <label style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
+              <span style={caps}>City</span>
+              <input value={store.city} maxLength={PLACE_MAX} onChange={(e) => setStore({ ...store, city: e.target.value })} style={field} />
+            </label>
           </div>
-          <span className={label}>
-            On the Hyderabad map <span className={hint}>(optional)</span>
-          </span>
-          {mapOpen ? (
-            <div className="mt-1.5">
-              <PinPicker
-                value={store.pin}
-                onChange={(pin) => setStore({ ...store, pin })}
-                neighbourhood={store.neighbourhood}
-              />
-            </div>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setMapOpen(true)}
-              className="mt-1.5 inline-flex h-9 items-center rounded-full bg-white px-4 text-sm font-bold text-brand-red ring-1 ring-brand-red/30 transition hover:bg-brand-red/5"
-            >
-              Put the store on the map
-            </button>
-          )}
-          <p className="mt-1.5 text-xs text-ink-soft">
-            The map shows the area, never the exact spot, and only posts shared with everyone.
-          </p>
+          <span style={caps}>Drop a pin</span>
+          <PinPicker value={store.pin} onChange={(pin) => setStore({ ...store, pin })} neighbourhood={store.neighbourhood} />
+          <p style={note}>The map shows the area, never the exact spot, and only posts shared with everyone.</p>
         </div>
-      )}
-
-      <p className="mt-3 text-sm">
-        {mode === "search" ? (
-          <button
-            type="button"
-            onClick={() => {
-              setAreaPicked(null);
-              setMode("manual");
-            }}
-            className={link}
-          >
-            Can&apos;t find it? Type it in
-          </button>
-        ) : mode === "picked" ? (
-          <button type="button" onClick={() => setMode("manual")} className={link}>
-            Edit the name or place
-          </button>
-        ) : (
-          <button type="button" onClick={() => setMode("search")} className={link}>
-            Search instead
-          </button>
-        )}
-      </p>
-
-      {error && (
-        <p role="alert" className="mt-3 rounded-xl bg-brand-red/10 px-4 py-3 text-sm text-brand-red-deep">
-          {error}
-        </p>
       )}
       <button
         type="button"
-        onClick={next}
-        disabled={mode === "search" && !store.storeName.trim()}
-        className={`${primaryButton} mt-5 w-full`}
+        onClick={() => {
+          if (mode === "manual") return setMode("search");
+          setAreaPicked(null);
+          setMode("manual");
+        }}
+        style={{ alignSelf: "flex-start", padding: 0, border: 0, background: "transparent", font: "700 13px 'Plus Jakarta Sans'", color: "#A3171B" }}
       >
-        Next
+        {mode === "manual" ? "Search instead" : "Not listed? Type it and drop a pin"}
       </button>
     </div>
   );
@@ -216,10 +112,9 @@ export function StoreStep({
 
 type Results = { query: string; places: Place[]; failed: boolean };
 
-/** A search of stores and places in Hyderabad, with the results right under it. */
-function StoreSearch({ onPick }: { onPick: (place: Place) => void }) {
+/** The search of stores and places in Hyderabad, with the results right under it. */
+function StoreSearch({ onPick, picked }: { onPick: (place: Place) => void; picked: StoreDetails | null }) {
   const id = useId();
-  const field = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<Results>({ query: "", places: [], failed: false });
   const asked = query.trim();
@@ -247,77 +142,58 @@ function StoreSearch({ onPick }: { onPick: (place: Place) => void }) {
   // Stores first, then streets and areas.
   const places =
     asked.length >= 2 && fresh ? [...results.places].sort((a, b) => Number(b.store) - Number(a.store)) : [];
+  const status =
+    asked.length < 2
+      ? null
+      : !fresh
+        ? "Searching…"
+        : results.failed
+          ? "Search isn't working just now. Type the store in instead."
+          : places.length === 0
+            ? "Nothing in Hyderabad matches that. You can type it in."
+            : null;
+  const pickedPlace = picked ? [picked.neighbourhood.trim(), picked.city.trim()].filter(Boolean).join(", ") : "";
+  const rows = [
+    ...(picked && !places.some((p) => p.store && p.name === picked.storeName)
+      ? [{ key: "picked", name: picked.storeName, area: pickedPlace, on: true, place: null }]
+      : []),
+    ...places.map((place) => ({
+      key: place.key,
+      name: place.name,
+      area: place.detail ?? "",
+      on: !!picked && place.store && place.name === picked.storeName,
+      place,
+    })),
+  ];
 
   return (
-    <div className="mt-4">
-      <div className="flex h-11 items-center gap-2 rounded-full bg-white pl-3.5 pr-1 ring-1 ring-ink/10 focus-within:ring-2 focus-within:ring-brand-red/40">
-        <SearchIcon className="h-[1.1rem] w-[1.1rem] shrink-0 text-ink-soft" />
-        <label htmlFor={`${id}-search`} className="sr-only">
-          Search for the store in Hyderabad
-        </label>
+    <>
+      <label style={{ display: "flex", alignItems: "center", gap: 10, height: 46, padding: "0 16px", borderRadius: 999, background: "#F7F2EF", color: "#6E5A55" }}>
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"></circle><path d="m16 16 4 4"></path></svg>
         <input
-          ref={field}
           id={`${id}-search`}
           type="search"
           enterKeyHint="search"
           autoComplete="off"
+          aria-label="Search for the store in Hyderabad"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search for the store"
-          className="min-w-0 flex-1 bg-transparent py-2 text-base text-ink outline-none placeholder:text-ink-soft [&::-webkit-search-cancel-button]:hidden"
+          placeholder="Store name or area"
+          className="[&::-webkit-search-cancel-button]:hidden"
+          style={{ flex: 1, border: 0, outline: "none", background: "transparent", font: "500 14px 'Plus Jakarta Sans'", minWidth: 0 }}
         />
-        {query && (
-          <button
-            type="button"
-            onClick={() => {
-              setQuery("");
-              field.current?.focus();
-            }}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-ink-soft hover:bg-paper hover:text-ink"
-          >
-            <CloseIcon className="h-4 w-4" />
-            <span className="sr-only">Clear the search</span>
-          </button>
-        )}
-      </div>
-
-      {places.length > 0 && (
-        <ul aria-label="Places found" className="mt-2 overflow-hidden rounded-2xl bg-white ring-1 ring-ink/10">
-          {places.map((place) => {
-            const Icon = place.store ? StoreIcon : PlaceIcon;
-            return (
-              <li key={place.key} className="border-b border-ink/[0.06] last:border-0">
-                <button
-                  type="button"
-                  onClick={() => onPick(place)}
-                  className="flex w-full items-center gap-2.5 px-3 py-2.5 text-left hover:bg-paper/70"
-                >
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-paper text-ink-soft">
-                    <Icon className="h-[1.1rem] w-[1.1rem]" />
-                  </span>
-                  <span className="min-w-0">
-                    <span className="block truncate text-[0.95rem] font-semibold text-ink">{place.name}</span>
-                    {place.detail && (
-                      <span className="block truncate text-[0.8rem] text-ink-soft">{place.detail}</span>
-                    )}
-                  </span>
-                </button>
-              </li>
-            );
-          })}
-        </ul>
+      </label>
+      {rows.length > 0 && (
+        <div style={{ display: "flex", flexDirection: "column", borderTop: "1px solid #F1E6E2" }}>
+          {rows.map((s) => (
+            <button key={s.key} type="button" aria-pressed={s.on} onClick={() => s.place && onPick(s.place)} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 2px", border: 0, borderBottom: "1px solid #F1E6E2", background: "transparent", textAlign: "left" }}>
+              <span style={{ width: 36, height: 36, borderRadius: "50%", background: s.on ? "#A3171B" : "#FFF3D1", display: "grid", placeItems: "center", flex: "none" }}><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke={s.on ? "#fff" : "#A3171B"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 21s-6.5-6.2-6.5-11.2a6.5 6.5 0 0 1 13 0C18.5 14.8 12 21 12 21Z"></path></svg></span>
+              <span style={{ flex: 1, display: "flex", flexDirection: "column" }}><span style={{ font: "700 14px 'Plus Jakarta Sans'", color: "#2B1D1A" }}>{s.name}</span><span style={{ font: "500 12px 'Plus Jakarta Sans'", color: "#6E5A55" }}>{s.area}</span></span>
+            </button>
+          ))}
+        </div>
       )}
-      <p role="status" className="mt-2 px-1 text-[0.85rem] text-ink-soft empty:hidden">
-        {asked.length < 2
-          ? "Type the store's name, or the street or area it was on."
-          : !fresh
-            ? "Searching…"
-            : results.failed
-              ? "Search isn't working just now. Type the store in instead."
-              : places.length === 0
-                ? "Nothing in Hyderabad matches that. You can type it in."
-                : ""}
-      </p>
-    </div>
+      {status && <p role="status" style={note}>{status}</p>}
+    </>
   );
 }

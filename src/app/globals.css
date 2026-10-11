@@ -232,3 +232,9 @@
 :root[data-splash] body {
   overflow: hidden;
 }
+
+/* The prototype has no reset for placeholders, so they show in the
+   browser's own grey, not Tailwind's half-strength text colour. */
+::placeholder {
+  color: revert;
+}

@@ -17,7 +17,7 @@ export const metadata: Metadata = {
 
 export default function SharePage() {
   return (
-    <main className="mx-auto flex w-full max-w-lg flex-1 flex-col px-4 py-6 sm:px-5 sm:py-12">
+    <main style={{ flex: 1, width: "100%", maxWidth: 560, margin: "0 auto" }}>
       <RequireAccount>
         {/* The address can name a store to fill in, so it's read in the browser. */}
         <Suspense fallback={<Loading />}>

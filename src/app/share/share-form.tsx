@@ -1,16 +1,13 @@
 "use client";
 
-import Link from "next/link";
-import { useSearchParams } from "next/navigation";
-import { useEffect, useLayoutEffect, useRef, useState, type FormEvent } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useLayoutEffect, useRef, useState } from "react";
 import { useAuth } from "@/components/auth-provider";
-import { KindIcon, off, on, pill } from "@/components/home/kind-chips";
-import { BackIcon } from "@/components/icons";
-import { PassTheMemory } from "@/components/pass-the-memory";
-import { card, input, pageLead, pageTitle, primaryButton } from "@/components/ui";
+import { useTyping } from "@/components/bottom-bar";
+import { flash } from "@/components/pas/toast";
+import { Walker } from "@/components/pas/walker";
 import { friendlyError } from "@/lib/auth-errors";
 import { memoryPath } from "@/lib/memories";
-import { personPath } from "@/lib/people";
 import { pinAt, type Pin } from "@/lib/pins";
 import {
   CAPTION_MAX,
@@ -23,11 +20,17 @@ import {
   type Category,
   type Visibility,
 } from "@/lib/stories";
-import { MediaStep, releasePicked, type Picked } from "./media-step";
+import { MediaStep, problemText, releasePicked, type Picked } from "./media-step";
 import { storeProblem, StoreStep, type StoreDetails, type StoreMode } from "./store-step";
 
-const label = "mt-4 block text-sm font-bold text-ink";
-const hint = "font-normal text-ink-soft";
+const RED = "#A3171B";
+const INK = "#2B1D1A";
+const SOFT = "#6E5A55";
+// The kinds the prototype's form offers, in its order.
+const FORM_KINDS = ["Cafes", "Tea Stalls", "Bakeries", "Restaurants", "Kirana Stores", "Bookstores"] as const satisfies readonly Category[];
+const isFormKind = (c: string): c is Category => (FORM_KINDS as readonly string[]).includes(c);
+const caps = { font: "700 10.5px 'Plus Jakarta Sans'", letterSpacing: ".14em", textTransform: "uppercase", color: SOFT } as const;
+const field = { height: 44, border: 0, borderRadius: 14, background: "#F7F2EF", padding: "0 14px", outline: "none", minWidth: 0 } as const;
 
 type Prefill = { storeName: string; category: Category | ""; pin: Pin | null };
 
@@ -40,7 +43,7 @@ function readPrefill(params: URLSearchParams): Prefill | null {
   const category = params.get("category");
   return {
     storeName,
-    category: (CATEGORIES as readonly string[]).includes(category ?? "") ? (category as Category) : "",
+    category: (CATEGORIES as readonly string[]).includes(category ?? "") && isFormKind(category ?? "") ? (category as Category) : "",
     pin: params.has("lat") && params.has("lng") && Number.isFinite(lat) && Number.isFinite(lng) ? pinAt({ lat, lng }) : null,
   };
 }
@@ -70,32 +73,23 @@ export function ShareForm() {
       key={`${round}:${prefill ? params.toString() : ""}`}
       prefill={prefill}
       onShared={() => (shared.current = true)}
-      onShareAnother={() => {
-        shared.current = false;
-        setRound((r) => r + 1);
-      }}
     />
   );
 }
 
-const STEPS = ["Photos or a video", "Which store?", "Your words"] as const;
-
-function StoryForm({
-  prefill,
-  onShared,
-  onShareAnother,
-}: {
-  prefill: Prefill | null;
-  onShared: () => void;
-  onShareAnother: () => void;
-}) {
+/** The prototype's New post: three steps, with Back and Next fixed above the bottom bar. */
+function StoryForm({ prefill, onShared }: { prefill: Prefill | null; onShared: () => void }) {
   const { user, profile } = useAuth();
-  const [step, setStep] = useState(0);
+  const router = useRouter();
+  // The bottom bar slides away while typing, so Back and Next drop down too.
+  const typing = useTyping();
+  const [step, setStep] = useState(1);
   const [picked, setPicked] = useState<Picked>(null);
+  const [preparing, setPreparing] = useState<string | null>(null);
   const [store, setStore] = useState<StoreDetails>({
     storeName: prefill?.storeName ?? "",
     neighbourhood: "",
-    city: prefill?.pin ? "Hyderabad" : (profile?.city ?? ""),
+    city: prefill?.pin ? "Hyderabad" : (profile?.city ?? "Hyderabad"),
     pin: prefill?.pin ?? null,
   });
   const [storeMode, setStoreMode] = useState<StoreMode>(prefill ? "picked" : "search");
@@ -109,51 +103,41 @@ function StoryForm({
   // How much of the upload is done, from 0 to 1, while sharing.
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
-  // Tried to share with something missing: what's still missing shows until it's fixed.
+  // Tapped Next with something missing: what's missing shows until it's fixed.
   const [tried, setTried] = useState(false);
-  // The new post's ID, once it's shared.
-  const [shared, setShared] = useState<string | null>(null);
-  const heading = useRef<HTMLHeadingElement>(null);
-  const moved = useRef(false);
-
-  // Each step starts at the top, with its heading read out.
-  useEffect(() => {
-    if (!moved.current) return;
-    window.scrollTo({ top: 0 });
-    heading.current?.focus();
-  }, [step]);
 
   if (!user) return null;
 
+  const thisYear = new Date().getFullYear();
+  const yearNumber = year.trim() ? Number(year) : null;
+  const problems = (
+    step === 1
+      ? [preparing, !picked && "Add a photo or a video."]
+      : step === 2
+        ? [storeProblem(store)]
+        : [
+            caption.trim().length < CAPTION_MIN && `Write your post (at least ${CAPTION_MIN} letters).`,
+            !category && "Choose what kind of place it is.",
+            yearNumber !== null &&
+              !(Number.isInteger(yearNumber) && yearNumber >= YEAR_MIN && yearNumber <= thisYear) &&
+              `The year should be between ${YEAR_MIN} and ${thisYear}.`,
+            !rights && "Confirm you may share these photos or this video.",
+          ]
+  ).filter(Boolean) as string[];
+  const canNext = !problems.length && !busy;
+  const shownError = tried && problems.length && !preparing ? problems[0] : error;
+
   function go(next: number) {
-    moved.current = true;
     setError(null);
     setTried(false);
     setStep(next);
+    window.scrollTo({ top: 0 });
   }
 
-  const thisYear = new Date().getFullYear();
-  const yearNumber = year.trim() ? Number(year) : null;
-  const problems = [
-    !picked && "Add a photo or a video.",
-    storeProblem(store),
-    caption.trim().length < CAPTION_MIN && `Write your post (at least ${CAPTION_MIN} letters).`,
-    !category && "Choose what kind of place it is.",
-    yearNumber !== null &&
-      !(Number.isInteger(yearNumber) && yearNumber >= YEAR_MIN && yearNumber <= thisYear) &&
-      `The year should be between ${YEAR_MIN} and ${thisYear}.`,
-    !rights && "Confirm you may share these photos or this video.",
-  ].filter(Boolean) as string[];
-
-  const shownError = tried && problems.length ? problems[0] : error;
-
-  async function submit(event: FormEvent) {
-    event.preventDefault();
-    if (problems.length) {
-      setTried(true);
-      setError(null);
-      return;
-    }
+  async function next() {
+    if (busy) return;
+    if (problems.length) return setTried(true);
+    if (step < 3) return go(step + 1);
     if (!user || !picked || !category) return;
     setError(null);
     setProgress(0);
@@ -166,261 +150,89 @@ function StoryForm({
         media,
         setProgress,
       );
-      setShared(storyId);
       onShared();
       // Uploaded, so the previews can go.
       releasePicked(picked);
-      setPicked(null);
+      router.push(visibility === "public" ? "/" : memoryPath(storyId));
+      flash("Posted. It is live now.");
     } catch (e) {
       setError(friendlyError(e));
-    } finally {
       setBusy(false);
     }
   }
 
-  if (shared) {
-    return (
-      <div className={card}>
-        <h1 className={pageTitle}>Your post is up</h1>
-        <p className="mt-2 text-ink">
-          {visibility === "public"
-            ? <>Your post about <strong>{store.storeName.trim()}</strong> is on Home now.</>
-            : <>Your post about <strong>{store.storeName.trim()}</strong> is up. Only people you send its link to can see it.</>}
-          {store.pin && visibility === "public" && " It's on the Hyderabad map too."}
-        </p>
-        <p className="mt-4">
-          <Link href={memoryPath(shared)} className={primaryButton}>
-            See my post
-          </Link>
-        </p>
-        <div className="mt-6">
-          <PassTheMemory
-            user={user}
-            storyId={shared}
-            storeName={store.storeName.trim()}
-            visibility={visibility}
-          />
-        </div>
-        <p className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-sm">
-          <Link href={`${personPath(user.uid)}#memories`} className="font-bold text-brand-red underline underline-offset-4">
-            Manage my posts
-          </Link>
-          <button
-            type="button"
-            onClick={onShareAnother}
-            className="font-bold text-brand-red underline underline-offset-4"
-          >
-            Share another
-          </button>
-        </p>
-      </div>
-    );
-  }
-
-  const cover = picked && "photos" in picked ? picked.photos[0]?.preview : null;
-  const uploading = busy && progress < 1;
+  const seg = (on: boolean) =>
+    ({ height: 36, border: 0, borderRadius: 999, background: on ? "#fff" : "transparent", color: on ? INK : SOFT, font: "700 12.5px 'Plus Jakarta Sans'", boxShadow: on ? "0 2px 8px rgb(120 70 30 / .12)" : "none" }) as const;
+  const nextLabel = !busy ? (step === 3 ? "Post" : "Next") : progress < 1 ? `Uploading… ${Math.round(progress * 100)}%` : "Posting…";
 
   return (
-    <div className="w-full">
-      <div className="flex items-center gap-2">
-        {step > 0 && (
-          <button
-            type="button"
-            onClick={() => go(step - 1)}
-            disabled={busy}
-            className="-ml-2 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-ink hover:bg-sand/60"
-          >
-            <BackIcon className="h-5 w-5" />
-            <span className="sr-only">Back to {STEPS[step - 1].toLowerCase()}</span>
-          </button>
-        )}
-        <h1 className={pageTitle}>New post</h1>
-        <p className="ml-auto text-sm font-semibold text-ink-soft">
-          Step {step + 1} of {STEPS.length}
-        </p>
-      </div>
-      <div aria-hidden="true" className="mt-3 grid grid-cols-3 gap-1.5">
-        {STEPS.map((name, i) => (
-          <span key={name} className={`h-1 rounded-full ${i <= step ? "bg-brand-red" : "bg-ink/10"}`} />
-        ))}
-      </div>
-      <h2 ref={heading} tabIndex={-1} className="mt-5 text-lg font-bold text-ink outline-none">
-        {STEPS[step]}
-      </h2>
+    <>
+      <div style={{ padding: "14px 18px 96px", display: "flex", flexDirection: "column", gap: 18 }}>
+        <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between" }}>
+          <div style={{ display: "flex", alignItems: "flex-end", gap: 4 }}><div style={{ position: "relative", width: 46, height: 72 }}><Walker width={46} top="50%" /></div><h1 style={{ margin: 0, font: "600 28px 'Playfair Display'" }}>New post</h1></div>
+          <span style={{ font: "700 11px 'Plus Jakarta Sans'", letterSpacing: ".12em", textTransform: "uppercase", color: SOFT }}>Step {step} of 3</span>
+        </div>
+        <div aria-hidden="true" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 6 }}>
+          {[1, 2, 3].map((n) => (
+            <div key={n} style={{ height: 4, borderRadius: 2, background: n <= step ? RED : "#EFE6E2", transition: "background .3s" }}></div>
+          ))}
+        </div>
 
-      {step === 0 && (
-        <>
-          <p className={pageLead}>The store today, or an old photo of you there.</p>
-          <MediaStep picked={picked} setPicked={setPicked} onNext={() => go(1)} />
-        </>
-      )}
+        {step === 1 && <MediaStep picked={picked} setPicked={setPicked} busy={preparing} setBusy={setPreparing} />}
 
-      {step === 1 && (
-        <>
-          <p className={pageLead}>Search for it, or type it in.</p>
+        {step === 2 && (
           <StoreStep
             store={store}
             setStore={setStore}
             mode={storeMode}
             setMode={setStoreMode}
-            onCategory={(found) => setCategory((now) => now || found)}
-            onNext={() => go(2)}
+            onCategory={(found) => setCategory((now) => now || (isFormKind(found) ? found : ""))}
           />
-        </>
-      )}
+        )}
 
-      {step === 2 && (
-        <form onSubmit={submit} noValidate>
-          <div className="mt-3 flex items-center gap-3 rounded-2xl bg-white p-2.5 ring-1 ring-ink/10">
-            {cover ? (
-              // eslint-disable-next-line @next/next/no-img-element -- local preview of a blob
-              <img src={cover} alt="" className="aspect-[4/5] w-10 shrink-0 rounded-lg object-cover" />
-            ) : (
-              <span className="aspect-[4/5] w-10 shrink-0 rounded-lg bg-ink" aria-hidden="true" />
-            )}
-            <span className="min-w-0">
-              <span className="block truncate font-bold text-ink">{store.storeName.trim()}</span>
-              <span className="block truncate text-[0.8rem] text-ink-soft">
-                {[store.neighbourhood.trim(), store.city.trim()].filter(Boolean).join(", ")}
-              </span>
-            </span>
+        {step === 3 && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <h2 style={{ margin: 0, font: "600 20px 'Playfair Display'" }}>Your words</h2>
+            <textarea
+              aria-label="Your post"
+              value={caption}
+              maxLength={CAPTION_MAX}
+              onChange={(e) => setCaption(e.target.value)}
+              placeholder="What do you remember?"
+              rows={3}
+              style={{ border: 0, borderRadius: 18, background: "#FFF0C4", padding: "14px 16px", font: "400 19px/1.35 'Kalam'", color: INK, outline: "none", resize: "none" }}
+            ></textarea>
+            <div role="group" aria-label="Kind" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <span style={caps}>Kind</span>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                {FORM_KINDS.map((k) => (
+                  <button key={k} type="button" aria-pressed={category === k} onClick={() => setCategory(k)} style={{ height: 34, padding: "0 14px", borderRadius: 999, border: `1.5px solid ${category === k ? RED : "#E7D9D4"}`, background: category === k ? RED : "#fff", color: category === k ? "#fff" : INK, font: "700 12.5px 'Plus Jakarta Sans'" }}>{k}</button>
+                ))}
+              </div>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "110px 1fr", gap: 10 }}>
+              <label style={{ display: "flex", flexDirection: "column", gap: 6 }}><span style={caps}>Year</span><input inputMode="numeric" maxLength={4} value={year} onChange={(e) => setYear(e.target.value.replace(/\D/g, ""))} placeholder="2009" style={{ ...field, font: "400 22px 'Anton'", color: RED }} /></label>
+              <label style={{ display: "flex", flexDirection: "column", gap: 6 }}><span style={caps}>I always ordered</span><input value={ordered} maxLength={ORDERED_MAX} onChange={(e) => setOrdered(e.target.value)} placeholder="Optional" style={{ ...field, font: "500 14px 'Plus Jakarta Sans'" }} /></label>
+            </div>
+            <div role="radiogroup" aria-label="Who can see it" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", padding: 4, borderRadius: 999, background: "#F7F2EF" }}>
+              <button type="button" role="radio" aria-checked={visibility === "public"} onClick={() => setVisibility("public")} style={seg(visibility === "public")}>Everyone</button>
+              <button type="button" role="radio" aria-checked={visibility === "link"} onClick={() => setVisibility("link")} style={seg(visibility === "link")}>Only with link</button>
+            </div>
+            <button type="button" role="checkbox" aria-checked={rights} onClick={() => setRights(!rights)} style={{ display: "flex", gap: 10, alignItems: "flex-start", padding: 0, border: 0, background: "transparent", textAlign: "left" }}>
+              <span style={{ width: 22, height: 22, flex: "none", borderRadius: 7, border: "2px solid #A3171B", background: rights ? RED : "#fff", display: "grid", placeItems: "center" }}><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"></path></svg></span>
+              <span style={{ font: "500 13px/1.45 'Plus Jakarta Sans'", color: INK }}>I took these photos or have the right to share them.</span>
+            </button>
           </div>
+        )}
 
-          <label htmlFor="caption" className={label}>
-            Your post
-          </label>
-          <textarea
-            id="caption"
-            value={caption}
-            maxLength={CAPTION_MAX}
-            rows={4}
-            onChange={(e) => setCaption(e.target.value)}
-            placeholder="What made this place special to you?"
-            className={`${input} mt-1.5 resize-y`}
-          />
-          <p className="mt-1 text-right text-xs text-ink-soft">
-            {caption.trim().length}/{CAPTION_MAX}
-          </p>
-
-          <fieldset className="mt-2">
-            <legend className="text-sm font-bold text-ink">What kind of place?</legend>
-            <div className="mt-2 flex flex-wrap gap-1.5">
-              {CATEGORIES.map((c) => (
-                <button
-                  key={c}
-                  type="button"
-                  aria-pressed={category === c}
-                  onClick={() => setCategory(c)}
-                  className={`${pill} ${category === c ? on : off}`}
-                >
-                  <KindIcon category={c} picked={category === c} />
-                  {c}
-                </button>
-              ))}
-            </div>
-          </fieldset>
-
-          <div className="grid grid-cols-[6.5rem_1fr] gap-x-3">
-            <div>
-              <label htmlFor="year" className={label}>
-                Year <span className={hint}>(optional)</span>
-              </label>
-              <input
-                id="year"
-                inputMode="numeric"
-                maxLength={4}
-                value={year}
-                onChange={(e) => setYear(e.target.value.replace(/\D/g, ""))}
-                placeholder="2004"
-                className={`${input} mt-1.5`}
-              />
-            </div>
-            <div>
-              <label htmlFor="ordered" className={label}>
-                I always ordered <span className={hint}>(optional)</span>
-              </label>
-              <input
-                id="ordered"
-                value={ordered}
-                maxLength={ORDERED_MAX}
-                onChange={(e) => setOrdered(e.target.value)}
-                placeholder="Cutting chai"
-                className={`${input} mt-1.5`}
-              />
-            </div>
-          </div>
-
-          <fieldset className="mt-4">
-            <legend className="text-sm font-bold text-ink">Who can see it</legend>
-            <div className="mt-1.5 grid grid-cols-2 gap-2">
-              {(
-                [
-                  ["public", "Everyone", "On Home, Explore, my profile and the map"],
-                  ["link", "Only with the link", "Not on Home, my profile or the map"],
-                ] as const
-              ).map(([value, title, detail]) => (
-                <label
-                  key={value}
-                  className={`flex cursor-pointer items-start gap-2.5 rounded-2xl p-3 ring-1 ${
-                    visibility === value ? "bg-brand-yellow/15 ring-brand-yellow" : "bg-white ring-ink/10"
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="visibility"
-                    value={value}
-                    checked={visibility === value}
-                    onChange={() => setVisibility(value)}
-                    className="mt-0.5 h-4 w-4 shrink-0 accent-brand-red"
-                  />
-                  <span>
-                    <span className="block text-sm font-bold text-ink">{title}</span>
-                    <span className="block text-[0.8rem] leading-snug text-ink-soft">{detail}</span>
-                  </span>
-                </label>
-              ))}
-            </div>
-          </fieldset>
-
-          <label className="mt-4 flex items-start gap-3 text-sm text-ink">
-            <input
-              type="checkbox"
-              checked={rights}
-              onChange={(e) => setRights(e.target.checked)}
-              className="mt-0.5 h-5 w-5 shrink-0 accent-brand-red"
-            />
-            {picked && "video" in picked
-              ? "This video is mine, or I have permission to share it. If it shows children, I am their parent."
-              : "These photos are mine, or I have permission to share them. If they show children, I am their parent."}
-          </label>
-
-          <button type="submit" disabled={busy} className={`${primaryButton} mt-5 w-full`}>
-            {!busy ? "Share" : uploading ? `Uploading… ${Math.round(progress * 100)}%` : "Sharing…"}
-          </button>
-          {busy && (
-            <div
-              role="progressbar"
-              aria-label="Upload"
-              aria-valuemin={0}
-              aria-valuemax={100}
-              aria-valuenow={Math.round(progress * 100)}
-              className="mt-2 h-1 overflow-hidden rounded-full bg-ink/10"
-            >
-              <div className="h-full bg-brand-red transition-[width]" style={{ width: `${progress * 100}%` }} />
-            </div>
-          )}
-          <p className="mt-3 text-center text-xs text-ink-soft">
-            Your post goes up straight away. Anyone can report a post, and moderators take
-            down what breaks the rules.
-          </p>
-
-          {shownError && (
-            <p role="alert" className="mt-4 rounded-xl bg-brand-red/10 px-4 py-3 text-sm text-brand-red-deep">
-              {shownError}
-            </p>
-          )}
-        </form>
-      )}
-    </div>
+        {shownError && <p role="alert" style={problemText}>{shownError}</p>}
+      </div>
+      <div style={{ position: "fixed", left: 0, right: 0, bottom: typing ? 0 : "calc(var(--bar-h) + var(--bar-lift))", maxWidth: 560, margin: "0 auto", padding: "12px 18px", display: "flex", gap: 10, background: "linear-gradient(rgb(255 255 255 / 0),#fff 30%)", zIndex: 6 }}>
+        {step > 1 && (
+          <button type="button" disabled={busy} onClick={() => go(step - 1)} style={{ height: 50, padding: "0 20px", border: 0, borderRadius: 999, background: "#F7F2EF", color: INK, font: "700 14px 'Plus Jakarta Sans'" }}>Back</button>
+        )}
+        <button type="button" aria-disabled={!canNext} onClick={next} style={{ flex: 1, height: 50, border: 0, borderRadius: 999, background: RED, color: "#fff", font: "700 15px 'Plus Jakarta Sans'", opacity: canNext || busy ? 1 : 0.4, transition: "opacity .2s" }}>{nextLabel}</button>
+      </div>
+    </>
   );
 }
