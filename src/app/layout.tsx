@@ -8,23 +8,27 @@ import { CookieBanner } from "@/components/cookie-choice";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { Splash, splashScript } from "@/components/splash";
+import { anton } from "@/lib/anton";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/site";
 import "./globals.css";
 
-// A clean, modern sans for everything but the memories themselves.
+// The redesign's fonts (docs/design_handoff_pas_redesign): Plus Jakarta Sans
+// 400 to 700 for the interface, Playfair Display 500 and 600 with italics for
+// headings, Kalam 400 for handwritten words and Anton 400 (src/lib/anton.ts)
+// for years and numbers. Google serves Jakarta and Playfair as variable fonts,
+// as the prototype gets them; Kalam 700 stays only for the pages not yet
+// redesigned.
 const jakarta = Plus_Jakarta_Sans({
   variable: "--font-jakarta",
   subsets: ["latin"],
 });
 
-// An elegant, high-contrast serif for titles and store names.
 const playfair = Playfair_Display({
   variable: "--font-playfair",
   style: ["normal", "italic"],
   subsets: ["latin"],
 });
 
-// Handwriting for the memories themselves, in Hindi and English.
 const kalam = Kalam({
   variable: "--font-kalam",
   weight: ["400", "700"],
@@ -54,7 +58,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" suppressHydrationWarning className={`${jakarta.variable} ${playfair.variable} ${kalam.variable} h-full antialiased`}>
+    <html lang="en" suppressHydrationWarning className={`${jakarta.variable} ${playfair.variable} ${kalam.variable} ${anton.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col pb-[calc(var(--bar-h)+var(--bar-lift))] font-sans">
         {/* Decides before the first paint whether the opening screen shows. */}
         <Script id="lss-splash" strategy="beforeInteractive">

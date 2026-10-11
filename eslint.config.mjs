@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // The design handoff, kept as received for comparing against.
+    "docs/design_handoff_pas_redesign/**",
   ]),
 ]);
 

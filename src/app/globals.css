@@ -33,16 +33,55 @@ body {
   color: var(--ink);
 }
 
+/* The redesign's resets, copied from the prototype
+   (docs/design_handoff_pas_redesign/Local Stores Prototype.dc.html). The
+   page stays white: the prototype's #EFEAE6 is only the space around its
+   phone. In the base layer, so the old pages' utility classes still win.
+   Red links apply inside redesigned parts ([data-pas]) until every page is
+   redesigned, so the old pages' plain links keep their colour. */
+@layer base {
+  body {
+    margin: 0;
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    color: #2B1D1A;
+    -webkit-font-smoothing: antialiased;
+  }
+  :where([data-pas]) a {
+    color: #A3171B;
+    text-decoration: none;
+  }
+  :where([data-pas]) a:hover {
+    color: #7D1114;
+  }
+  button {
+    font-family: inherit;
+    cursor: pointer;
+  }
+  input,
+  textarea {
+    font-family: inherit;
+  }
+}
+/* Copied character for character from the prototype. */
+*::-webkit-scrollbar{display:none}
+@keyframes pasBurst{0%{transform:scale(0);opacity:0}15%{transform:scale(1.25);opacity:1}30%{transform:scale(.92)}45%{transform:scale(1.04)}60%{transform:scale(1)}85%{opacity:1}100%{transform:scale(1) translateY(-40px);opacity:0}}
+@keyframes pasBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+@keyframes pasRing{0%{transform:scale(.4);opacity:.7}100%{transform:scale(2.2);opacity:0}}
+@keyframes pasMarch{to{stroke-dashoffset:-22}}
+@keyframes pasWalk{from{background-position:0% 0}to{background-position:100% 0}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
 /* Titles and store names are set in the serif, at a lighter weight than
    the sans so the thick and thin strokes show. Small all-caps labels stay
-   in the sans. Outside a layer, this wins over the utility classes. */
-:is(h1, h2, h3):not(.uppercase) {
+   in the sans. Outside a layer, this wins over the utility classes. Only
+   for the pages not yet redesigned: never inside [data-pas]. */
+:is(h1, h2, h3):not(.uppercase, [data-pas] *) {
   font-family: var(--font-serif);
   font-weight: 600;
   letter-spacing: -0.01em;
   font-variant-numeric: lining-nums;
 }
-h1:not(.uppercase) {
+h1:not(.uppercase, [data-pas] *) {
   font-weight: 500;
 }
 
