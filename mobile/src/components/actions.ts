@@ -3,7 +3,7 @@ import { router } from "expo-router";
 import { useState } from "react";
 import { Share } from "react-native";
 import { friendlyError } from "@/lib/auth-errors";
-import { follow, unfollow } from "@/lib/follows";
+import { follow, unblock, unfollow } from "@/lib/follows";
 import { SITE } from "@/lib/site";
 import { useAuth } from "./auth-provider";
 import { flash } from "./toast";
@@ -37,20 +37,22 @@ export async function sharePost(path: string, title: string) {
   }
 }
 
-/** Follow and Following for a post's author: "You" on their own posts. */
+/** Follow and Following for a post's author: "You" on their own posts, and Unblock for someone blocked. */
 export function useFollowAuthor(authorId: string | null, authorName: string) {
   const { member, ask } = useAskToJoin();
   const follows = useMyFollows();
   const [busy, setBusy] = useState(false);
   const mine = !!member && member.uid === authorId;
   const following = !!authorId && follows.following.has(authorId);
+  const blocked = !!authorId && follows.blocked.has(authorId);
   const toggle = async () => {
     if (mine || !authorId) return;
     if (!member) return ask();
     if (!follows.ready || busy) return;
     setBusy(true);
     try {
-      if (following) await unfollow(member, authorId);
+      if (blocked) await unblock(member, authorId);
+      else if (following) await unfollow(member, authorId);
       else await follow(member, authorId);
     } catch (e) {
       flash(e instanceof FirebaseError && e.code === "permission-denied" ? `You can't follow ${authorName} right now.` : friendlyError(e));
@@ -58,5 +60,5 @@ export function useFollowAuthor(authorId: string | null, authorName: string) {
       setBusy(false);
     }
   };
-  return { mine, following, busy, toggle, text: mine ? "You" : following ? "Following" : "Follow" };
+  return { mine, following, busy, toggle, text: mine ? "You" : blocked ? "Unblock" : following ? "Following" : "Follow" };
 }

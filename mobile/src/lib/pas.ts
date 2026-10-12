@@ -39,6 +39,7 @@ export const PAS = {
   miniMapGrid: "#ECE3D7",
   miniMapWater: "#CFE0EA",
   savedCard: "#F2C8B9",
+  backdrop: "#EFEAE6",
 } as const;
 
 type Family = "Playfair Display" | "Plus Jakarta Sans" | "Kalam" | "Anton";

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useSyncExternalStore } from "react";
 import type { MemoryResult, Wall } from "./memories";
-import type { PersonResult } from "./people";
+import type { FollowKind, FollowListResult, PersonResult } from "./people";
 import { SITE } from "./site";
 
 // The posts, read from the website's stored copy (src/app/api/app/ there),
@@ -19,6 +19,10 @@ export function loadMemory(id: string) {
 
 export function loadPerson(uid: string) {
   return getJson<PersonResult>(`/api/app/people/${encodeURIComponent(uid)}`);
+}
+
+export function loadFollowList(uid: string, kind: FollowKind) {
+  return getJson<FollowListResult>(`/api/app/people/${encodeURIComponent(uid)}/${kind}`);
 }
 
 /** The Wall: null until it has loaded, with an error when it couldn't. */
