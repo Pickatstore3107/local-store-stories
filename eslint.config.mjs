@@ -14,6 +14,8 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     // The design handoff, kept as received for comparing against.
     "docs/design_handoff_pas_redesign/**",
+    // The phone app, checked with its own tools (mobile/package.json).
+    "mobile/**",
   ]),
 ]);
 
