@@ -23,6 +23,7 @@ import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
 import { AuthProvider, useAuth } from "@/components/auth-provider";
+import { Toast } from "@/components/toast";
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -50,6 +51,7 @@ export default function RootLayout() {
     <AuthProvider>
       <StatusBar style="dark" />
       {(fontsLoaded || fontError) && <Screens />}
+      <Toast />
     </AuthProvider>
   );
 }
@@ -69,6 +71,7 @@ function Screens() {
       <Stack.Screen name="signin" options={{ animation: "slide_from_bottom" }} />
       <Stack.Screen name="welcome" />
       <Stack.Screen name="activity" />
+      <Stack.Screen name="memories/[id]" />
     </Stack>
   );
 }

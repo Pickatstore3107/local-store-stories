@@ -17,12 +17,28 @@ export const PAS = {
   white: "#fff",
   butter: "#FFF0C4",
   butterLight: "#FFF3D1",
+  butterRoad: "#FFE7A3",
+  butterRoadLight: "#FFEFC2",
   ink: INK,
   soft: SOFT,
   placeholder: "#8C7670",
   hairline: "#F1E6E2",
   border: "#E7D9D4",
   inputFill: "#F7F2EF",
+  barTrack: "#EFE6E2",
+  dashedBorder: "#D8C8C2",
+  pickedFill: "#FFF7F5",
+  mapPaper: "#FBF5EA",
+  mapDots: "#E9DFD0",
+  water: "#D3E4EC",
+  waterLabel: "#5B8AA3",
+  park: "#E4EDD6",
+  parkLabel: "#6F8A55",
+  areaLabel: "#B3A29B",
+  miniMapPaper: "#F6F1EA",
+  miniMapGrid: "#ECE3D7",
+  miniMapWater: "#CFE0EA",
+  savedCard: "#F2C8B9",
 } as const;
 
 type Family = "Playfair Display" | "Plus Jakarta Sans" | "Kalam" | "Anton";
@@ -39,14 +55,18 @@ const FACES: Record<Family, Record<number, string>> = {
 /**
  * The prototype's `font` shorthand as a phone text style:
  * `font("600 21px", "Playfair Display")` is `font:600 21px 'Playfair Display'`,
- * and `font("italic 500 15px", ...)` its italic.
+ * `font("italic 500 15px", ...)` its italic, and `font("600 18px/1.1", ...)`
+ * sets the line height too, 1.1 times the size.
  */
 export function font(spec: string, family: Family): TextStyle {
   const italic = spec.includes("italic");
-  const [weight, size] = spec.replace("italic", "").trim().split(/\s+/);
+  const [weight, sizes] = spec.replace("italic", "").trim().split(/\s+/);
+  const [size, line] = sizes.split("/");
   const face = FACES[family][Number(weight)] ?? FACES[family][400];
+  const fontSize = parseFloat(size);
   return {
     fontFamily: italic && family === "Playfair Display" ? `${face}_Italic` : face,
-    fontSize: parseFloat(size),
+    fontSize,
+    ...(line && { lineHeight: Math.round(fontSize * parseFloat(line)) }),
   };
 }
