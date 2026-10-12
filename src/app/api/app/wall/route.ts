@@ -1,11 +1,12 @@
 import { loadWall } from "@/lib/server/wall";
+import { OPEN } from "../open";
 
-// The phone app (mobile/) reads posts here, from the same stored copy as
-// Home, because photos are private and only this server can sign their links.
-
-/** Every post shared with everyone, newest first, as Home shows them. */
+/**
+ * The Wall for the phone app (mobile/), the same stored copy Home is built
+ * from. Photo links are signed here, as on the website.
+ */
 export async function GET() {
   const wall = await loadWall();
-  if (!wall) return Response.json({ error: "The posts couldn't be loaded just now." }, { status: 503 });
-  return Response.json(wall);
+  if (!wall) return Response.json({ error: "Could not load the posts." }, { status: 503, headers: OPEN });
+  return Response.json(wall, { headers: OPEN });
 }

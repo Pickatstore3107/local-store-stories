@@ -8,11 +8,6 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#FFC000"
-    },
     "ios": {
       "supportsTablet": false
     },
@@ -36,7 +31,22 @@
           "backgroundColor": "#FFC000"
         }
       ],
-      "expo-font"
+      "expo-font",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Choose photos of a store to share in your post, or a profile photo.",
+          "cameraPermission": false,
+          "microphonePermission": false
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Show the stories near you on the map. Your location stays on your phone."
+        }
+      ],
+      "expo-video"
     ],
     "experiments": {
       "typedRoutes": true

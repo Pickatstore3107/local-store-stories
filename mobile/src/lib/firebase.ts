@@ -25,3 +25,8 @@ const auth: Auth = fresh && Platform.OS !== "web"
   : getAuth(app);
 
 export const firebase = { app, auth, db: getFirestore(app) };
+
+/** The same services, under the name the website's shared code uses. */
+export function getFirebase() {
+  return firebase;
+}
