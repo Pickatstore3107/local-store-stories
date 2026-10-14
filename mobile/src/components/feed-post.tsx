@@ -1,7 +1,7 @@
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
-import { useEffect, useRef } from "react";
+import { memo, useEffect, useRef } from "react";
 import { Pressable, Text, View } from "react-native";
 import Svg, { Path } from "react-native-svg";
 import { memoryPath, type WallMemory } from "@/lib/memories";
@@ -72,7 +72,7 @@ export function Avatar({ name, photo, size }: { name: string; photo: string | nu
   );
 }
 
-export function FeedPost({ p, builtAt, onCount }: { p: WallMemory; builtAt: number; onCount: (n: number) => void }) {
+export const FeedPost = memo(function FeedPost({ p, builtAt, onCount }: { p: WallMemory; builtAt: number; onCount: (id: string, n: number) => void }) {
   const { member, ask } = useAskToJoin();
   const like = useLike(p.id, p.likes, builtAt);
   const save = useSave(p.id);
@@ -87,8 +87,8 @@ export function FeedPost({ p, builtAt, onCount }: { p: WallMemory; builtAt: numb
     report.current = onCount;
   });
   useEffect(() => {
-    report.current(likes);
-  }, [likes]);
+    if (likes !== p.likes.count) report.current(p.id, likes);
+  }, [p.id, p.likes.count, likes]);
   useEffect(() => () => clearTimeout(pending.current), []);
   useEffect(() => {
     if (like.error) flash(like.error);
@@ -194,4 +194,4 @@ export function FeedPost({ p, builtAt, onCount }: { p: WallMemory; builtAt: numb
       </View>
     </View>
   );
-}
+});

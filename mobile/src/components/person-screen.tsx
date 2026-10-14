@@ -2,30 +2,60 @@ import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { PAS, font } from "@/lib/pas";
-import type { PersonResult } from "@/lib/people";
-import { loadPerson } from "@/lib/wall";
+import { photoOf, type PersonResult, type PublicPerson } from "@/lib/people";
+import { getCachedPerson, loadPerson, useWall } from "@/lib/wall";
+import { useAuth } from "./auth-provider";
 import { ProfileView } from "./profile-view";
 
 type Loaded = PersonResult | { status: "loading" };
 
-/** Someone's profile, read from the website's stored copy, pulled down to read again. */
+/** Someone's profile, read directly from Firestore + local Wall, pulled down to read again. */
 export function PersonScreen({ uid }: { uid: string }) {
   const insets = useSafeAreaInsets();
-  const [result, setResult] = useState<Loaded>({ status: "loading" });
+  const { user, profile } = useAuth();
+  const { wall } = useWall();
+
+  const immediatePerson = useCallback((): PublicPerson | null => {
+    const cached = getCachedPerson(uid);
+    if (cached) return cached;
+    if (user?.uid === uid && profile) {
+      const memories = (wall?.memories ?? [])
+        .filter((m) => m.authorId === uid)
+        .sort((a, b) => b.approvedAt - a.approvedAt);
+      return {
+        uid,
+        name: profile.displayName,
+        city: profile.city ?? null,
+        bio: profile.bio ?? null,
+        photo: photoOf(profile),
+        followers: 0,
+        following: 0,
+        memories,
+      };
+    }
+    return null;
+  }, [uid, user?.uid, profile, wall]);
+
+  const [result, setResult] = useState<Loaded>(() => {
+    const initial = immediatePerson();
+    return initial ? { status: "found", person: initial } : { status: "loading" };
+  });
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
     try {
       setResult(await loadPerson(uid));
     } catch {
-      setResult({ status: "error" });
+      const fallback = immediatePerson();
+      setResult(fallback ? { status: "found", person: fallback } : { status: "error" });
     }
-  }, [uid]);
+  }, [uid, immediatePerson]);
 
   useEffect(() => {
-    setResult({ status: "loading" });
+    const initial = immediatePerson();
+    setResult(initial ? { status: "found", person: initial } : { status: "loading" });
     void load();
-  }, [load]);
+  }, [load, immediatePerson]);
 
   async function pull() {
     setRefreshing(true);

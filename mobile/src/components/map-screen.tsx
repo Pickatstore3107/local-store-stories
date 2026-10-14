@@ -3,7 +3,6 @@ import { Image } from "expo-image";
 import { useLocalSearchParams } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { FlatList, Linking, Platform, Pressable, ScrollView, Text, View, useWindowDimensions } from "react-native";
-import MapView, { Marker, Polyline, type Region } from "react-native-maps";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Circle, Path } from "react-native-svg";
 import { HYDERABAD, type LatLng } from "@/lib/pins";
@@ -12,6 +11,7 @@ import { useWall } from "@/lib/wall";
 import { useAskToJoin } from "./actions";
 import { openMemory } from "./feed-post";
 import { MapSearch, type Found, type PinnedMemory } from "./map-search";
+import { PasMap, type PasMapRef } from "./pas-map";
 import { flash } from "./toast";
 import { useMyFollows } from "./use-my-follows";
 import { useMyLocation } from "./use-my-location";
@@ -20,7 +20,7 @@ import { Walker } from "./walker";
 // The map, as the website's src/components/map/map-screen.tsx: search and
 // kinds at the top, Near me and the story trail on the right, and along the
 // bottom the "Since" year slider with the walking woman and a card for
-// every story, synced with the pins.
+// every story, synced with the pins on the OpenFreeMap + MapLibre canvas.
 
 const RED = PAS.red, INK = PAS.ink;
 const MAP_KINDS = ["All", "Following", "Cafes", "Tea Stalls", "Bakeries", "Bookstores"] as const;
@@ -48,8 +48,6 @@ function pinSpots(memories: PinnedMemory[]) {
   return spots;
 }
 
-const coord = ({ lat, lng }: LatLng) => ({ latitude: lat, longitude: lng });
-
 function directions({ lat, lng }: LatLng) {
   return Platform.OS === "ios"
     ? `https://maps.apple.com/?daddr=${lat.toFixed(6)},${lng.toFixed(6)}`
@@ -64,7 +62,7 @@ export function MapScreen() {
   const { location, locate } = useMyLocation();
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
-  const map = useRef<MapView>(null);
+  const map = useRef<PasMapRef>(null);
   const cards = useRef<FlatList<PinnedMemory>>(null);
   const [ready, setReady] = useState(false);
   const [mapKind, setMapKind] = useState<MapKind>("All");
@@ -94,10 +92,7 @@ export function MapScreen() {
 
   // Moves the map so a story sits in the upper part, above the cards.
   const panTo = (spot: LatLng, delta = 0.02) => {
-    map.current?.animateToRegion(
-      { latitude: spot.lat - delta * 0.18, longitude: spot.lng, latitudeDelta: delta, longitudeDelta: delta },
-      600,
-    );
+    map.current?.panTo(spot, delta, true);
   };
 
   const scrollCardTo = (i: number) => {
@@ -122,12 +117,21 @@ export function MapScreen() {
       if (memory.year && memory.year < since) setYearMin(memory.year);
       setActivePin(memory.id);
       panTo(spots.get(memory.id) ?? memory.pin, 0.012);
-      setTimeout(() => scrollCardTo(memories.filter((p) => !p.year || p.year >= Math.min(since, memory.year ?? since)).findIndex((p) => p.id === memory.id)), 300);
+      setTimeout(
+        () =>
+          scrollCardTo(
+            memories
+              .filter((p) => !p.year || p.year >= Math.min(since, memory.year ?? since))
+              .findIndex((p) => p.id === memory.id),
+          ),
+        300,
+      );
     } else if (memories.length) {
-      map.current?.fitToCoordinates([...spots.values()].map(coord), {
-        edgePadding: { top: 140, bottom: 300, left: 40, right: 60 },
-        animated: false,
-      });
+      map.current?.fitToCoordinates(
+        [...spots.values()],
+        { top: 140, bottom: 300, left: 40, right: 60 },
+        false,
+      );
     }
     // Runs once, when both are ready.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -200,54 +204,61 @@ export function MapScreen() {
     if (place.extent) {
       const [west, south, east, north] = place.extent;
       map.current?.fitToCoordinates(
-        [coord({ lat: south, lng: west }), coord({ lat: north, lng: east })],
-        { edgePadding: { top: 140, bottom: 300, left: 40, right: 60 }, animated: true },
+        [
+          { lat: south, lng: west },
+          { lat: north, lng: east },
+        ],
+        { top: 140, bottom: 300, left: 40, right: 60 },
+        true,
       );
     } else {
       panTo(place.spot, 0.012);
     }
   }
 
-  const trailCoords = trail
-    ? [...visible]
-        .filter((p) => p.year)
-        .sort((a, b) => a.year! - b.year!)
-        .map((p) => coord(spots.get(p.id)!))
-    : [];
-  const start: Region = {
-    latitude: HYDERABAD.center.lat,
-    longitude: HYDERABAD.center.lng,
-    latitudeDelta: 0.25,
-    longitudeDelta: 0.25,
-  };
+  const trailCoords = useMemo(
+    () =>
+      trail
+        ? [...visible]
+            .filter((p) => p.year)
+            .sort((a, b) => a.year! - b.year!)
+            .map((p) => spots.get(p.id)!)
+        : [],
+    [trail, visible, spots],
+  );
+
+  const pinItems = useMemo(
+    () =>
+      visible.map((p) => {
+        const spot = spots.get(p.id)!;
+        return {
+          id: p.id,
+          lat: spot.lat,
+          lng: spot.lng,
+          storeName: p.storeName,
+          photoUrl: p.photoUrl,
+          year: p.year,
+          active: p.id === activeId,
+        };
+      }),
+    [visible, spots, activeId],
+  );
+
   const failed = !!error && !wall;
 
   return (
     <View style={{ flex: 1, backgroundColor: PAS.mapPaper }}>
-      <MapView
+      <PasMap
         ref={map}
-        style={{ flex: 1 }}
-        initialRegion={start}
-        onMapReady={() => setReady(true)}
-        showsUserLocation={false}
-        toolbarEnabled={false}
+        initialCenter={HYDERABAD.center}
+        initialZoom={11}
+        pins={pinItems}
+        trail={trailCoords}
+        me={me}
+        onReady={() => setReady(true)}
+        onPickPin={pick}
         accessibilityLabel="Map of Hyderabad with stories as pins"
-        mapPadding={{ top: 0, right: 0, left: 0, bottom: BAR + insets.bottom + 220 }}
-      >
-        {trailCoords.length > 1 && (
-          <Polyline coordinates={trailCoords} strokeColor={RED} strokeWidth={2.5} lineDashPattern={[2, 9]} lineCap="round" lineJoin="round" />
-        )}
-        {mapPosts.filter(shows).map((p) => (
-          <PhotoPin key={p.id} memory={p} spot={spots.get(p.id)!} on={p.id === activeId} onPress={() => pick(p.id)} />
-        ))}
-        {me && (
-          <Marker coordinate={coord(me)} anchor={{ x: 0.5, y: 0.5 }} tracksViewChanges={false} accessibilityLabel="You are here">
-            <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: "rgba(163,23,27,0.25)", alignItems: "center", justifyContent: "center" }}>
-              <View style={{ width: 18, height: 18, borderRadius: 9, backgroundColor: RED, borderWidth: 3, borderColor: "#fff" }} />
-            </View>
-          </Marker>
-        )}
-      </MapView>
+      />
 
       <View style={{ position: "absolute", top: 6, left: 12, right: 12, gap: 10, zIndex: 4 }}>
         <MapSearch memories={memories} onFound={onFound} />
@@ -365,40 +376,5 @@ export function MapScreen() {
         />
       </View>
     </View>
-  );
-}
-
-/** A story's photo in a round frame with its year, as the website's map pins. */
-function PhotoPin({ memory, spot, on, onPress }: { memory: PinnedMemory; spot: LatLng; on: boolean; onPress: () => void }) {
-  // Android draws a marker once; it's redrawn while its photo arrives and when it's picked.
-  const [redraw, setRedraw] = useState(true);
-  useEffect(() => {
-    setRedraw(true);
-    const t = setTimeout(() => setRedraw(false), 1500);
-    return () => clearTimeout(t);
-  }, [on, memory.photoUrl]);
-  const size = on ? 62 : 44;
-  const ring = on ? RED : "#fff";
-  return (
-    <Marker
-      coordinate={coord(spot)}
-      anchor={{ x: 0.5, y: 1 }}
-      onPress={onPress}
-      tracksViewChanges={redraw}
-      zIndex={on ? 5 : 2}
-      accessibilityLabel={memory.storeName}
-    >
-      <View style={{ alignItems: "center", paddingTop: 12, paddingHorizontal: 20 }}>
-        <View style={{ width: size, height: size, borderRadius: size / 2, borderWidth: 3, borderColor: ring, backgroundColor: PAS.inputFill, overflow: "hidden" }}>
-          {memory.photoUrl && <Image source={{ uri: memory.photoUrl }} contentFit="cover" style={{ width: "100%", height: "100%" }} onLoad={() => setRedraw(true)} />}
-        </View>
-        {memory.year !== null && (
-          <View style={{ position: "absolute", top: 2, right: 2, paddingHorizontal: 7, paddingVertical: 2, borderRadius: 999, backgroundColor: on ? PAS.yellow : "#fff" }}>
-            <Text style={[font("400 12px/1.25", "Anton"), { color: on ? INK : RED }]}>{memory.year}</Text>
-          </View>
-        )}
-        <View style={{ width: 0, height: 0, marginTop: -2, borderLeftWidth: 7, borderRightWidth: 7, borderTopWidth: 10, borderLeftColor: "transparent", borderRightColor: "transparent", borderTopColor: ring }} />
-      </View>
-    </Marker>
   );
 }

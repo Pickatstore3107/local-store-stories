@@ -2,7 +2,7 @@ import MaskedView from "@react-native-masked-view/masked-view";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { FlatList, Pressable, RefreshControl, ScrollView, Text, TextInput, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Circle, Path } from "react-native-svg";
@@ -194,6 +194,15 @@ export default function Home() {
     </View>
   );
 
+  const onCount = useCallback((id: string, n: number) => {
+    setLikeCounts((c) => (c[id] === n ? c : { ...c, [id]: n }));
+  }, []);
+  const builtAt = wall?.builtAt ?? 0;
+  const renderItem = useCallback(
+    ({ item }: { item: WallMemory }) => <FeedPost p={item} builtAt={builtAt} onCount={onCount} />,
+    [builtAt, onCount],
+  );
+
   return (
     <FlatList
       data={feed}
@@ -202,13 +211,10 @@ export default function Home() {
       keyboardDismissMode="on-drag"
       ListHeaderComponent={header}
       ListEmptyComponent={empty}
-      renderItem={({ item }) => (
-        <FeedPost
-          p={item}
-          builtAt={wall?.builtAt ?? 0}
-          onCount={(n) => setLikeCounts((c) => (c[item.id] === n ? c : { ...c, [item.id]: n }))}
-        />
-      )}
+      renderItem={renderItem}
+      initialNumToRender={4}
+      maxToRenderPerBatch={4}
+      windowSize={5}
       refreshControl={<RefreshControl refreshing={loading && !!wall} onRefresh={reload} tintColor={RED} colors={[RED]} />}
       contentContainerStyle={{ paddingBottom: insets.bottom + 84 }}
       style={{ backgroundColor: "#fff" }}

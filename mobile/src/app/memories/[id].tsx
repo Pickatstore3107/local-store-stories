@@ -34,7 +34,7 @@ import { metresBetween } from "@/lib/nearby";
 import { PAS, font } from "@/lib/pas";
 import { hasReported, REPORT_REASONS, REPORTS_TO_HOLD, sendReport } from "@/lib/reports";
 import { GRIEVANCE_EMAIL } from "@/lib/site";
-import { loadMemory, useWall } from "@/lib/wall";
+import { getCachedMemory, loadMemory, useWall } from "@/lib/wall";
 
 // A post's page, as the website's src/app/memories/[id]/memory-post.tsx:
 // its photos full width to swipe through, then a white sheet over them with
@@ -48,16 +48,20 @@ type Loaded = { status: "loading" } | { status: "found"; memory: Memory } | { st
 
 export default function MemoryScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const [result, setResult] = useState<Loaded>({ status: "loading" });
+  const [result, setResult] = useState<Loaded>(() => {
+    const cached = getCachedMemory(id);
+    return cached ? { status: "found", memory: cached } : { status: "loading" };
+  });
   const [attempt, setAttempt] = useState(0);
   const insets = useSafeAreaInsets();
 
   useEffect(() => {
     let current = true;
-    setResult({ status: "loading" });
+    const cached = getCachedMemory(id);
+    setResult(cached ? { status: "found", memory: cached } : { status: "loading" });
     loadMemory(id)
       .then((r) => current && setResult(r))
-      .catch(() => current && setResult({ status: "error" }));
+      .catch(() => current && !cached && setResult({ status: "error" }));
     return () => {
       current = false;
     };
